@@ -27,7 +27,23 @@ PagedFileManager::createFile (const char *fileName).
 
 RC PagedFileManager::createFile(const string &fileName)
 {
-    return -1;
+    FILE *fp;
+
+    char * cstr = new char [fileName.length()+1];
+    strcpy(cstr, fileName.c_str());
+    fp = fopen(cstr, "r");
+
+    if(fp == nullptr){
+        fp = fopen(cstr, "w");
+        delete[] cstr;
+        return 0;
+    }else{
+        fclose(fp);
+        delete[] cstr;
+        return -1;
+    }
+
+
 }
 
 /*
@@ -39,7 +55,23 @@ PagedFileManager::destroyFile (const char *fileName).
 
 RC PagedFileManager::destroyFile(const string &fileName)
 {
-    return -1;
+
+    FILE *fp;
+    int ret_val;
+
+    char * cstr = new char [fileName.length()+1];
+    strcpy(cstr, fileName.c_str());
+    fp = fopen(cstr, "r");
+
+    if(fp == nullptr){
+        delete[] cstr;
+        return 1;
+    }else{
+        fclose(fp);
+        ret_val = remove(cstr);
+        delete[] cstr;
+        return (ret_val);
+    }
 }
 
 /*
@@ -57,7 +89,22 @@ FileHandle &fileHandle).
 
 RC PagedFileManager::openFile(const string &fileName, FileHandle &fileHandle)
 {
-    return -1;
+    FILE *fp;
+
+    char * cstr = new char [fileName.length()+1];
+    strcpy(cstr, fileName.c_str());
+    fp = fopen(cstr, "r");
+
+    if(fp == nullptr){
+        delete[] cstr;
+        return 1;
+    }else{
+        fclose(fp);
+        fopen(cstr, "rw");
+        delete[] cstr;
+        fileHandle.setfpV2(fp);
+        return 0;
+    }
 }
 
 /*
@@ -69,8 +116,8 @@ PagedFileManager::closeFile(FileHandle &fileHandle).
 */
 
 RC PagedFileManager::closeFile(FileHandle &fileHandle)
-{
-    return -1;
+{   FILE * fp = fileHandle.getfpV2();
+    return (fclose(fp));
 }
 
 FileHandle::FileHandle()
@@ -112,7 +159,22 @@ and writes the given data into the newly allocated page.
 
 RC FileHandle::appendPage(const void *data)
 {
-    return -1;
+    //maybe check size of data :)
+    int ret_val;
+    char * pp;
+
+    //does this give us right size
+    pp = (char *) malloc(PAGE_SIZE);
+
+    fseek(fpV2, 0L, SEEK_END);
+    ret_val = fwrite( (char *) data, PAGE_SIZE, 1, fpV2);
+    std::cout << "fwrite bytes: " << ret_val  << "  " << PAGE_SIZE << std::endl;
+    if(ret_val == 0){
+        appendPageCounter++;
+        return 0;
+    }
+
+    return 1;
 }
 
 /*
@@ -122,7 +184,18 @@ in the file.
 
 unsigned FileHandle::getNumberOfPages()
 {
-    return -1;
+    size_t num_pages;
+    FILE * fp = getfpV2();
+
+    fseek(fp, 0L, SEEK_END);
+    size_t sz = ftell(fp);
+    fseek(fp, 0L, SEEK_SET);
+
+    num_pages = ceil(sz/PAGE_SIZE);
+
+    std::cout << "num_pages: "<< num_pages << " " << sz << std::endl;
+
+    return num_pages;
 }
 
 /*
@@ -134,5 +207,9 @@ be applied.
 
 RC FileHandle::collectCounterValues(unsigned &readPageCount, unsigned &writePageCount, unsigned &appendPageCount)
 {
-	return -1;
+    // #dont fail pls
+    readPageCount = this->readPageCounter;
+    writePageCount = this->writePageCounter;
+    appendPageCount = this->appendPageCounter;
+    return 0;
 }

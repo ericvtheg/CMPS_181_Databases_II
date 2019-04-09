@@ -2,10 +2,10 @@
 #include <string>
 #include <cassert>
 #include <sys/stat.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <string.h>
 #include <stdexcept>
-#include <stdio.h> 
+#include <stdio.h>
 
 #include "pfm.h"
 #include "rbfm.h"
@@ -32,7 +32,7 @@ int RBFTest_4(PagedFileManager *pfm)
 	unsigned readPageCount1 = 0;
 	unsigned writePageCount1 = 0;
 	unsigned appendPageCount1 = 0;
-	
+
     // Open the file "test3"
     FileHandle fileHandle;
     rc = pfm->openFile(fileName, fileHandle);
@@ -46,7 +46,7 @@ int RBFTest_4(PagedFileManager *pfm)
 	    rc = pfm->closeFile(fileHandle);
         return -1;
     }
-	
+
     // Append the first page
     void *data = malloc(PAGE_SIZE);
     for(unsigned i = 0; i < PAGE_SIZE; i++)
@@ -55,7 +55,7 @@ int RBFTest_4(PagedFileManager *pfm)
     }
     rc = fileHandle.appendPage(data);
     assert(rc == success && "Appending a page should not fail.");
-   
+
     // collect after counters
 	rc = fileHandle.collectCounterValues(readPageCount1, writePageCount1, appendPageCount1);
     if(rc != success)
@@ -66,7 +66,7 @@ int RBFTest_4(PagedFileManager *pfm)
     }
     cout << "before:R W A - " << readPageCount << " " << writePageCount << " " << appendPageCount << " after:R W A - " << readPageCount1 << " " << writePageCount1 << " " << appendPageCount1 << endl;
     assert (appendPageCount1 > appendPageCount && "The appendPageCount should have been increased.");
-   	
+
     // Get the number of pages
     unsigned count = fileHandle.getNumberOfPages();
     assert(count == (unsigned)1 && "The count should be one at this moment.");
@@ -86,7 +86,7 @@ int main()
 {
 	// To test the functionality of the paged file manager
     PagedFileManager *pfm = PagedFileManager::instance();
-    
+
     RC rcmain = RBFTest_4(pfm);
     return rcmain;
 }
