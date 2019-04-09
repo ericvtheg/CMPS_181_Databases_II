@@ -34,7 +34,7 @@ RC PagedFileManager::createFile(const string &fileName)
     fp = fopen(cstr, "r");
 
     if(fp == nullptr){
-        fp = fopen(cstr, "w");
+        fp = fopen(cstr, "w+");
         delete[] cstr;
         return 0;
     }else{
@@ -100,7 +100,7 @@ RC PagedFileManager::openFile(const string &fileName, FileHandle &fileHandle)
         return 1;
     }else{
         fclose(fp);
-        fopen(cstr, "rw");
+        fopen(cstr, "r+");
         delete[] cstr;
         fileHandle.setfpV2(fp);
         return 0;
@@ -167,14 +167,14 @@ RC FileHandle::appendPage(const void *data)
     pp = (char *) malloc(PAGE_SIZE);
 
     fseek(fpV2, 0L, SEEK_END);
-    ret_val = fwrite( (char *) data, PAGE_SIZE, 1, fpV2);
+    ret_val = fwrite( (char *) data, 1, PAGE_SIZE, fpV2);
     std::cout << "fwrite bytes: " << ret_val  << "  " << PAGE_SIZE << std::endl;
-    if(ret_val == 0){
+    if(!(ferror(fpV2))){
         appendPageCounter++;
         return 0;
+    }else{
+        return 1;
     }
-
-    return 1;
 }
 
 /*
