@@ -138,8 +138,18 @@ start from 0.
 */
 
 RC FileHandle::readPage(PageNum pageNum, void *data)
-{
-    return -1;
+{   
+    size_t sz = PAGE_SIZE;
+    fseek(fpV2, pageNum*PAGE_SIZE, SEEK_SET);
+    size_t ret_val = fread(data, 1, sz, fpV2);
+    std::cout << "fread bytes: " << ret_val  << "  " << sz << std::endl;
+    if(ret_val == sz){
+        readPageCounter++;
+        return 0;
+    }else{
+        return 1;
+    }
+
 }
 
 /*
@@ -148,8 +158,19 @@ by pageNum. The page should exist. Page numbers start from 0.
 */
 
 RC FileHandle::writePage(PageNum pageNum, const void *data)
-{
-    return -1;
+{   //ASK TA
+    //ADD A CHECK FOR IS PAGE EXISTS also, should we clear the page first?
+    //Assume how large the data is suppose to be?
+    size_t sz = PAGE_SIZE;
+    fseek(fpV2, pageNum*PAGE_SIZE, SEEK_SET);
+    size_t ret_val = fwrite(data, 1, sz, fpV2);
+    std::cout << "fread bytes: " << ret_val  << "  " << sz << std::endl;
+    if(!(ferror(fpV2))){
+        writePageCounter++;
+        return 0;
+    }else{
+        return 1;
+    }
 }
 
 /*
@@ -160,21 +181,21 @@ and writes the given data into the newly allocated page.
 RC FileHandle::appendPage(const void *data)
 {
     //maybe check size of data :)
-    int ret_val;
-    char * pp;
-
+    size_t ret_val;
+    //char * pp;
     //does this give us right size
-    pp = (char *) malloc(PAGE_SIZE);
-
+    //pp = (char *) malloc(sizeof(*((char *)data)));
+    size_t sz = PAGE_SIZE;
     fseek(fpV2, 0L, SEEK_END);
-    ret_val = fwrite( (char *) data, 1, PAGE_SIZE, fpV2);
-    std::cout << "fwrite bytes: " << ret_val  << "  " << PAGE_SIZE << std::endl;
+    ret_val = fwrite( data, 1, sz, fpV2);
+    std::cout << "fwrite bytes: " << ret_val  << "  " << sz << std::endl;
     if(!(ferror(fpV2))){
         appendPageCounter++;
         return 0;
     }else{
         return 1;
     }
+
 }
 
 /*
