@@ -1,7 +1,7 @@
 #include "rbfm.h"
 
 RecordBasedFileManager* RecordBasedFileManager::_rbf_manager = 0;
-
+PagedFileManager* RecordBasedFileManager::_pf_manager = 0;
 RecordBasedFileManager* RecordBasedFileManager::instance()
 {
     if(!_rbf_manager)
@@ -24,8 +24,7 @@ The file should not already exist. This method should not
 create any pages in the file.
 */
 RC RecordBasedFileManager::createFile(const string &fileName) {
-
-    return -1;
+    return _pf_manager.createFile(fileName);
 }
 
 /*
@@ -34,7 +33,7 @@ The file should already exist.
 */
 
 RC RecordBasedFileManager::destroyFile(const string &fileName) {
-    return -1;
+    return _pf_manager.destroyFile(fileName);
 }
 
 /*
@@ -58,7 +57,7 @@ Opening a file more than once for reading is no problem.
 */
 
 RC RecordBasedFileManager::openFile(const string &fileName, FileHandle &fileHandle) {
-    return -1;
+       return _pf_manager.createFile(fileName);
 }
 
 /*
@@ -114,4 +113,10 @@ an example for three records would be:
 
 RC RecordBasedFileManager::printRecord(const vector<Attribute> &recordDescriptor, const void *data) {
     return -1;
+    nullindicator;
+    
+   
+    //for(int i=0;i< recordDescriptor.size();i++){
+    
+    }
 }
