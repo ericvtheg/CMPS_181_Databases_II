@@ -1,6 +1,8 @@
 #ifndef _rbfm_h_
 #define _rbfm_h_
 
+#define INT_SIZE 4
+#define FLOAT_SIZE 4
 #include <string>
 #include <vector>
 #include <climits>
@@ -114,6 +116,11 @@ IMPORTANT, PLEASE READ: All methods below this comment (other than the construct
   RC updateRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, const RID &rid);
 
   RC readAttribute(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const RID &rid, const string &attributeName, void *data);
+
+  // Calculate actual bytes for nulls-indicator for the given field counts
+  int getActualByteForNullsIndicator(int fieldCount) {
+  	return ceil((double) fieldCount / CHAR_BIT);
+  }
 
   // Scan returns an iterator to allow the caller to go through the results one by one.
   RC scan(FileHandle &fileHandle,

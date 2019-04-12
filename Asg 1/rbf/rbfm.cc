@@ -1,7 +1,8 @@
 #include "rbfm.h"
 
 RecordBasedFileManager* RecordBasedFileManager::_rbf_manager = 0;
-PagedFileManager* RecordBasedFileManager::_pf_manager = 0;
+PagedFileManager*  _pf_manager = PagedFileManager::instance();
+
 RecordBasedFileManager* RecordBasedFileManager::instance()
 {
     if(!_rbf_manager)
@@ -18,13 +19,15 @@ RecordBasedFileManager::~RecordBasedFileManager()
 {
 }
 
+
+
 /*
 This method creates an empty-paged file called fileName.
 The file should not already exist. This method should not
 create any pages in the file.
 */
 RC RecordBasedFileManager::createFile(const string &fileName) {
-    return _pf_manager.createFile(fileName);
+    return _pf_manager->createFile(fileName);
 }
 
 /*
@@ -33,7 +36,7 @@ The file should already exist.
 */
 
 RC RecordBasedFileManager::destroyFile(const string &fileName) {
-    return _pf_manager.destroyFile(fileName);
+    return _pf_manager->destroyFile(fileName);
 }
 
 /*
@@ -57,7 +60,7 @@ Opening a file more than once for reading is no problem.
 */
 
 RC RecordBasedFileManager::openFile(const string &fileName, FileHandle &fileHandle) {
-       return _pf_manager.createFile(fileName);
+       return _pf_manager->openFile(fileName, fileHandle);
 }
 
 /*
@@ -68,7 +71,7 @@ disk when the file is closed.
 */
 
 RC RecordBasedFileManager::closeFile(FileHandle &fileHandle) {
-    return -1;
+    return _pf_manager->closeFile(fileHandle);
 }
 
 /*
@@ -76,6 +79,18 @@ Given a record descriptor, read the record identified by the given rid.
 */
 
 RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, RID &rid) {
+    //calculate size of new slot + size of record to add
+    //if enough free space for both
+        // add slot w/ size of record
+        // inc # of slots
+        // if free space ptr != null
+            // fseek find where free space begins
+    // else
+        // append page
+        // do steps above
+
+
+
     return -1;
 }
 
@@ -112,11 +127,34 @@ an example for three records would be:
 */
 
 RC RecordBasedFileManager::printRecord(const vector<Attribute> &recordDescriptor, const void *data) {
-    return -1;
-    nullindicator;
-    
-   
-    //for(int i=0;i< recordDescriptor.size();i++){
-    
+    int offset;
+    for(int i = 0; i<recordDescriptor.size(); i++){
+        offset = getActualByteForNullsIndicator(recordDescriptor.size());
+        if (recordDescriptor[i].type == TypeInt){
+            int buffer;
+            offset += INT_SIZE;
+            memcpy(&buffer, ((char *)data + offset), INT_SIZE);
+            cout << recordDescriptor[i].name << " : " << buffer << " ";
+        }
+        else if (recordDescriptor[i].type == TypeReal){
+            float buffer;
+            offset += FLOAT_SIZE;
+            // memcpy(dest, source, size());
+            memcpy(&buffer, ((char *)data + offset), FLOAT_SIZE);
+            cout << recordDescriptor[i].name << " : " << buffer << " ";
+        }
+        else if (recordDescriptor[i].type == TypeVarChar){
+            const size_t varcharsize = recordDescriptor[i].length;
+            offset += varcharsize;
+            char buffer[varcharsize];
+            // memcpy(varcharsize,((char *)data + offset);
+            memcpy(&buffer, ((char *)data + offset), varcharsize);
+            cout << recordDescriptor[i].name << " : " << buffer << " ";
+        }
+        else{
+            return -1;
+        }
+        cout << endl;
     }
+    return 0;
 }
