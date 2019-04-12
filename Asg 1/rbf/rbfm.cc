@@ -127,29 +127,35 @@ an example for three records would be:
 */
 
 RC RecordBasedFileManager::printRecord(const vector<Attribute> &recordDescriptor, const void *data) {
-    int offset;
+    int offset = 0;
+    char* data_ptr = (char *) data;
     for(int i = 0; i<recordDescriptor.size(); i++){
         offset = getActualByteForNullsIndicator(recordDescriptor.size());
         if (recordDescriptor[i].type == TypeInt){
             int buffer;
             offset += INT_SIZE;
-            memcpy(&buffer, ((char *)data + offset), INT_SIZE);
+            memcpy(&buffer, (data_ptr + offset), INT_SIZE);
             cout << recordDescriptor[i].name << " : " << buffer << " ";
+
+            // offset += (recordDescriptor[i].length)*INT_SIZE;
         }
         else if (recordDescriptor[i].type == TypeReal){
             float buffer;
-            offset += FLOAT_SIZE;
             // memcpy(dest, source, size());
-            memcpy(&buffer, ((char *)data + offset), FLOAT_SIZE);
+            offset += FLOAT_SIZE;
+            memcpy(&buffer, (data_ptr + offset), FLOAT_SIZE);
             cout << recordDescriptor[i].name << " : " << buffer << " ";
+
+            // offset += (recordDescriptor[i].length)*FLOAT_SIZE;
         }
         else if (recordDescriptor[i].type == TypeVarChar){
-            const size_t varcharsize = recordDescriptor[i].length;
-            offset += varcharsize;
+            const size_t varcharsize = (recordDescriptor[i].length);
             char buffer[varcharsize];
             // memcpy(varcharsize,((char *)data + offset);
-            memcpy(&buffer, ((char *)data + offset), varcharsize);
-            cout << recordDescriptor[i].name << " : " << buffer << " ";
+            offset += varcharsize;
+            memcpy(&buffer, (data_ptr + offset), varcharsize);
+            cout << recordDescriptor[i].name << ": " << buffer << " ";
+
         }
         else{
             return -1;
