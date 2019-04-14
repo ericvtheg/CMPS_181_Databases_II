@@ -2,10 +2,10 @@
 #include <string>
 #include <cassert>
 #include <sys/stat.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <string.h>
 #include <stdexcept>
-#include <stdio.h> 
+#include <stdio.h>
 
 #include "pfm.h"
 #include "rbfm.h"
@@ -22,7 +22,7 @@ int RBFTest_8(RecordBasedFileManager *rbfm) {
     // 5. Close Record-Based File
     // 6. Destroy Record-Based File
     cout << endl << "***** In RBF Test Case 8 *****" << endl;
-   
+
     RC rc;
     string fileName = "test8";
 
@@ -37,15 +37,15 @@ int RBFTest_8(RecordBasedFileManager *rbfm) {
     FileHandle fileHandle;
     rc = rbfm->openFile(fileName, fileHandle);
     assert(rc == success && "Opening the file should not fail.");
-      
-    RID rid; 
+
+    RID rid;
     int recordSize = 0;
     void *record = malloc(100);
     void *returnedData = malloc(100);
 
     vector<Attribute> recordDescriptor;
     createRecordDescriptor(recordDescriptor);
-    
+
     // Initialize a NULL field indicator
     int nullFieldsIndicatorActualSize = getActualByteForNullsIndicator(recordDescriptor.size());
     unsigned char *nullsIndicator = (unsigned char *) malloc(nullFieldsIndicatorActualSize);
@@ -55,10 +55,10 @@ int RBFTest_8(RecordBasedFileManager *rbfm) {
     prepareRecord(recordDescriptor.size(), nullsIndicator, 8, "UCSCSlug", 24, 170.1, 5000, record, &recordSize);
     cout << endl << "Inserting Data:" << endl;
     rbfm->printRecord(recordDescriptor, record);
-    
+
     rc = rbfm->insertRecord(fileHandle, recordDescriptor, record, rid);
     assert(rc == success && "Inserting a record should not fail.");
-    
+
     // Given the rid, read the record from file
     rc = rbfm->readRecord(fileHandle, recordDescriptor, rid, returnedData);
     assert(rc == success && "Reading a record should not fail.");
@@ -74,7 +74,7 @@ int RBFTest_8(RecordBasedFileManager *rbfm) {
         free(returnedData);
         return -1;
     }
-    
+
     cout << endl;
 
     // Close the file "test8"
@@ -87,22 +87,22 @@ int RBFTest_8(RecordBasedFileManager *rbfm) {
 
 	rc = destroyFileShouldSucceed(fileName);
     assert(rc == success  && "Destroying the file should not fail.");
-    
+
     free(record);
     free(returnedData);
 
     cout << "RBF Test Case 8 Finished! The result will be examined." << endl << endl;
-    
+
     return 0;
 }
 
 int main()
 {
-    // To test the functionality of the record-based file manager 
-    RecordBasedFileManager *rbfm = RecordBasedFileManager::instance(); 
-     
+    // To test the functionality of the record-based file manager
+    RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
+
     remove("test8");
-       
+
     RC rcmain = RBFTest_8(rbfm);
     return rcmain;
 }

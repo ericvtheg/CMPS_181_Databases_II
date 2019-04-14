@@ -127,40 +127,53 @@ an example for three records would be:
 */
 
 RC RecordBasedFileManager::printRecord(const vector<Attribute> &recordDescriptor, const void *data) {
-    int offset = 0;
+    int offset = getActualByteForNullsIndicator(recordDescriptor.size());
     char* data_ptr = (char *) data;
+    offset += 4; //why the fuck is there 4 unaccounted for bytes
     for(int i = 0; i<recordDescriptor.size(); i++){
-        offset = getActualByteForNullsIndicator(recordDescriptor.size());
+        // cout << "Offset:" << " : " << offset << " ";
+        // cout << endl;
         if (recordDescriptor[i].type == TypeInt){
             int buffer;
-            offset += INT_SIZE;
-            memcpy(&buffer, (data_ptr + offset), INT_SIZE);
-            cout << recordDescriptor[i].name << " : " << buffer << " ";
 
-            // offset += (recordDescriptor[i].length)*INT_SIZE;
+            memcpy(&buffer, (data_ptr += offset), INT_SIZE);
+            offset = INT_SIZE;
+
+            cout << recordDescriptor[i].name << " : " << buffer << " ";
         }
         else if (recordDescriptor[i].type == TypeReal){
             float buffer;
-            // memcpy(dest, source, size());
-            offset += FLOAT_SIZE;
-            memcpy(&buffer, (data_ptr + offset), FLOAT_SIZE);
-            cout << recordDescriptor[i].name << " : " << buffer << " ";
 
-            // offset += (recordDescriptor[i].length)*FLOAT_SIZE;
+            memcpy(&buffer, (data_ptr += offset), FLOAT_SIZE);
+            offset = FLOAT_SIZE;
+
+            cout << recordDescriptor[i].name << " : " << buffer << " ";
         }
         else if (recordDescriptor[i].type == TypeVarChar){
             const size_t varcharsize = (recordDescriptor[i].length);
             char buffer[varcharsize];
-            // memcpy(varcharsize,((char *)data + offset);
-            offset += varcharsize;
-            memcpy(&buffer, (data_ptr + offset), varcharsize);
-            cout << recordDescriptor[i].name << ": " << buffer << " ";
 
+            memcpy(&buffer, (data_ptr += offset), varcharsize);
+
+            if(buffer != nullptr){
+                offset = (strlen(buffer));
+                if((strlen(buffer)) == 30){
+                    offset = 30;
+                }else{
+                    offset = (strlen(buffer)-1);
+                }
+            }
+            cout << recordDescriptor[i].name << ": " << buffer << " ";
         }
         else{
             return -1;
         }
+        // cout << "Offset:" << " : " << offset << " ";
+        // cout << endl;
+        // cout << "Data_ptr:" << ": " << data_ptr << " ";
         cout << endl;
+        // offset = 0;
+
     }
     return 0;
 }
