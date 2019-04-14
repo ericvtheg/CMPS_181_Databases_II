@@ -127,53 +127,58 @@ an example for three records would be:
 */
 
 RC RecordBasedFileManager::printRecord(const vector<Attribute> &recordDescriptor, const void *data) {
-    int offset = getActualByteForNullsIndicator(recordDescriptor.size());
+	int nullBytes = getActualByteForNullsIndicator(recordDescriptor.size()); 
+    int offset = nullBytes ;
     char* data_ptr = (char *) data;
-    offset += 4; //why the fuck is there 4 unaccounted for bytes
-    for(int i = 0; i<recordDescriptor.size(); i++){
-        // cout << "Offset:" << " : " << offset << " ";
-        // cout << endl;
+    bool nullBit = false;
+    unsigned char *nullsIndicator = (unsigned char *) malloc(nullBytes);
+    memset(nullsIndicator, 0, nullBytes);
+    memcpy(nullsIndicator, data, sizeof(nullBytes));
+   
+    for(size_t i = 0; i<recordDescriptor.size(); i++){
+        int nullIndex = i/8;
+        nullBit = nullsIndicator[nullIndex] & (1 << (7 - (i%8)));
         if (recordDescriptor[i].type == TypeInt){
-            int buffer;
-
-            memcpy(&buffer, (data_ptr += offset), INT_SIZE);
-            offset = INT_SIZE;
-
-            cout << recordDescriptor[i].name << " : " << buffer << " ";
+            if (!nullBit){
+	            int buffer;
+	            memcpy(&buffer, (data_ptr += offset), INT_SIZE);
+	            offset = INT_SIZE;
+	            cout << recordDescriptor[i].name << " : "<< buffer << " " ;       
+            }else{
+                cout << recordDescriptor[i].name << " : NULL ";
+            }
         }
         else if (recordDescriptor[i].type == TypeReal){
-            float buffer;
-
-            memcpy(&buffer, (data_ptr += offset), FLOAT_SIZE);
-            offset = FLOAT_SIZE;
-
-            cout << recordDescriptor[i].name << " : " << buffer << " ";
+            if (!nullBit){
+	            float buffer;
+	            memcpy(&buffer, (data_ptr += offset), FLOAT_SIZE);
+	            offset = FLOAT_SIZE;
+	            cout << recordDescriptor[i].name << " : "<< buffer << " ";
+	        }else{
+     	        cout << recordDescriptor[i].name << " : NULL ";
+            }
         }
         else if (recordDescriptor[i].type == TypeVarChar){
-            const size_t varcharsize = (recordDescriptor[i].length);
-            char buffer[varcharsize];
-
-            memcpy(&buffer, (data_ptr += offset), varcharsize);
-
-            if(buffer != nullptr){
-                offset = (strlen(buffer));
-                if((strlen(buffer)) == 30){
-                    offset = 30;
-                }else{
-                    offset = (strlen(buffer)-1);
-                }
+        	if(!nullBit){
+	            int varcharsize;
+	            memcpy(&varcharsize, (data_ptr += offset), INT_SIZE);
+	            offset = INT_SIZE;
+	            //+1 to add the null terminating character
+	            char buffer[varcharsize + 1];
+	            memcpy(&buffer, (data_ptr += offset), varcharsize);
+	            buffer[varcharsize] ='\0';
+	            offset = varcharsize;
+	            cout << recordDescriptor[i].name << " : " << buffer << " ";
+            }else{
+	            cout << recordDescriptor[i].name << " : NULL ";
             }
-            cout << recordDescriptor[i].name << ": " << buffer << " ";
         }
         else{
+        	free(nullsIndicator);
             return -1;
         }
-        // cout << "Offset:" << " : " << offset << " ";
-        // cout << endl;
-        // cout << "Data_ptr:" << ": " << data_ptr << " ";
         cout << endl;
-        // offset = 0;
-
     }
+    free(nullsIndicator);
     return 0;
 }
