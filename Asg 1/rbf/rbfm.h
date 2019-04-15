@@ -30,6 +30,15 @@ struct Attribute {
     AttrLength length; // attribute length
 };
 
+struct SlotHeader {
+   unsigned slotNum {};
+   unsigned freeSpace {};
+};
+
+struct SlotDirectory{
+   vector<pair<unsigned,unsigned>> slotVec; 
+};
+
 // Comparison Operator (NOT needed for part 1 of the project)
 typedef enum { EQ_OP = 0, // no condition// =
            LT_OP,      // <
