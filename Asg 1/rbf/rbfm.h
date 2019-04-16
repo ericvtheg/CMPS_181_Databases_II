@@ -31,12 +31,8 @@ struct Attribute {
 };
 
 struct SlotHeader {
-   unsigned slotNum {};
+   unsigned slotsV2 {};
    unsigned freeSpace {};
-};
-
-struct SlotDirectory{
-   vector<pair<unsigned,unsigned>> slotVec; 
 };
 
 // Comparison Operator (NOT needed for part 1 of the project)

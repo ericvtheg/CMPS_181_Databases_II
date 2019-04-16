@@ -27,7 +27,16 @@ The file should not already exist. This method should not
 create any pages in the file.
 */
 RC RecordBasedFileManager::createFile(const string &fileName) {
-    return _pf_manager->createFile(fileName);
+    SlotHeader header;
+    header.slotsV2   = 0;
+    header.freeSpace = 0; //offset to start of free space
+    // cout << sizeof( header) << " " << sizeof(directory);
+    _pf_manager->createFile(fileName);
+    FILE *fp = fopen(fileName.c_str(), "r+" );
+    fseek(fp, -1 * (sizeof(header)), SEEK_END);
+    fwrite(&header, sizeof(header), 1, fp);
+    fclose(fp);
+    return 0;
 }
 
 /*
@@ -80,6 +89,72 @@ Given a record descriptor, read the record identified by the given rid.
 
 RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, RID &rid) {
     //calculate size of new slot + size of record to add
+    SlotHeader header;
+    size_t free_bytes = 0;
+    size_t total_used = 0; //-8 to accomdate for allocated slot
+    char* data_ptr = (char *) data;
+    bool nullBit = false;
+
+    int nullBytes = getActualByteForNullsIndicator(recordDescriptor.size());
+    unsigned char *nullsIndicator = (unsigned char *) malloc(nullBytes);
+    memset(nullsIndicator, 0, nullBytes);
+    memcpy(nullsIndicator, data, sizeof(nullBytes));
+    total_used += nullBytes;
+
+    fread(&header, sizeof(header), 1, fileHandle.getfpV2());
+    pair<unsigned,unsigned> directory[header.slotsV2 + 1];
+
+    if(header.slotsV2 != 0 ){
+       fread(&directory, sizeof(directory), 1, fileHandle.getfpV2());
+    }
+
+    cout << "Header Info:" << header.slotsV2 << " " << header.freeSpace <<  " " <<  sizeof(directory)<<endl;
+
+    // - 8 bytes to account for newly allocated memory in directory array
+    free_bytes = PAGE_SIZE - (sizeof(directory) + sizeof(header));
+
+    for(size_t i = 0; i<recordDescriptor.size(); i++){
+        cout << "Total_used_iter: " << total_used << endl;
+        int nullIndex = i/8;
+        nullBit = nullsIndicator[nullIndex] & (1 << (7 - (i%8)));
+        if (recordDescriptor[i].type == TypeInt){
+            if (!nullBit){
+	            total_used += INT_SIZE;
+            }
+        }
+        else if (recordDescriptor[i].type == TypeReal){
+            if (!nullBit){
+	           total_used += FLOAT_SIZE;
+	        }
+        }
+        else if (recordDescriptor[i].type == TypeVarChar){
+        	if(!nullBit){
+	            int varcharsize;
+	            memcpy(&varcharsize, (data_ptr + total_used), INT_SIZE);
+	            total_used += INT_SIZE;
+                total_used += varcharsize;
+                cout << "Var_char size: " << varcharsize << endl;
+            }
+        }
+        cout << "Total_used_iter: " << total_used << endl;
+    }
+
+    free_bytes = free_bytes - total_used;
+
+
+
+    if(free_bytes >= 0){
+        cout << "Total_used: " << total_used << endl;
+        header.slotsV2 += 1;
+        fseek(fileHandle.getfpV2(), header.freeSpace, SEEK_SET);
+        fwrite(data, 1, total_used, fileHandle.getfpV2());
+        header.freeSpace += total_used;
+    }
+
+
+
+    cout << "free_bytes: " << free_bytes << endl;
+
     //if enough free space for both
         // add slot w/ size of record
         // inc # of slots
@@ -88,10 +163,9 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
     // else
         // append page
         // do steps above
+        free(nullsIndicator);
+        return 0;
 
-
-
-    return -1;
 }
 
 /*
@@ -127,14 +201,14 @@ an example for three records would be:
 */
 
 RC RecordBasedFileManager::printRecord(const vector<Attribute> &recordDescriptor, const void *data) {
-	int nullBytes = getActualByteForNullsIndicator(recordDescriptor.size()); 
+	int nullBytes = getActualByteForNullsIndicator(recordDescriptor.size());
     int offset = nullBytes ;
     char* data_ptr = (char *) data;
     bool nullBit = false;
     unsigned char *nullsIndicator = (unsigned char *) malloc(nullBytes);
     memset(nullsIndicator, 0, nullBytes);
     memcpy(nullsIndicator, data, sizeof(nullBytes));
-   
+
     for(size_t i = 0; i<recordDescriptor.size(); i++){
         int nullIndex = i/8;
         nullBit = nullsIndicator[nullIndex] & (1 << (7 - (i%8)));
@@ -143,7 +217,7 @@ RC RecordBasedFileManager::printRecord(const vector<Attribute> &recordDescriptor
 	            int buffer;
 	            memcpy(&buffer, (data_ptr += offset), INT_SIZE);
 	            offset = INT_SIZE;
-	            cout << recordDescriptor[i].name << " : "<< buffer << " " ;       
+	            cout << recordDescriptor[i].name << " : "<< buffer << " " ;
             }else{
                 cout << recordDescriptor[i].name << " : NULL ";
             }

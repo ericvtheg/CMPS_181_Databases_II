@@ -35,6 +35,7 @@ RC PagedFileManager::createFile(const string &fileName)
 
     if(fp == nullptr){
         fp = fopen(cstr, "w+");
+        fclose(fp);
         delete[] cstr;
         return 0;
     }else{
@@ -138,7 +139,7 @@ start from 0.
 */
 
 RC FileHandle::readPage(PageNum pageNum, void *data)
-{   
+{
     size_t sz = PAGE_SIZE;
     fseek(fpV2, pageNum*PAGE_SIZE, SEEK_SET);
     size_t ret_val = fread(data, 1, sz, fpV2);
