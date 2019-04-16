@@ -108,13 +108,13 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
        fread(&directory, sizeof(directory), 1, fileHandle.getfpV2());
     }
 
-    cout << "Header Info:" << header.slotsV2 << " " << header.freeSpace <<  " " <<  sizeof(directory)<<endl;
+    // cout << "Header Info:" << header.slotsV2 << " " << header.freeSpace <<  " " <<  sizeof(directory)<<endl;
 
     // - 8 bytes to account for newly allocated memory in directory array
     free_bytes = PAGE_SIZE - (sizeof(directory) + sizeof(header));
 
     for(size_t i = 0; i<recordDescriptor.size(); i++){
-        cout << "Total_used_iter: " << total_used << endl;
+        // cout << "Total_used_iter: " << total_used << endl;
         int nullIndex = i/8;
         nullBit = nullsIndicator[nullIndex] & (1 << (7 - (i%8)));
         if (recordDescriptor[i].type == TypeInt){
@@ -133,16 +133,16 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
 	            memcpy(&varcharsize, (data_ptr + total_used), INT_SIZE);
 	            total_used += INT_SIZE;
                 total_used += varcharsize;
-                cout << "Var_char size: " << varcharsize << endl;
+                // cout << "Var_char size: " << varcharsize << endl;
             }
         }
-        cout << "Total_used_iter: " << total_used << endl;
+        // cout << "Total_used_iter: " << total_used << endl;
     }
 
     free_bytes = free_bytes - total_used;
 
     if(free_bytes >= 0){
-        cout << "Total_used: " << total_used << endl;
+        cout << "Total_used: " << total_used << " bytes" << endl;
         header.slotsV2 += 1;
         fseek(fileHandle.getfpV2(), header.freeSpace, SEEK_SET);
         fwrite(data, 1, total_used, fileHandle.getfpV2());
@@ -157,19 +157,10 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
 
     rid.pageNum = 0;
     rid.slotNum = header.slotsV2 + 1;
-    cout << "free_bytes: " << free_bytes << endl;
+    // cout << "free_bytes: " << free_bytes << endl;
 
-    //if enough free space for both
-        // add slot w/ size of record
-        // inc # of slots
-        // if free space ptr != null
-            // fseek find where free space begins
-    // else
-        // append page
-        // do steps above
         free(nullsIndicator);
         return 0;
-
 }
 
 /*
@@ -185,13 +176,23 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
     SlotHeader header;
     int page_offset;
 
+    cout << "hit 1" << endl;
+
+    // find end of page and then move header bytes back
     fseek(fileHandle.getfpV2(), -1 * (sizeof(header)), SEEK_END);
     fread(&header, sizeof(header), 1, fileHandle.getfpV2());
 
+    cout << "hit 2" << endl;
+
+    // this line below is causing seg fault
+    // header.slotsV2 value is way off
     pair<unsigned,unsigned> directory[header.slotsV2];
 
-    fseek(fileHandle.getfpV2(), -1 * (sizeof(directory) + sizeof(header)), SEEK_END);
+    // find end of page and then move both size of directory and header back
+    fseek(fileHandle.getfpV2(), -1 * (sizeof(directory)), SEEK_END);
     fread(&directory, sizeof(directory), 1, fileHandle.getfpV2());
+
+    cout << "hit 3" << endl;
 
     // getting to appropiate page then adding offset of record
     page_offset = (rid.pageNum * PAGE_SIZE) + directory[rid.slotNum].second;
@@ -199,6 +200,8 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
     // ask salami about where to cpy data
     fseek(fileHandle.getfpV2(), page_offset, SEEK_SET);
     fread(&data, directory[rid.slotNum].second, 1, fileHandle.getfpV2());
+
+    cout << "hit 4" << endl;
 
     return 0;
 }
