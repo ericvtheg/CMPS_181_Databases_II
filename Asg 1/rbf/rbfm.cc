@@ -22,26 +22,33 @@ RecordBasedFileManager::~RecordBasedFileManager()
 
 
 /*
-This method creates an empty-paged file called fileName.
-The file should not already exist. This method should not
-create any pages in the file.
+This method creates a record-based file called fileName. The file should not already exist. Please 
+note that this method should internally use the method PagedFileManager::createFile (const char 
+*fileName).
 */
 RC RecordBasedFileManager::createFile(const string &fileName) {
     SlotHeader header;
     header.slotsV2   = 0;
     header.freeSpace = 0; //offset to start of free space
     // cout << sizeof( header) << " " << sizeof(directory);
+
+    //Create an insert the header
     _pf_manager->createFile(fileName);
-    FILE *fp = fopen(fileName.c_str(), "r+" );
-    fseek(fp, -1 * (sizeof(header)), SEEK_END);
-    fwrite(&header, sizeof(header), 1, fp);
-    fclose(fp);
+    // FILE *fp = fopen(fileName.c_str(), "r+" );
+    // char * buffer = (char *) calloc(sizeof(char), PAGE_SIZE);
+    // fseek(fp, 0, SEEK_SET);
+    // fwrite(buffer, sizeof(char), PAGE_SIZE, fp);
+    // free(buffer);
+    // fseek(fp, -1 * (sizeof(header)), SEEK_END);
+    // fwrite(&header, sizeof(header), 1, fp);
+    // fclose(fp);
     return 0;
 }
 
 /*
-This method destroys the paged file whose name is fileName.
-The file should already exist.
+This method destroys the record-based file whose name is fileName. The file should exist. Please 
+note that this method should internally use the method PagedFileManager::destroyFile (const 
+char *fileName).  
 */
 
 RC RecordBasedFileManager::destroyFile(const string &fileName) {
@@ -49,23 +56,12 @@ RC RecordBasedFileManager::destroyFile(const string &fileName) {
 }
 
 /*
-This method opens the paged file whose name is fileName.
-The file must already exist (and been created using the
-createFile method). If the open method is successful, the
-fileHandle object whose address is passed in as a parameter
-now becomes a "handle" for the open file. This file handle
-is used to manipulate the pages of the file (see the FileHandle
-class description below). It is an error if fileHandle is already
-a handle for some open file when it is passed to the openFile
-method. It is not an error to open the same file more than once
-if desired, but this would be done by using a different fileHandle
-object each time. Each call to the openFile method creates a new
-"instance" of the open file. Warning: Opening a file more than
-once for data modification is not prevented by the PF component,
-but doing so is likely to corrupt the file structure and may
-crash the PF component. (You do not need to try and prevent this,
-as you can assume the layer above is "friendly" in that regard.)
-Opening a file more than once for reading is no problem.
+This method opens the record-based file whose name is fileName. The file must already exist 
+and it must have been created using the RecordBasedFileManager::createFile method. If the 
+method is successful, the fileHandle object whose address is passed as a parameter becomes a 
+"handle" for the open file. The file handle rules in the method PagedFileManager::openFile apply 
+here too. Also note that this method should internally use the method 
+PagedFileManager::openFile(const char *fileName, FileHandle &fileHandle). 
 */
 
 RC RecordBasedFileManager::openFile(const string &fileName, FileHandle &fileHandle) {
@@ -73,10 +69,9 @@ RC RecordBasedFileManager::openFile(const string &fileName, FileHandle &fileHand
 }
 
 /*
-This method closes the open file instance referred to by
-fileHandle. (The file should have been opened using the
-openFile method.) All of the file's pages are flushed to
-disk when the file is closed.
+This method closes the open file instance referred to by fileHandle. The file must have been 
+opened using the RecordBasedFileManager::openFile method. Note that this method should 
+internally use the method PagedFileManager::closeFile(FileHandle &fileHandle).
 */
 
 RC RecordBasedFileManager::closeFile(FileHandle &fileHandle) {
@@ -84,37 +79,61 @@ RC RecordBasedFileManager::closeFile(FileHandle &fileHandle) {
 }
 
 /*
-Given a record descriptor, read the record identified by the given rid.
+Given a record descriptor, insert a new record into the file identified by the provided handle. You 
+can assume that the input is always correct and free of error. That is, you do not need to check to 
+see if the input record has the right number of attributes or if the attribute types match. However, 
+in order to deal with NULL values in the attributes, the first part in *data contains n bytes for 
+passing the null information about each field. The value n can be calculated by using this 
+formula: ceil(number of fields in a record / 8). For example, if there are 5 fields, ceil(5/8) = 1 
+byte. If there are 20 fields, the size will be ceil(20/8) = 3 bytes. The left-most bit in the first byte 
+corresponds to the first field. The right-most bit in the first byte corresponds to the eighth field. If 
+there are more than eight fields, the left-most bit in the second byte corresponds to the ninth field 
+and so on. If the bit corresponding to a field is set to 1, then the actual data does not contain any 
+value for this field. For example, if there are three fields in a record and the second field contains 
+NULL, the bit representation in a byte is 0100000. In addition, in the actual data, the incoming 
+record contains the first and the third values only. That is, the third field value is placed right 
+after the first field value in this case. 
+This format (null-fields-indicator + actual data) is to be used for all record manipulation 
+operations (unless stated differently). For example, when you read a record, the first part of what 
+you return should contain a null-fields-indicator that provides the information about null fields, 
+and the actual data should not contain null field values. 
+Your file structure is a heap file, and you may use a system-sequenced file organization. That is, 
+if the last (current) page has enough space, insert a new record into this page. If not, find the first 
+page with free space large enough to store the record, e.g., looking from the beginning of the file, 
+and store the record at that location. An RID here is the record ID which is used to uniquely 
+identify records in a file. An RID consists of: 1) the page number that the record resides in within 
+the file, and 2) the slot number that the record resides in within the page. The insertRecord 
+method accepts an RID object and fills it with the RID of the record that is the target for 
+insertion; this lets the caller know what the system-determined RID was for each newly inserted 
+record. For managing free space within pages, you should keep the free space coalesced in the 
+center of the page at all times -- so if a record deletion or update creates a "hole", you should 
+move records around to keep all of the free space together. Note that this will not change the 
+RIDs of your records; when you move a record within a page, you will also keep track of the 
+record's new offset in the slot table on the page, and the RID only contains the slot number, not 
+the offset itself. 
+Note that the API data format above is intended just for passing the data into insertRecord(). This
+does not necessarily mean that the internal representation of your record should be the same as 
+this format. (It probably shouldn't be. :-)) 
 */
 
 RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, RID &rid) {
     //calculate size of new slot + size of record to add
-    SlotHeader header;
+    struct SlotHeader header;
     size_t free_bytes = 0;
-    size_t total_used = 0; //-8 to accomdate for allocated slot
+    size_t total_used = 0;
     char* data_ptr = (char *) data;
     bool nullBit = false;
 
     int nullBytes = getActualByteForNullsIndicator(recordDescriptor.size());
+
+    //Initialize and copy over nullFieldIndicator data
     unsigned char *nullsIndicator = (unsigned char *) malloc(nullBytes);
     memset(nullsIndicator, 0, nullBytes);
     memcpy(nullsIndicator, data, sizeof(nullBytes));
     total_used += nullBytes;
-
-    fread(&header, sizeof(header), 1, fileHandle.getfpV2());
-    pair<unsigned,unsigned> directory[header.slotsV2 + 1];
-
-    if(header.slotsV2 != 0 ){
-       fread(&directory, sizeof(directory), 1, fileHandle.getfpV2());
-    }
-
-    cout << "Header Info:" << header.slotsV2 << " " << header.freeSpace <<  " " <<  sizeof(directory)<<endl;
-
-    // - 8 bytes to account for newly allocated memory in directory array
-    free_bytes = PAGE_SIZE - (sizeof(directory) + sizeof(header));
-
+     
+    //find out total amount of bytes within data
     for(size_t i = 0; i<recordDescriptor.size(); i++){
-        cout << "Total_used_iter: " << total_used << endl;
         int nullIndex = i/8;
         nullBit = nullsIndicator[nullIndex] & (1 << (7 - (i%8)));
         if (recordDescriptor[i].type == TypeInt){
@@ -133,72 +152,174 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
 	            memcpy(&varcharsize, (data_ptr + total_used), INT_SIZE);
 	            total_used += INT_SIZE;
                 total_used += varcharsize;
-                cout << "Var_char size: " << varcharsize << endl;
             }
         }
         cout << "Total_used_iter: " << total_used << endl;
     }
 
-    free_bytes = free_bytes - total_used;
+    // fseek(fileHandle.getfpV2(), 0L, SEEK_END);
+    // size_t sz = ftell(fileHandle.getfpV2());
+    // if(sz < PAGE_SIZE){
+    // 	fileHandle.appendPage(nullptr);  
+    // }
 
-    if(free_bytes >= 0){
-        cout << "Total_used: " << total_used << endl;
-        header.slotsV2 += 1;
-        fseek(fileHandle.getfpV2(), header.freeSpace, SEEK_SET);
-        fwrite(data, 1, total_used, fileHandle.getfpV2());
+    
+    for(size_t i = 0; i < fileHandle.getNumberOfPages(); i++ ){
+	    //Seek over to the end of a page and read the header
+	    fseek(fileHandle.getfpV2(), -1 * (sizeof(header)) + (PAGE_SIZE * (i + 1)), SEEK_SET);
+	    fread(&header, sizeof(header), 1, fileHandle.getfpV2());
+	    
+	    //Initial new variable to store slot directory
+	    struct SlotInfo * directory = (struct SlotInfo *) malloc(header.slotsV2 + 1);
+	    size_t newdirectorySize = (header.slotsV2 + 1)*sizeof(struct SlotInfo);
+	    size_t prevdirectorySize = newdirectorySize - sizeof(struct SlotInfo);
+	    if(header.slotsV2 != 0 ){
+	       fseek(fileHandle.getfpV2(), -1 * (sizeof(header) + prevdirectorySize) + (PAGE_SIZE * i), SEEK_SET);
+	       fread(directory, prevdirectorySize, 1, fileHandle.getfpV2());
+	    }
 
-        header.freeSpace += total_used;
-        fseek(fileHandle.getfpV2(), -1 * (sizeof(header)), SEEK_END);
-        fwrite(&header, 1, sizeof(header), fileHandle.getfpV2());
-        directory[header.slotsV2 + 1] = { header.freeSpace, total_used};
-        fseek(fileHandle.getfpV2(), -1 * (sizeof(directory) + sizeof(header)), SEEK_END);
-        fwrite(&directory, 1, (sizeof(directory) + sizeof(header)), fileHandle.getfpV2());
+	    cout << "Header Info:" << header.slotsV2 << " " << header.freeSpace <<  " " <<  newdirectorySize <<endl;
+
+	    free_bytes = PAGE_SIZE - (newdirectorySize + sizeof(header));
+
+        free_bytes = free_bytes - total_used;
+
+	    if(free_bytes >= 0){
+	        cout << "Total_used: " << total_used << endl;
+	        header.slotsV2 += 1;
+	        //Seek to free space offset and write the data there
+	        fseek(fileHandle.getfpV2(), header.freeSpace, SEEK_SET);
+	        fwrite(data, total_used, 1, fileHandle.getfpV2());
+	        
+	        //After updating the header, write this back to the file
+	        header.freeSpace += total_used;
+	        fseek(fileHandle.getfpV2(), (-1 *sizeof(struct SlotHeader)) + (PAGE_SIZE * (i + 1)), SEEK_SET);
+	        fwrite(&header, sizeof(header), 1, fileHandle.getfpV2());
+
+	        //TESTING
+	        // struct SlotHeader header2;
+	        // fseek(fileHandle.getfpV2(), -1 * (sizeof(struct SlotHeader)), SEEK_END);
+	        // fread(&header2, sizeof(struct SlotHeader), 1, fileHandle.getfpV2());
+	        // cout << "Header2 Info:" << header2.slotsV2 << " " << header2.freeSpace <<  " " <<  directorySize <<endl;
+	        //TESTING
+
+	        //TAKE arraysize - 1 and make a pair with ending offset and size
+	        directory[header.slotsV2 - 1].endOffset = header.freeSpace; 
+	        directory[header.slotsV2 - 1].length = total_used; 
+	        fseek(fileHandle.getfpV2(), (-1 * (newdirectorySize + sizeof(struct SlotHeader))) + (PAGE_SIZE * (i + 1)), SEEK_SET);
+	        fwrite(directory, newdirectorySize, 1, fileHandle.getfpV2());
+
+	        //TESTING
+	        // struct SlotInfo * directory2 = (struct SlotInfo *) malloc(header.slotsV2);
+	        // fseek(fileHandle.getfpV2(), (-1 * (newdirectorySize + sizeof(struct SlotHeader))) + (PAGE_SIZE * (i + 1)), SEEK_SET);
+	        // fread(directory2, newdirectorySize, 1, fileHandle.getfpV2());
+	        // cout << "Directory2 Info:" << directory2[0].endOffset << " " << directory2[0].length <<endl;
+	        // free(directory2);
+	        //TESTING
+
+	        rid.pageNum = i;
+	        rid.slotNum = header.slotsV2 - 1;
+	        cout << "free_bytes: " << free_bytes << endl;
+	        //if enough free space for both
+	            // add slot w/ size of record
+	            // inc # of slots
+	            // if free space ptr != null
+	                // fseek find where free space begins
+	        // else
+	            // append page
+	            // do steps above
+	        free(directory);
+	        free(nullsIndicator); 
+	        return 0;
+	    }else{
+	        free(directory);
+	        free(nullsIndicator);
+	    }
     }
+    //Out of for loop, no adequete free space found append new page
+    size_t numPages = fileHandle.getNumberOfPages();
+    fileHandle.appendPage(nullptr);  
+    header.slotsV2  = 1;    
+    header.freeSpace = PAGE_SIZE*numPages + total_used;
 
-    rid.pageNum = 0;
-    rid.slotNum = header.slotsV2 + 1;
-    cout << "free_bytes: " << free_bytes << endl;
+    cout << "Append Page: " << header.freeSpace << endl; 
 
-    //if enough free space for both
-        // add slot w/ size of record
-        // inc # of slots
-        // if free space ptr != null
-            // fseek find where free space begins
-    // else
-        // append page
-        // do steps above
-        free(nullsIndicator);
-        return 0;
+    //Write in the data
+    fseek(fileHandle.getfpV2(), header.freeSpace - total_used, SEEK_SET);
+    fwrite(data, total_used, 1, fileHandle.getfpV2());
+
+    //Write in the updated header
+    fseek(fileHandle.getfpV2(),(-1 * sizeof(struct SlotHeader)), SEEK_END);
+    fwrite(&header, sizeof(struct SlotHeader), 1, fileHandle.getfpV2());
+    
+    //Write in the directory
+    struct SlotInfo * directory2 = (struct SlotInfo *) malloc(header.slotsV2);
+    size_t directorySize = (header.slotsV2)*sizeof(struct SlotInfo);
+    directory2[header.slotsV2 - 1].endOffset = header.freeSpace; 
+	directory2[header.slotsV2 - 1].length = total_used; 
+	fseek(fileHandle.getfpV2(), -1 * (directorySize + sizeof(struct SlotHeader)), SEEK_END);
+	fwrite(directory2, directorySize, 1, fileHandle.getfpV2());
+
+	numPages = fileHandle.getNumberOfPages();
+
+	cout << "DirectoryTest Info B4:" << directory2[0].endOffset << " " << directory2[0].length <<endl;
+
+    //TESTING
+	struct SlotInfo * directoryTest = (struct SlotInfo *) malloc(header.slotsV2);
+	fseek(fileHandle.getfpV2(), (-1 * (directorySize + sizeof(struct SlotHeader))) + (PAGE_SIZE * (numPages)), SEEK_SET);
+	fread(directoryTest, directorySize, 1, fileHandle.getfpV2());
+	cout << "DirectoryTest Info:" << directoryTest[0].endOffset << " " << directoryTest[0].length <<endl;
+	free(directoryTest);
+    //TESTING
+
+
+	rid.pageNum = numPages - 1 ;
+	rid.slotNum = header.slotsV2 - 1;
+	cout << "RID Pagenum: " << rid.pageNum << " " << rid.slotNum << endl;
+	free(directory2);
+	return 0;
 
 }
 
 /*
-Given a record descriptor, delete the record identified
-by the given rid. Also, each time when a record is
-deleted, you will need to compact that page. That is,
-keep the free space in the middle of the page -- the
-slot table will be at one end, the record data area
-will be at the other end, and the free space should be in the middle.
+Given a record descriptor, read the record identified by the given rid. 
 */
 
 RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const RID &rid, void *data) {
-    SlotHeader header;
-    int page_offset;
+    struct SlotHeader header;
+    size_t page_offset = 0;
 
-    fseek(fileHandle.getfpV2(), -1 * (sizeof(header)), SEEK_END);
-    fread(&header, sizeof(header), 1, fileHandle.getfpV2());
+    fseek(fileHandle.getfpV2(),(-1 * sizeof(struct SlotHeader)) + (PAGE_SIZE*rid.pageNum), SEEK_SET);
+    fread(&header, sizeof(struct SlotHeader), 1, fileHandle.getfpV2());
 
-    pair<unsigned,unsigned> directory[header.slotsV2];
+    cout << "Header Info:" << header.slotsV2 << " " << header.freeSpace << endl;
+    //pair<unsigned,unsigned> * directory = (pair<unsigned,unsigned> *) malloc(header.slotsV2);
+    
+  //  TESTING READ
+    //pair<unsigned,unsigned> * directory2 = (pair<unsigned,unsigned> *) malloc(header.slotsV2);
+    size_t directorySize = (header.slotsV2)*sizeof(struct SlotInfo);
+   // struct SlotInfo directory2;
 
-    fseek(fileHandle.getfpV2(), -1 * (sizeof(directory) + sizeof(header)), SEEK_END);
-    fread(&directory, sizeof(directory), 1, fileHandle.getfpV2());
+    //struct SlotInfo * directory2 = (struct SlotInfo *) malloc(header.slotsV2 );
+    struct SlotInfo directory2;
+    fseek(fileHandle.getfpV2(), -1 * (directorySize + sizeof(struct SlotHeader)) + PAGE_SIZE * (rid.pageNum + 1) +(sizeof(SlotInfo) * rid.slotNum) , SEEK_SET);
+    fread(&directory2, sizeof(struct SlotInfo), 1, fileHandle.getfpV2()); 
+    //cout << "directory2 pair: " << directory2.endOffset <<" "<< directory2.length << endl;
+    cout << "directory2 pair: " << directory2.endOffset <<" "<< directory2.length << endl;
+   // free(directory2);
+   // struct SlotInfo * directory = (struct SlotInfo *) malloc(header.slotsV2);
+   // cout << "directorySize" << directorySize << endl;
 
+   // fseek(fileHandle.getfpV2(), -1 * (directorySize + sizeof(struct SlotHeader)), SEEK_END);
+   // fread(&directory, directorySize, 1, fileHandle.getfpV2());
     // getting to appropiate page then adding offset of record
-    page_offset = (rid.pageNum * PAGE_SIZE) + directory[rid.slotNum].second;
+  //  cout << directory[0].endOffset << " " <<directory[0].length << endl;
+    page_offset = (rid.pageNum * PAGE_SIZE) + directory2.endOffset - directory2.length ;
+    cout << "page_offset: " << page_offset  <<endl;
 
     // ask salami about where to cpy data
     fseek(fileHandle.getfpV2(), page_offset, SEEK_SET);
-    fread(&data, directory[rid.slotNum].second, 1, fileHandle.getfpV2());
+    fread(data, directory2.length , 1, fileHandle.getfpV2());
 
     return 0;
 }

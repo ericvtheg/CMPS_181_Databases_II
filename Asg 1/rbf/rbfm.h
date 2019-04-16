@@ -31,8 +31,13 @@ struct Attribute {
 };
 
 struct SlotHeader {
-   unsigned slotsV2 {};
-   unsigned freeSpace {};
+   unsigned slotsV2 {};   //number of slots on a page
+   unsigned freeSpace {}; //starting offset of the free space of a page
+};
+
+struct SlotInfo {
+   unsigned endOffset {}; // the endoffset of a record 
+   unsigned length{};     // the length of the record
 };
 
 // Comparison Operator (NOT needed for part 1 of the project)

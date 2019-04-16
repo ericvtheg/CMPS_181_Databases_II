@@ -39,7 +39,7 @@ private:
 class FileHandle
 {
 private:
-    FILE * fpV2;
+    FILE * fpV2 = nullptr;
 
 public:
     // variables to keep the counter for each operation

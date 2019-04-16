@@ -19,12 +19,10 @@ PagedFileManager::~PagedFileManager()
 }
 
 /*
-This method creates a record-based file called fileName.
-The file should not already exist. Please note that this
-method should internally use the method
-PagedFileManager::createFile (const char *fileName).
+This method creates an empty-paged file called fileName. The file should not already exist. This 
+method should not create any pages in the file.
 */
-
+//ASK IF THIS IS OKAY? CREATE SIZE
 RC PagedFileManager::createFile(const string &fileName)
 {
     FILE *fp;
@@ -32,27 +30,22 @@ RC PagedFileManager::createFile(const string &fileName)
     char * cstr = new char [fileName.length()+1];
     strcpy(cstr, fileName.c_str());
     fp = fopen(cstr, "r");
-    char * buffer = (char *) calloc(sizeof(char), PAGE_SIZE);
     if(fp == nullptr){
         fp = fopen(cstr, "w+");
-        fwrite(buffer, sizeof(char), PAGE_SIZE, fp);
         fclose(fp);
         delete[] cstr;
         return 0;
     }else{
         fclose(fp);
         delete[] cstr;
-        return -1;
+        return 1;
     }
 
 
 }
 
 /*
-This method destroys the record-based file whose name is
-fileName. The file should exist. Please note that this
-method should internally use the method
-PagedFileManager::destroyFile (const char *fileName).
+This method destroys the paged file whose name is fileName. The file should already exist. 
 */
 
 RC PagedFileManager::destroyFile(const string &fileName)
@@ -77,21 +70,24 @@ RC PagedFileManager::destroyFile(const string &fileName)
 }
 
 /*
-This method opens the record-based file whose name is
-fileName. The file must already exist and it must have
-been created using the RecordBasedFileManager::createFile
-method. If the method is successful, the fileHandle object
-whose address is passed as a parameter becomes a "handle"
-for the open file. The file handle rules in the method
-PagedFileManager::openFile apply here too. Also note that
-this method should internally use the method
-PagedFileManager::openFile(const char *fileName,
-FileHandle &fileHandle).
+This method opens the paged file whose name is fileName. The file must already exist (and been 
+created using the createFile method). If the open method is successful, the fileHandle object 
+whose address is passed in as a parameter now becomes a "handle" for the open file. This file 
+handle is used to manipulate the pages of the file (see the FileHandle class description below). It 
+is an error if fileHandle is already a handle for some open file when it is passed to the openFile 
+method. It is not an error to open the same file more than once if desired, but this would be done 
+by using a different fileHandle object each time. Each call to the openFile method creates a new 
+"instance" of the open file. Warning: Opening a file more than once for data modification is not 
+prevented by the PF component, but doing so is likely to corrupt the file structure and may crash 
+the PF component. (You do not need to try and prevent this, as you can assume the layer above is 
+"friendly" in that regard.) Opening a file more than once for reading is no problem
 */
 
 RC PagedFileManager::openFile(const string &fileName, FileHandle &fileHandle)
 {
     FILE *fp;
+    //If fileHandle is not null, already has a handle, return error
+    if(fileHandle.getfpV2() != nullptr) return 1;
 
     char * cstr = new char [fileName.length()+1];
     strcpy(cstr, fileName.c_str());
@@ -110,11 +106,9 @@ RC PagedFileManager::openFile(const string &fileName, FileHandle &fileHandle)
 }
 
 /*
-This method closes the open file instance referred to by
-fileHandle. The file must have been opened using the
-RecordBasedFileManager::openFile method. Note that this
-method should internally use the method
-PagedFileManager::closeFile(FileHandle &fileHandle).
+This method closes the open file instance referred to by fileHandle. (The file should have been 
+opened using the openFile method.) All of the file's pages are flushed to disk when the file is 
+closed.
 */
 
 RC PagedFileManager::closeFile(FileHandle &fileHandle)
@@ -140,18 +134,27 @@ start from 0.
 */
 
 RC FileHandle::readPage(PageNum pageNum, void *data)
-{
-    size_t sz = PAGE_SIZE;
-    fseek(fpV2, pageNum*PAGE_SIZE, SEEK_SET);
-    size_t ret_val = fread(data, 1, sz, fpV2);
-    std::cout << "fread bytes: " << ret_val  << "  " << sz << std::endl;
-    if(ret_val == sz){
-        readPageCounter++;
-        return 0;
+{   
+    //Check the size of the file to verify the existence of a page
+	fseek(fpV2, 0L, SEEK_END);
+    size_t sz = ftell(fpV2);
+    fseek(fpV2, 0L, SEEK_SET);
+    size_t num_pages = ceil(sz/PAGE_SIZE);
+
+    //If pagenum is within range 0 to numpages, good
+    if(pageNum >= 0 and num_pages >= pageNum){
+	    fseek(fpV2, pageNum*PAGE_SIZE, SEEK_SET);
+	    size_t ret_val = fread(data, 1, PAGE_SIZE, fpV2);
+	    //std::cout << "fread bytes: " << ret_val  << "  " << sz << std::endl;
+	    if(ret_val == PAGE_SIZE){
+	        readPageCounter++;
+	        return 0;
+	    }else{
+	        return 1;
+	    }
     }else{
         return 1;
     }
-
 }
 
 /*
@@ -160,18 +163,27 @@ by pageNum. The page should exist. Page numbers start from 0.
 */
 
 RC FileHandle::writePage(PageNum pageNum, const void *data)
-{   //ASK TA
-    //ADD A CHECK FOR IS PAGE EXISTS also, should we clear the page first?
+{  
+    //ASK ADD A CHECK FOR IS PAGE EXISTS also, should we clear the page first?
     //Assume how large the data is suppose to be?
-    size_t sz = PAGE_SIZE;
-    fseek(fpV2, pageNum*PAGE_SIZE, SEEK_SET);
-    size_t ret_val = fwrite(data, 1, sz, fpV2);
-    std::cout << "fread bytes: " << ret_val  << "  " << sz << std::endl;
-    if(!(ferror(fpV2))){
-        writePageCounter++;
-        return 0;
+    fseek(fpV2, 0L, SEEK_END);
+    size_t sz = ftell(fpV2);
+    fseek(fpV2, 0L, SEEK_SET);
+    size_t num_pages = ceil(sz/PAGE_SIZE);
+
+    //If pagenum is within range 0 to numpages, good
+    if(pageNum >= 0 and num_pages >= pageNum){
+	    fseek(fpV2, pageNum*PAGE_SIZE, SEEK_SET);
+	    fwrite(data, 1, PAGE_SIZE, fpV2);
+	    //std::cout << "fread bytes: " << ret_val  << "  " << sz << std::endl;
+	    if(!(ferror(fpV2))){
+	        writePageCounter++;
+	        return 0;
+	    }else{
+	        return 1;
+	    }
     }else{
-        return 1;
+    	return 1;
     }
 }
 
@@ -182,15 +194,16 @@ and writes the given data into the newly allocated page.
 
 RC FileHandle::appendPage(const void *data)
 {
-    //maybe check size of data :)
-    size_t ret_val;
-    //char * pp;
-    //does this give us right size
-    //pp = (char *) malloc(sizeof(*((char *)data)));
-    size_t sz = PAGE_SIZE;
-    fseek(fpV2, 0L, SEEK_END);
-    ret_val = fwrite( data, 1, sz, fpV2);
-    std::cout << "fwrite bytes: " << ret_val  << "  " << sz << std::endl;
+    // ASK: Do we need to verify the size of data?
+    size_t num_pages = getNumberOfPages();
+    char * buffer = (char *) calloc(sizeof(char), PAGE_SIZE);
+    fwrite(buffer, sizeof(char), PAGE_SIZE, fpV2);
+    fseek(fpV2, PAGE_SIZE * num_pages, SEEK_SET);
+    if(data != nullptr){
+        fwrite( data, 1, PAGE_SIZE, fpV2);
+    }
+    //std::cout << "fwrite bytes: " << ret_val  << "  " << sz << std::endl;
+    free(buffer);
     if(!(ferror(fpV2))){
         appendPageCounter++;
         return 0;
@@ -207,16 +220,22 @@ in the file.
 
 unsigned FileHandle::getNumberOfPages()
 {
+
     size_t num_pages;
+
     FILE * fp = getfpV2();
 
+    //Geting the total size of the file
     fseek(fp, 0L, SEEK_END);
     size_t sz = ftell(fp);
     fseek(fp, 0L, SEEK_SET);
-
-    num_pages = ceil(sz/PAGE_SIZE);
-
-    std::cout << "num_pages: "<< num_pages << " " << sz << std::endl;
+    
+    if(sz < PAGE_SIZE){ 
+       num_pages = 0;
+    }else{
+       num_pages = ceil(sz/PAGE_SIZE);
+    }
+    //std::cout << "num_pages: "<< num_pages << " " << sz << std::endl;
 
     return num_pages;
 }
@@ -230,7 +249,6 @@ be applied.
 
 RC FileHandle::collectCounterValues(unsigned &readPageCount, unsigned &writePageCount, unsigned &appendPageCount)
 {
-    // #dont fail pls
     readPageCount = this->readPageCounter;
     writePageCount = this->writePageCounter;
     appendPageCount = this->appendPageCounter;
