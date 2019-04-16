@@ -131,8 +131,7 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
     memset(nullsIndicator, 0, nullBytes);
     memcpy(nullsIndicator, data, sizeof(nullBytes));
     total_used += nullBytes;
-     
-    //find out total amount of bytes within data
+
     for(size_t i = 0; i<recordDescriptor.size(); i++){
         int nullIndex = i/8;
         nullBit = nullsIndicator[nullIndex] & (1 << (7 - (i%8)));
@@ -154,9 +153,8 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
                 total_used += varcharsize;
             }
         }
-        cout << "Total_used_iter: " << total_used << endl;
+        // cout << "Total_used_iter: " << total_used << endl;
     }
-
     // fseek(fileHandle.getfpV2(), 0L, SEEK_END);
     // size_t sz = ftell(fileHandle.getfpV2());
     // if(sz < PAGE_SIZE){
@@ -278,7 +276,6 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
 	cout << "RID Pagenum: " << rid.pageNum << " " << rid.slotNum << endl;
 	free(directory2);
 	return 0;
-
 }
 
 /*
@@ -320,6 +317,8 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
     // ask salami about where to cpy data
     fseek(fileHandle.getfpV2(), page_offset, SEEK_SET);
     fread(data, directory2.length , 1, fileHandle.getfpV2());
+
+    cout << "hit 4" << endl;
 
     return 0;
 }
