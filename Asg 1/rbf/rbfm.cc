@@ -141,18 +141,22 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
 
     free_bytes = free_bytes - total_used;
 
-
-
     if(free_bytes >= 0){
         cout << "Total_used: " << total_used << endl;
         header.slotsV2 += 1;
         fseek(fileHandle.getfpV2(), header.freeSpace, SEEK_SET);
         fwrite(data, 1, total_used, fileHandle.getfpV2());
+
         header.freeSpace += total_used;
+        fseek(fileHandle.getfpV2(), -1 * (sizeof(header)), SEEK_END);
+        fwrite(&header, 1, sizeof(header), fileHandle.getfpV2());
+        directory[header.slotsV2 + 1] = { header.freeSpace, total_used};
+        fseek(fileHandle.getfpV2(), -1 * (sizeof(directory) + sizeof(header)), SEEK_END);
+        fwrite(&directory, 1, (sizeof(directory) + sizeof(header)), fileHandle.getfpV2());
     }
 
-
-
+    rid.pageNum = 0;
+    rid.slotNum = header.slotsV2 + 1;
     cout << "free_bytes: " << free_bytes << endl;
 
     //if enough free space for both
@@ -178,7 +182,25 @@ will be at the other end, and the free space should be in the middle.
 */
 
 RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const RID &rid, void *data) {
-    return -1;
+    SlotHeader header;
+    int page_offset;
+
+    fseek(fileHandle.getfpV2(), -1 * (sizeof(header)), SEEK_END);
+    fread(&header, sizeof(header), 1, fileHandle.getfpV2());
+
+    pair<unsigned,unsigned> directory[header.slotsV2];
+
+    fseek(fileHandle.getfpV2(), -1 * (sizeof(directory) + sizeof(header)), SEEK_END);
+    fread(&directory, sizeof(directory), 1, fileHandle.getfpV2());
+
+    // getting to appropiate page then adding offset of record
+    page_offset = (rid.pageNum * PAGE_SIZE) + directory[rid.slotNum].second;
+
+    // ask salami about where to cpy data
+    fseek(fileHandle.getfpV2(), page_offset, SEEK_SET);
+    fread(&data, directory[rid.slotNum].second, 1, fileHandle.getfpV2());
+
+    return 0;
 }
 
 /*

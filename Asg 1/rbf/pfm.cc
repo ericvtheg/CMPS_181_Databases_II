@@ -32,9 +32,10 @@ RC PagedFileManager::createFile(const string &fileName)
     char * cstr = new char [fileName.length()+1];
     strcpy(cstr, fileName.c_str());
     fp = fopen(cstr, "r");
-
+    char * buffer = (char *) calloc(sizeof(char), PAGE_SIZE);
     if(fp == nullptr){
         fp = fopen(cstr, "w+");
+        fwrite(buffer, sizeof(char), PAGE_SIZE, fp);
         fclose(fp);
         delete[] cstr;
         return 0;
