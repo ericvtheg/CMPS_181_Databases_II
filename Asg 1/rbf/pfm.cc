@@ -197,9 +197,11 @@ RC FileHandle::appendPage(const void *data)
     // ASK: Do we need to verify the size of data?
     size_t num_pages = getNumberOfPages();
     char * buffer = (char *) calloc(sizeof(char), PAGE_SIZE);
-    fwrite(buffer, sizeof(char), PAGE_SIZE, fpV2);
+    //fseek(fpV2, PAGE_SIZE * num_pages, SEEK_SET);
     fseek(fpV2, PAGE_SIZE * num_pages, SEEK_SET);
+    fwrite(buffer, sizeof(char), PAGE_SIZE, fpV2);
     if(data != nullptr){
+        fseek(fpV2, PAGE_SIZE * num_pages, SEEK_SET);
         fwrite( data, 1, PAGE_SIZE, fpV2);
     }
     //std::cout << "fwrite bytes: " << ret_val  << "  " << sz << std::endl;

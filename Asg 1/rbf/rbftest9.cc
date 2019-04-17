@@ -63,7 +63,9 @@ int RBFTest_9(RecordBasedFileManager *rbfm, vector<RID> &rids, vector<int> &size
         memset(record, 0, 1000);
         prepareLargeRecord(recordDescriptor.size(), nullsIndicator, i, record, &size);
 
+        cout << "HERE1" <<endl;
         rc = rbfm->insertRecord(fileHandle, recordDescriptor, record, rid);
+        //cout << "HERE2" <<endl;
         assert(rc == success && "Inserting a record should not fail.");
 
         rids.push_back(rid);
