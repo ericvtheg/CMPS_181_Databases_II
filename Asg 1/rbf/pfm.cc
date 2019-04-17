@@ -22,11 +22,9 @@ PagedFileManager::~PagedFileManager()
 This method creates an empty-paged file called fileName. The file should not already exist. This 
 method should not create any pages in the file.
 */
-//ASK IF THIS IS OKAY? CREATE SIZE
 RC PagedFileManager::createFile(const string &fileName)
 {
     FILE *fp;
-
     char * cstr = new char [fileName.length()+1];
     strcpy(cstr, fileName.c_str());
     fp = fopen(cstr, "r");
@@ -47,10 +45,8 @@ RC PagedFileManager::createFile(const string &fileName)
 /*
 This method destroys the paged file whose name is fileName. The file should already exist. 
 */
-
 RC PagedFileManager::destroyFile(const string &fileName)
 {
-
     FILE *fp;
     int ret_val;
 
@@ -82,7 +78,6 @@ prevented by the PF component, but doing so is likely to corrupt the file struct
 the PF component. (You do not need to try and prevent this, as you can assume the layer above is 
 "friendly" in that regard.) Opening a file more than once for reading is no problem
 */
-
 RC PagedFileManager::openFile(const string &fileName, FileHandle &fileHandle)
 {
     FILE *fp;
@@ -110,9 +105,9 @@ This method closes the open file instance referred to by fileHandle. (The file s
 opened using the openFile method.) All of the file's pages are flushed to disk when the file is 
 closed.
 */
-
 RC PagedFileManager::closeFile(FileHandle &fileHandle)
-{   FILE * fp = fileHandle.getfpV2();
+{   
+    FILE * fp = fileHandle.getfpV2();
     return (fclose(fp));
 }
 
@@ -132,7 +127,6 @@ This method reads the page into the memory block pointed
 to by data. The page should exist. Note that page numbers
 start from 0.
 */
-
 RC FileHandle::readPage(PageNum pageNum, void *data)
 {   
     //Check the size of the file to verify the existence of a page
@@ -142,7 +136,7 @@ RC FileHandle::readPage(PageNum pageNum, void *data)
     size_t num_pages = ceil(sz/PAGE_SIZE);
 
     //If pagenum is within range 0 to numpages, good
-    if(pageNum >= 0 and num_pages >= pageNum){
+    if(pageNum >= 0 and num_pages >= pageNum and num_pages != 0){
 	    fseek(fpV2, pageNum*PAGE_SIZE, SEEK_SET);
 	    size_t ret_val = fread(data, 1, PAGE_SIZE, fpV2);
 	    //std::cout << "fread bytes: " << ret_val  << "  " << sz << std::endl;
@@ -161,11 +155,8 @@ RC FileHandle::readPage(PageNum pageNum, void *data)
 This method writes the given data into a page specified
 by pageNum. The page should exist. Page numbers start from 0.
 */
-
 RC FileHandle::writePage(PageNum pageNum, const void *data)
 {  
-    //ASK ADD A CHECK FOR IS PAGE EXISTS also, should we clear the page first?
-    //Assume how large the data is suppose to be?
     fseek(fpV2, 0L, SEEK_END);
     size_t sz = ftell(fpV2);
     fseek(fpV2, 0L, SEEK_SET);
@@ -191,13 +182,10 @@ RC FileHandle::writePage(PageNum pageNum, const void *data)
 This method appends a new page to the end of the file
 and writes the given data into the newly allocated page.
 */
-
 RC FileHandle::appendPage(const void *data)
 {
-    // ASK: Do we need to verify the size of data?
     size_t num_pages = getNumberOfPages();
     char * buffer = (char *) calloc(sizeof(char), PAGE_SIZE);
-    //fseek(fpV2, PAGE_SIZE * num_pages, SEEK_SET);
     fseek(fpV2, PAGE_SIZE * num_pages, SEEK_SET);
     fwrite(buffer, sizeof(char), PAGE_SIZE, fpV2);
     if(data != nullptr){
@@ -219,14 +207,11 @@ RC FileHandle::appendPage(const void *data)
 This method returns the total number of pages currently
 in the file.
 */
-
 unsigned FileHandle::getNumberOfPages()
 {
-
     size_t num_pages;
 
     FILE * fp = getfpV2();
-
     //Geting the total size of the file
     fseek(fp, 0L, SEEK_END);
     size_t sz = ftell(fp);
@@ -238,7 +223,6 @@ unsigned FileHandle::getNumberOfPages()
        num_pages = ceil(sz/PAGE_SIZE);
     }
     //std::cout << "num_pages: "<< num_pages << " " << sz << std::endl;
-
     return num_pages;
 }
 
