@@ -71,6 +71,7 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
     struct SlotHeader header;
     int free_bytes = 0;
     int total_used = 0;
+    int passed_used = 0;
     vector<int> recVec;
     char* data_ptr = (char *) data;
     bool nullBit = false;
@@ -78,32 +79,41 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
     int nullBytes = getActualByteForNullsIndicator(recordDescriptor.size());
     //Initialize and copy over nullFieldIndicator data
     unsigned char *nullsIndicator = (unsigned char *) malloc(nullBytes);
+   
     memset(nullsIndicator, 0, nullBytes);
     memcpy(nullsIndicator, data_ptr, nullBytes);
 
     total_used = nullBytes;
+    passed_used = nullBytes;
     int nullIndex = 0;
+    cout << "insertRecord1"<<endl;
 
     for(size_t i = 0; i<recordDescriptor.size(); i++){
         nullIndex = i/8;
         nullBit = nullsIndicator[nullIndex] & (1 << (7 - (i%8)));
         if (recordDescriptor[i].type == TypeInt){
             if (!nullBit){
+            	cout << " int: " << i << endl;
 	            total_used += INT_SIZE;
+	            passed_used += INT_SIZE;
 	            recVec.push_back(INT_SIZE);
             }
         }
         else if (recordDescriptor[i].type == TypeReal){
             if (!nullBit){
-	            total_used += FLOAT_SIZE;
+            	cout << " float: " << i << endl;
+	            total_used += INT_SIZE;
+	            passed_used += FLOAT_SIZE;
 	            recVec.push_back(FLOAT_SIZE);
 	        }
         }
         else if (recordDescriptor[i].type == TypeVarChar){
         	if(!nullBit){
 	            int varcharsize;
-	            memcpy(&varcharsize, (data_ptr + total_used), INT_SIZE);
+            	cout << " varcharsize: " << i << endl;
+	            memcpy(&varcharsize, (data_ptr + passed_used), INT_SIZE);
                 total_used += varcharsize;
+                passed_used = passed_used + varcharsize + INT_SIZE;
 	            recVec.push_back(varcharsize);
             }
         }
@@ -192,7 +202,7 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
         fread(&header, sizeof(struct SlotHeader), 1, fileHandle.getfpV2());
 
         //Initial new variable to store slot directory
-        //cout << "iter: " << i << " Header numSlots:" << header.slotsV2 << "  FreeSpace Offset:" << header.freeSpace <<endl;
+        cout << "iter: " << i << " Header numSlots:" << header.slotsV2 << "  FreeSpace Offset:" << header.freeSpace <<endl;
         directory = (struct SlotInfo *) realloc(directory, sizeof(SlotInfo)*(header.slotsV2 + 1));
         int newdirectorySize = (header.slotsV2 + 1)*sizeof(struct SlotInfo);
         int prevdirectorySize = newdirectorySize - sizeof(struct SlotInfo);
@@ -206,9 +216,9 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
         //cout << "free_bytes: " << free_bytes << endl;
         //cout << "total_used: " << total_used << endl;
         //Subtract the amount of space already taken
-        free_bytes -=  ((header.freeSpace - (PAGE_SIZE * i)));
+      //  free_bytes -=  ((header.freeSpace - (PAGE_SIZE * i)));
+        free_bytes -=  header.freeSpace;
 
-        free_bytes -= total_used;
         //cout << "free_bytes after: " << free_bytes << endl;
 
         if(free_bytes >= 0){
@@ -227,11 +237,15 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
             int recArr[recArrCount];
             std::copy(recVec.begin(), recVec.end(), recArr);
 
-            memcpy((char *)record + INT_SIZE, &recArr, recArrBytes);
+            memcpy((char *)record + INT_SIZE + nullBytes, &recArr[0], recArrBytes);
 
             //Seek to free space offset and write the data there
-            fseek(fileHandle.getfpV2(), header.freeSpace, SEEK_SET);
-            fwrite((char *)record, total_used, 1, fileHandle.getfpV2());
+			 //header.freeSpace = PAGE_SIZE*numPages + header.freeSpace;
+			 int totalFreeOffset = PAGE_SIZE*i + header.freeSpace;
+			 cout << "Header numSlots:" << header.slotsV2 << "  FreeSpace Offset:" << header.freeSpace <<endl;
+			 //Write in the data
+			 fseek(fileHandle.getfpV2(), totalFreeOffset, SEEK_SET);
+			 fwrite((char *)record , total_used, 1, fileHandle.getfpV2());
 
             //After updating the header, write this back to the file
             header.freeSpace += total_used;
@@ -265,7 +279,8 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
     header.slotsV2  = 1;
 
     //Beginning of where records are written.
-    header.freeSpace = PAGE_SIZE*numPages + setupBytes + nullBytes;
+    //header.freeSpace = PAGE_SIZE*numPages + setupBytes + nullBytes;
+    header.freeSpace = setupBytes + nullBytes;
     cout << "Header numSlots:" << header.slotsV2 << "  FreeSpace Offset:" << header.freeSpace <<endl;
     cout << "Total_used" << total_used <<endl;
 
@@ -290,6 +305,7 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
     // fread(&arrSize, INT_SIZE , 1, fileHandle.getfpV2());
 
     //recStart
+   // header.freeSpace = PAGE_SIZE*numPages + total_used;
     header.freeSpace = PAGE_SIZE*numPages + total_used;
     cout << "Header numSlots:" << header.slotsV2 << "  FreeSpace Offset:" << header.freeSpace <<endl;
     //Write in the data
@@ -297,6 +313,7 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
     fwrite((char *)record , total_used, 1, fileHandle.getfpV2());
 
 
+    header.freeSpace = total_used;
     //Write in the updated header
     fseek(fileHandle.getfpV2(),(-1 * sizeof(struct SlotHeader)), SEEK_END);
     fwrite(&header, sizeof(struct SlotHeader), 1, fileHandle.getfpV2());
@@ -354,7 +371,7 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
     fread(&directory2, sizeof(struct SlotInfo), 1, fileHandle.getfpV2());
     cout << "readRecord Directory: " << directory2.endOffset <<" "<< directory2.length << endl;
 
-    page_offset = directory2.endOffset - directory2.length ;
+    page_offset = (rid.pageNum * PAGE_SIZE)+ directory2.endOffset - directory2.length  ;
 
   //  char * buffer = (char *) malloc(directory2.length);
     int arrSize;
@@ -379,6 +396,7 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
     fseek(fileHandle.getfpV2(), page_offset + INT_SIZE, SEEK_SET);
     fread(data_ptr, nullBytes , 1 , fileHandle.getfpV2());
 
+    
     page_offset += (INT_SIZE *( 1 + arrSize)) + nullBytes ;
     offset = nullBytes;
     int nonNullCount = 0;
@@ -388,7 +406,7 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
         nullBit = nullsIndicator[nullIndex] & (1 << (7 - (i%8)));
         if(!nullBit){
             if(i == 0){
-            	attrLen = recArr[nonNullCount] - page_offset;
+            	attrLen = recArr[nonNullCount] - ((INT_SIZE *( 1 + arrSize)) + nullBytes)  ;
             	cout << "attrLen" << attrLen << endl;
             }else{
             	attrLen = recArr[nonNullCount] - recArr[nonNullCount - 1];
@@ -441,8 +459,7 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
 
 
 
-
-   // free(buffer);
+    free(nullsIndicator);
     return 0;
 }
 
