@@ -1,0 +1,80 @@
+﻿1. Basic information
+Team number: 11
+Student ID of submitter: 1492157
+Student Name of submitter: Eric Ventor
+Other Team Members: Eric Ventor, Ivan Espiritu, Rebecca Bui
+
+
+
+
+2. Internal Record Format
+- Show your record format design and describe how your design satisfies O(1) field access. If not, just mention that you haven't implemented this feature.
+
+
+           Our record format design was implemented in a way that satisfies O(1) field access. Each page of records contains a slot header along with a slot directory. The slot header contains the offset to the start of free space along with the number of slots being used (ie taken by existing records) which is necessary to read the entirety of the slot directory. By obtaining the length of the directory through
+(number of slots) * sizeof(SlotIndex) 
+we are able to use this offset to  memcpy() the directory into an array of SlotInfo Structs and read the offset and length values necessary for a given slot index from an RID. Using these values we are able to simply perform the necessary arithmetic on the starting offset of any specified record to read the bytes of memory associated with that record, rendering a runtime of O(1). 
+
+
+- Describe how you store a VarChar field.
+
+
+        Our database management system takes multiple steps in order to efficiently store the necessary varchar field supplied by the “user.” Upon verifying that the data that we are storing is of type VarChar we made it such that before the actual text data is stored, we allocate an additional space of INT_SIZE. These additional bytes store the length of the data of type VarChar. This field is allocated so that if we were to define an attribute to have a max length of 30, for example, text shorter than this maximum will only need to take up the amount of space it needs rather than the max length, allowing us to save space. These extra bytes also allow us to easily obtain the actual size of data of this type. An example of the storage would be if we were to have a piece of data of type VarChar that consisted of 30 bytes, when the data is stored, it would take up 34 bytes total  where the 4 bytes for INT_SIZE is allocated to inform the DBMS of the length of the string. Assuming we have a pointer located at the base of these 34 bytes we can load the initial 4 bytes to get the length of the string. Using this new-found knowledge we can memcpy the next x bytes to be able to properly load the VarChar into a null-terminated char array. 
+
+
+
+
+3. Page Format
+- Show your page format design
+Picture: See PageFormat.png
+
+
+Description: 
+        Our page was based off the design in lecture 3. We created a Struct SlotHeader which holds the number of slots within the slot directory and the total amount of data stored in the page, which we use as our free space offset. The directory and header are stored at the “end” of a page and grows inward, while the data allocated in the page is stored at the beginning of the page and similarly grows inward, making it so that the free space is coalesced into the center of the page, similar to what is mentioned in lecture. The slot directory is comprised of an array of  Struct SlotInfo, where the SlotInfo struct is essentially a pair containing data regarding the current end offset of a certain data record and the length of that record. These two structs combined with the data make up the page contents.  
+
+
+
+
+4. Implementation Detail
+- Other implementation details goes here.
+
+
+In order to implement the project, we first decided to start by working on the pfm files, as that is where the tests began. 
+
+
+For the PFM, we made the createFile() method by first understanding the arguments being given to the function. Given the string fileName, we copied and converted this to a c string allowing us to use fopen(cstring, “r”). We realized that it was best to be using the stdio files as stated from the project description file. Using the flag “r” , we can check if the file already exists. If it does, we return 1 indicating an error and close the file. If it does not exist, we then call fopen() with “w+” to create the file. The destroyFile() followed very similar logic for checking file existence. If the file is found, remove it. If it does not exist return a rc indicating an error.
+
+
+The openFile also follows similar logic to check whether or not to proceed depending on if a file does or does not exist. The main difference in these functions was that we called to the  fileHandle to store the FILE*.
+
+
+The reading/writing pages were a little more involved. We first had to check if the page number given exists within the file and then made use of fseek(), fread(), and fwrite() . In read page, we had to fseek and ftell to verify page existed, then used a fread of size PAGE_SIZE once we were able to determine the offset of PAGE_SIZE * Page number for the fseek. After a successful read, we had to increase the readPageCounter. In the write page, we did the same steps as the read page, but instead of fread() , we used fwrite() into the page after fseek(). We then increased the writePageCounter in the fileHandle. 
+
+
+We implemented appendPage() by first creating the getNumberOfPages() function where we once again use an fseek() and ftell() to get the size of the file. We divide this by the PAGE_SIZE and take the ceiling of this value to get  the number of  pages. If it was determined the size of the whole file is less than 4096, then it must be no new pages were created yet, making the number of pages is zero. In the append, we had to allocate space for the new page. This is done by calling calloc to allocate memory of size PAGE_SIZE , then going to the end of the last page using  fseek(). We finally using an fwrite() of the allocated memory from the calloc().On success we appendPageCounter from the fileHandle. 
+
+
+We then moved on the the rbfm, where we created an instance of the a PFM which would handle our create/destroy/open/close files for the rbfm. We then started work on out printRecord() function to gain an understanding of how the record format should look.
+
+
+We used the skeleton of a printRecord() that Saloni provided for us in section, and modified that to match our current design. Before the record could begin printing, we checked through the passed in attributes to determine whether they were TypeReal, TypeInt, or Type VarChar. TypeReals and TypeInts were of 4 bytes each, while the VarChars were of variable length whose size are taken in accordance to the way we described in a previous section. In each of these three checks, we created a buffer that would memcpy() the number of bytes for each type and then set the type size to be the offset. We do this since we keep a char * dataptr that increments by the offset each time we loop through a new attribute. The offset of the last attribute will be added to the data pointer will keep track of the current end of bytes.        
+
+
+Our next step was to implement the slot header and directory. This was first done by creating a Struct for the header of each page. This struct consisted of two variables which contained the starting offset of where the free space for a page is and the  length of the slot  directory. During an insertRecord() where there is not enough space to accommodate the         data passed in, we append a new page and into it, create and initialize this header. We then insert the header into the page by by writing this struct to the end of a page.
+        
+        For the slot directory, we decided that it would be an array of structs. The struct we create for this is struct SlotInfo, which is also essentially a pair containing the the end offset of each record and the total length of the record. During insertRecord(), we update this directory and the header to match the amount of new records and the data passed in.
+
+
+        Our insertRecord() function works pretty similar to how our previous memory arithmetic has been implemented for other functions. The function starts by getting the nullBytes using the provided getActualByteForNullsIndicator() function. Using nullBytes we are able to allocate how much memory is needed to memcpy() the null-flag bits into a readable data type. In order to keep track of the number of bytes a record takes up, we define a total_used integer to grow accordingly to the the size of the types of the attributes. During this process we also we’d add the size of the nullBytes to the total_used. Similar to how we printRecord(), we get the total data used by a record by iterating through our non-empty (using our null-flags) data based on the attributes given. These types help us identify how much space is necessary to be allocated. Once we get a type of VarChar we memcpy the first 4 bytes (which is designated to tell us the length of the string). Using this information we able to appropriately allocate the exact required space of the string and add this to our total_used count. Once we are done iterating through the recordDescriptors, we know the total size necessary for the record to be inserted. 
+
+
+Now that we know the total size of our record, we iterate through each page looking for enough memory space to place it within the page. We do this by grabbing the header of each page and using its freeSpace offset and the size of its header and directory to determine  if the amount of free space can accommodate the total_used count. We do this until we find a page with enough free space. Once we find a page with enough space we write our record data  and update the header and slot directory accordingly. If there is no page with enough free space we append a page and insert the record there, creating the header as needed.
+
+
+        ReadRecord() operates similarly to printRecord()except we are give an RID to find the matching data within the page. In order to find the actual record within the pages we use the passed in RID. Using the PageNum  from the RID we get an offset of PAGE_SIZE * (PAGENUM + 1 to assist in reading the header and directory information. Now having access to the header and directory of the page we are able to calculate the exact starting point of the record’s data using our saved end offset and length variables from the slot Directory using the given slotNum.
+
+
+5. Other (optional)
+
+
+        Just as a last segment of our write up we wanted to include Valgrind. We ran valgrind on each one of the tests and were left with results we believe are correct. The only bytes lossed/still reachable were bytes created by given code from professor Finkelstein.

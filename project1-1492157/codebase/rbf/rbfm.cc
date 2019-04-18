@@ -20,89 +20,6 @@ RecordBasedFileManager::~RecordBasedFileManager()
 }
 
 
-
-/*
-This method creates a record-based file called fileName. The file should not already exist. Please
-note that this method should internally use the method PagedFileManager::createFile (const char
-*fileName).
-*/
-RC RecordBasedFileManager::createFile(const string &fileName) {
-    SlotHeader header;
-    header.slotsV2   = 0;
-    header.freeSpace = 0; //offset to start of free space
-    // cout << sizeof( header) << " " << sizeof(directory);
-    //Create an insert the header
-    _pf_manager->createFile(fileName);
-    return 0;
-}
-
-/*
-This method destroys the record-based file whose name is fileName. The file should exist. Please
-note that this method should internally use the method PagedFileManager::destroyFile (const
-char *fileName).
-*/
-RC RecordBasedFileManager::destroyFile(const string &fileName) {
-    return _pf_manager->destroyFile(fileName);
-}
-
-/*
-This method opens the record-based file whose name is fileName. The file must already exist
-and it must have been created using the RecordBasedFileManager::createFile method. If the
-method is successful, the fileHandle object whose address is passed as a parameter becomes a
-"handle" for the open file. The file handle rules in the method PagedFileManager::openFile apply
-here too. Also note that this method should internally use the method
-PagedFileManager::openFile(const char *fileName, FileHandle &fileHandle).
-*/
-RC RecordBasedFileManager::openFile(const string &fileName, FileHandle &fileHandle) {
-    return _pf_manager->openFile(fileName, fileHandle);
-}
-
-/*
-This method closes the open file instance referred to by fileHandle. The file must have been
-opened using the RecordBasedFileManager::openFile method. Note that this method should
-internally use the method PagedFileManager::closeFile(FileHandle &fileHandle).
-*/
-RC RecordBasedFileManager::closeFile(FileHandle &fileHandle) {
-    return _pf_manager->closeFile(fileHandle);
-}
-
-/*
-Given a record descriptor, insert a new record into the file identified by the provided handle. You
-can assume that the input is always correct and free of error. That is, you do not need to check to
-see if the input record has the right number of attributes or if the attribute types match. However,
-in order to deal with NULL values in the attributes, the first part in *data contains n bytes for
-passing the null information about each field. The value n can be calculated by using this
-formula: ceil(number of fields in a record / 8). For example, if there are 5 fields, ceil(5/8) = 1
-byte. If there are 20 fields, the size will be ceil(20/8) = 3 bytes. The left-most bit in the first byte
-corresponds to the first field. The right-most bit in the first byte corresponds to the eighth field. If
-there are more than eight fields, the left-most bit in the second byte corresponds to the ninth field
-and so on. If the bit corresponding to a field is set to 1, then the actual data does not contain any
-value for this field. For example, if there are three fields in a record and the second field contains
-NULL, the bit representation in a byte is 0100000. In addition, in the actual data, the incoming
-record contains the first and the third values only. That is, the third field value is placed right
-after the first field value in this case.
-This format (null-fields-indicator + actual data) is to be used for all record manipulation
-operations (unless stated differently). For example, when you read a record, the first part of what
-you return should contain a null-fields-indicator that provides the information about null fields,
-and the actual data should not contain null field values.
-Your file structure is a heap file, and you may use a system-sequenced file organization. That is,
-if the last (current) page has enough space, insert a new record into this page. If not, find the first
-page with free space large enough to store the record, e.g., looking from the beginning of the file,
-and store the record at that location. An RID here is the record ID which is used to uniquely
-identify records in a file. An RID consists of: 1) the page number that the record resides in within
-the file, and 2) the slot number that the record resides in within the page. The insertRecord
-method accepts an RID object and fills it with the RID of the record that is the target for
-insertion; this lets the caller know what the system-determined RID was for each newly inserted
-record. For managing free space within pages, you should keep the free space coalesced in the
-center of the page at all times -- so if a record deletion or update creates a "hole", you should
-move records around to keep all of the free space together. Note that this will not change the
-RIDs of your records; when you move a record within a page, you will also keep track of the
-record's new offset in the slot table on the page, and the RID only contains the slot number, not
-the offset itself.
-Note that the API data format above is intended just for passing the data into insertRecord(). This
-does not necessarily mean that the internal representation of your record should be the same as
-this format. (It probably shouldn't be. :-))
-*/
 RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, RID &rid) {
     //calculate size of new slot + size of record to add
     struct SlotHeader header;
@@ -157,7 +74,6 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
 	       fseek(fileHandle.getfpV2(), -1 * (sizeof(struct SlotHeader) + prevdirectorySize) + (PAGE_SIZE * (i + 1)), SEEK_SET);
 	       fread(directory, prevdirectorySize, 1, fileHandle.getfpV2());
 	    }
-
 
         //Subtracting size of the header and the Directory
         free_bytes = PAGE_SIZE - (newdirectorySize + sizeof(struct SlotHeader));
