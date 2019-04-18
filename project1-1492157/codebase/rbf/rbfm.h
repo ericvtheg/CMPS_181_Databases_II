@@ -5,6 +5,8 @@
 #define FLOAT_SIZE 4
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <iostream>
 #include <climits>
 
 #include "../rbf/pfm.h"
