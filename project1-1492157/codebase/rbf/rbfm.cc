@@ -370,7 +370,6 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
         cout << i <<": " << recArr[i] << " " << endl;
     }
     
-    page_offset += (INT_SIZE *( 1 + arrSize)) + nullBytes ;
 
     //Load in Null Indicator
     fseek(fileHandle.getfpV2(), page_offset + INT_SIZE, SEEK_SET);
@@ -379,17 +378,30 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
     
     fseek(fileHandle.getfpV2(), page_offset + INT_SIZE, SEEK_SET);
     fread(data_ptr, nullBytes , 1 , fileHandle.getfpV2());
-    offset = nullBytes;
 
+    page_offset += (INT_SIZE *( 1 + arrSize)) + nullBytes ;
+    offset = nullBytes;
     int nonNullCount = 0;
+    int attrLen = 0;
     for(size_t i = 0; i<recordDescriptor.size(); i++){
         int nullIndex = i/8;
         nullBit = nullsIndicator[nullIndex] & (1 << (7 - (i%8)));
+        if(!nullBit){
+            if(i == 0){
+            	attrLen = recArr[nonNullCount] - page_offset;
+            	cout << "attrLen" << attrLen << endl;
+            }else{
+            	attrLen = recArr[nonNullCount] - recArr[nonNullCount - 1];
+            	cout << "attrLen" << attrLen << endl;
+            }
+        }
+
         if (recordDescriptor[i].type == TypeInt){
             if (!nullBit){
-
+                cout << "HERE INT"  << i<< endl;
                 fseek(fileHandle.getfpV2(), page_offset , SEEK_SET);
                 fread(data_ptr + offset, INT_SIZE, 1, fileHandle.getfpV2());
+                cout << page_offset << " " << offset <<  endl;
                 page_offset += INT_SIZE;
                 offset +=INT_SIZE;
                 nonNullCount++;
@@ -397,9 +409,12 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
         }
         else if (recordDescriptor[i].type == TypeReal){
             if (!nullBit){
-                
+                float fuffer;
                 fseek(fileHandle.getfpV2(), page_offset, SEEK_SET);
                 fread(data_ptr + offset, FLOAT_SIZE, 1, fileHandle.getfpV2());
+                fread(&fuffer, FLOAT_SIZE, 1, fileHandle.getfpV2());
+                cout << "HERE FLOAT" << i<<" " << fuffer<< endl;
+                cout << page_offset << " " << offset <<  endl;
                 page_offset += FLOAT_SIZE;
                 offset +=FLOAT_SIZE;
                 nonNullCount++;
@@ -408,14 +423,17 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
         else if (recordDescriptor[i].type == TypeVarChar){
             if(!nullBit){
 
+                cout << "HERE varchar" << i<<endl;
+               
                 fseek(fileHandle.getfpV2(), page_offset, SEEK_SET);
-                memcpy(data_ptr + offset, &recArr[nonNullCount], INT_SIZE);
+                memcpy(data_ptr + offset, &attrLen, INT_SIZE);
                 offset +=INT_SIZE;
                 
-                fseek(fileHandle.getfpV2(), page_offset, SEEK_SET);
-                fread(data_ptr + offset, recArr[nonNullCount], 1, fileHandle.getfpV2());
-                page_offset += recArr[nonNullCount];
-                offset += recArr[nonNullCount];
+                fseek(fileHandle.getfpV2(), recArr[nonNullCount]- attrLen, SEEK_SET);
+                fread(data_ptr + offset, attrLen, 1, fileHandle.getfpV2());
+                cout << page_offset << " " << offset << endl;
+                page_offset += attrLen;
+                offset += attrLen;
                 nonNullCount++;
             }
         }
