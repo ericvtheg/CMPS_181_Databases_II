@@ -19,7 +19,7 @@ PagedFileManager::~PagedFileManager()
 }
 
 /*
-This method creates an empty-paged file called fileName. The file should not already exist. This 
+This method creates an empty-paged file called fileName. The file should not already exist. This
 method should not create any pages in the file.
 */
 RC PagedFileManager::createFile(const string &fileName)
@@ -43,7 +43,7 @@ RC PagedFileManager::createFile(const string &fileName)
 }
 
 /*
-This method destroys the paged file whose name is fileName. The file should already exist. 
+This method destroys the paged file whose name is fileName. The file should already exist.
 */
 RC PagedFileManager::destroyFile(const string &fileName)
 {
@@ -66,16 +66,16 @@ RC PagedFileManager::destroyFile(const string &fileName)
 }
 
 /*
-This method opens the paged file whose name is fileName. The file must already exist (and been 
-created using the createFile method). If the open method is successful, the fileHandle object 
-whose address is passed in as a parameter now becomes a "handle" for the open file. This file 
-handle is used to manipulate the pages of the file (see the FileHandle class description below). It 
-is an error if fileHandle is already a handle for some open file when it is passed to the openFile 
-method. It is not an error to open the same file more than once if desired, but this would be done 
-by using a different fileHandle object each time. Each call to the openFile method creates a new 
-"instance" of the open file. Warning: Opening a file more than once for data modification is not 
-prevented by the PF component, but doing so is likely to corrupt the file structure and may crash 
-the PF component. (You do not need to try and prevent this, as you can assume the layer above is 
+This method opens the paged file whose name is fileName. The file must already exist (and been
+created using the createFile method). If the open method is successful, the fileHandle object
+whose address is passed in as a parameter now becomes a "handle" for the open file. This file
+handle is used to manipulate the pages of the file (see the FileHandle class description below). It
+is an error if fileHandle is already a handle for some open file when it is passed to the openFile
+method. It is not an error to open the same file more than once if desired, but this would be done
+by using a different fileHandle object each time. Each call to the openFile method creates a new
+"instance" of the open file. Warning: Opening a file more than once for data modification is not
+prevented by the PF component, but doing so is likely to corrupt the file structure and may crash
+the PF component. (You do not need to try and prevent this, as you can assume the layer above is
 "friendly" in that regard.) Opening a file more than once for reading is no problem
 */
 RC PagedFileManager::openFile(const string &fileName, FileHandle &fileHandle)
@@ -86,14 +86,14 @@ RC PagedFileManager::openFile(const string &fileName, FileHandle &fileHandle)
 
     char * cstr = new char [fileName.length()+1];
     strcpy(cstr, fileName.c_str());
-    fp = fopen(cstr, "r");
+    fp = fopen(cstr, "r+");
 
     if(fp == nullptr){
         delete[] cstr;
         return 1;
     }else{
-        fclose(fp);
-        fopen(cstr, "r+");
+        // fclose(fp);
+        //fp = fopen(cstr, "r+");
         delete[] cstr;
         fileHandle.setfpV2(fp);
         return 0;
@@ -101,12 +101,12 @@ RC PagedFileManager::openFile(const string &fileName, FileHandle &fileHandle)
 }
 
 /*
-This method closes the open file instance referred to by fileHandle. (The file should have been 
-opened using the openFile method.) All of the file's pages are flushed to disk when the file is 
+This method closes the open file instance referred to by fileHandle. (The file should have been
+opened using the openFile method.) All of the file's pages are flushed to disk when the file is
 closed.
 */
 RC PagedFileManager::closeFile(FileHandle &fileHandle)
-{   
+{
     FILE * fp = fileHandle.getfpV2();
     return (fclose(fp));
 }
@@ -128,7 +128,7 @@ to by data. The page should exist. Note that page numbers
 start from 0.
 */
 RC FileHandle::readPage(PageNum pageNum, void *data)
-{   
+{
     //Check the size of the file to verify the existence of a page
 	fseek(fpV2, 0L, SEEK_END);
     size_t sz = ftell(fpV2);
@@ -156,7 +156,7 @@ This method writes the given data into a page specified
 by pageNum. The page should exist. Page numbers start from 0.
 */
 RC FileHandle::writePage(PageNum pageNum, const void *data)
-{  
+{
     fseek(fpV2, 0L, SEEK_END);
     size_t sz = ftell(fpV2);
     fseek(fpV2, 0L, SEEK_SET);
@@ -215,9 +215,9 @@ unsigned FileHandle::getNumberOfPages()
     //Geting the total size of the file
     fseek(fp, 0L, SEEK_END);
     size_t sz = ftell(fp);
-    fseek(fp, 0L, SEEK_SET);
-    
-    if(sz < PAGE_SIZE){ 
+    // fseek(fp, 0L, SEEK_SET);
+
+    if(sz < PAGE_SIZE){
        num_pages = 0;
     }else{
        num_pages = ceil(sz/PAGE_SIZE);
