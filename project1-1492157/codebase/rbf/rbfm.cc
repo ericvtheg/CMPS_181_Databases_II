@@ -19,6 +19,52 @@ RecordBasedFileManager::~RecordBasedFileManager()
 {
 }
 
+/*
+This method creates a record-based file called fileName. The file should not already exist. Please
+note that this method should internally use the method PagedFileManager::createFile (const char
+*fileName).
+*/
+RC RecordBasedFileManager::createFile(const string &fileName) {
+    SlotHeader header;
+    header.slotsV2   = 0;
+    header.freeSpace = 0; //offset to start of free space
+    // cout << sizeof( header) << " " << sizeof(directory);
+    //Create an insert the header
+    _pf_manager->createFile(fileName);
+    return 0;
+}
+
+/*
+This method destroys the record-based file whose name is fileName. The file should exist. Please
+note that this method should internally use the method PagedFileManager::destroyFile (const
+char *fileName).
+*/
+RC RecordBasedFileManager::destroyFile(const string &fileName) {
+    return _pf_manager->destroyFile(fileName);
+}
+
+/*
+This method opens the record-based file whose name is fileName. The file must already exist
+and it must have been created using the RecordBasedFileManager::createFile method. If the
+method is successful, the fileHandle object whose address is passed as a parameter becomes a
+"handle" for the open file. The file handle rules in the method PagedFileManager::openFile apply
+here too. Also note that this method should internally use the method
+PagedFileManager::openFile(const char *fileName, FileHandle &fileHandle).
+*/
+RC RecordBasedFileManager::openFile(const string &fileName, FileHandle &fileHandle) {
+    return _pf_manager->openFile(fileName, fileHandle);
+}
+
+/*
+This method closes the open file instance referred to by fileHandle. The file must have been
+opened using the RecordBasedFileManager::openFile method. Note that this method should
+internally use the method PagedFileManager::closeFile(FileHandle &fileHandle).
+*/
+RC RecordBasedFileManager::closeFile(FileHandle &fileHandle) {
+    return _pf_manager->closeFile(fileHandle);
+}
+
+
 
 RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, RID &rid) {
     //calculate size of new slot + size of record to add
