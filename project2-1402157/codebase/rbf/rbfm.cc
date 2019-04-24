@@ -447,3 +447,20 @@ void RecordBasedFileManager::setRecordAtOffset(void *page, unsigned offset, cons
         header_offset += sizeof(ColumnOffset);
     }
 }
+
+// RC deleteRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const RID &rid);
+// // Assume the RID does not change after an update
+
+// RC updateRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, const RID &rid);
+
+// RC readAttribute(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const RID &rid, const string &attributeName, void *data);
+
+// // Scan returns an iterator to allow the caller to go through the results one by one. 
+// RC scan(FileHandle &fileHandle,
+//     const vector<Attribute> &recordDescriptor,
+//     const string &conditionAttribute,
+//     const CompOp compOp,                  // comparision type such as "<" and "="
+//     const void *value,                    // used in the comparison
+//     const vector<string> &attributeNames, // a list of projected attributes
+//     RBFM_ScanIterator &rbfm_ScanIterator);
+
