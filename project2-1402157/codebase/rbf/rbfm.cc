@@ -469,7 +469,7 @@ RC RecordBasedFileManager::deleteRecord(FileHandle &fileHandle, const vector<Att
     cout << "(headersize, slotsize) : (" << sizeof(SlotDirectoryHeader) << ", " << sizeof(SlotDirectoryRecordEntry) << ") " <<  endl;
     char * headir_end = pageData + sizeof(SlotDirectoryHeader) + (sizeof(SlotDirectoryRecordEntry) * header.recordEntriesNumber);
     cout << "recordEntriesNumber: " << header.recordEntriesNumber << endl;
-    
+
     uint32_t headir_offset = sizeof(SlotDirectoryHeader) + sizeof(SlotDirectoryRecordEntry) * header.recordEntriesNumber;
     cout << "headir_offset: " << headir_offset << endl;
     // Pointer to the start of the record to be deleted
@@ -521,14 +521,15 @@ RC RecordBasedFileManager::deleteRecord(FileHandle &fileHandle, const vector<Att
     return 0;
 }
 
-RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, const RID &rid){
+RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, RID &rid){
 
     // malloc new page
     void *pageDataV = malloc(PAGE_SIZE);
     char *pageData = (char *)pageDataV;
 
-    char *to_load_data = (char *) data;
+    //get to load record size
     unsigned to_load_recordSize = getRecordSize(recordDescriptor, data);
+    char *to_load_data = (char *) data;
 
     //error checking
     if (pageData == NULL)
@@ -541,23 +542,171 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
     SlotDirectoryRecordEntry record = getSlotDirectoryRecordEntry(pageData, rid.slotNum);
     SlotDirectoryHeader header = getSlotDirectoryHeader(pageData);
 
-    char * start_upd_record = pageData + record.offset - record.length;
+    void * records_to_load = malloc(PAGE_SIZE);
+    char * to_shift_data = pageData + header.freeSpaceOffset;
+
+    char * start_to_upd_record = pageData + record.offset;
+
+    //set contents of record to 0
+    memset(start_to_upd_record, 0, record.length);
 
     if(record.length == to_load_recordSize){
         //straight load it in
-        
+        memcpy(start_to_upd_record, to_load_data, to_load_recordSize);
     }
-    else if(record.length > to_load_recordSize){
-        //can read in record but must coalesce rest of records
+    else if(record.length > to_load_recordSize){ //can read in record but must coalesce rest of records
+
+        //load in updated info by adding difference of size to properly align records
+        unsigned diff = record.length - to_load_recordSize;
+        memcpy(start_to_upd_record + diff, to_load_data, to_load_recordSize);
+
+        //coalesce
+        //subtract diff to make up for change in record size
+        uint32_t to_shift_data_size =  (record.offset) - header.freeSpaceOffset - diff;
+        // load into buffer
+        memcpy(records_to_load, to_shift_data, to_shift_data_size);
+        memset(to_shift_data, 0, to_shift_data_size);
+        memcpy(to_shift_data + diff, records_to_load, to_shift_data_size);
+
+        //update headers & slots
+        for(size_t i = 0; i < header.recordEntriesNumber; i++){
+
+            SlotDirectoryRecordEntry upd_entry = getSlotDirectoryRecordEntry(pageData, i);
+
+            if(i == rid.slotNum){ //dont kill rid
+                upd_entry.offset = record.offset + diff; //set to 0 for dead RID
+                upd_entry.length = to_load_recordSize;
+            }else{
+                upd_entry.offset += diff;
+            }
+            // is the second arg right?
+            setSlotDirectoryRecordEntry(pageData, i, upd_entry);
+        }
+
+        header.freeSpaceOffset += diff;
+        setSlotDirectoryHeader(pageData, header);
     }
     else{ // else to_load_recordSize is bigger than record.length
+        bool pageFound = false;
+        unsigned i;
+        unsigned inserted_pageNum;
+        unsigned numPages = fileHandle.getNumberOfPages();
 
+        //look for page with enough free space
+        for (i = 0; i < numPages; i++)
+        {
+            if (getPageFreeSpaceSize(pageData) >= sizeof(SlotDirectoryRecordEntry) + to_load_recordSize)
+            {
+                inserted_pageNum = i;
+                pageFound = true;
+                break;
+            }
+        }
+
+        // If we can't find a page with enough space, we create a new one
+        if(!pageFound)
+        {
+            //can i pass in nullptr to create a blank appendPage
+            if(fileHandle.appendPage(nullptr))
+                return RBFM_APPEND_FAILED;
+            i += 1;
+            inserted_pageNum = i;
+        }
+
+        if(rid.pageNum == i){ // if page found is same page as original record
+            // write updated record to page
+            header.freeSpaceOffset = header.freeSpaceOffset - to_load_recordSize;
+            memcpy(pageData + header.freeSpaceOffset, data, to_load_recordSize);
+
+            to_shift_data = pageData + header.freeSpaceOffset;
+            //coalesce
+            uint32_t to_shift_data_size =  record.offset - header.freeSpaceOffset;
+            //load to_shift_data into buffer
+            memcpy(records_to_load, to_shift_data, to_shift_data_size);
+            // clear mem for new memcpy
+            memset(to_shift_data, 0, to_shift_data_size);
+            //load in buffer
+            memcpy(to_shift_data, records_to_load, to_shift_data_size);
+
+            //update headers & slots
+            for(i = 0; i < header.recordEntriesNumber; i++){
+                SlotDirectoryRecordEntry upd_entry = getSlotDirectoryRecordEntry(pageData, i);
+                if(rid.slotNum == i){
+                    upd_entry.length = to_load_recordSize;
+                    upd_entry.offset = header.freeSpaceOffset;
+                }else{
+                    upd_entry.offset += record.length;
+                }
+                // what should the second arg be
+                setSlotDirectoryRecordEntry(pageData, i, upd_entry);
+            }
+
+            fileHandle.writePage(inserted_pageNum, pageData);
+
+        }else{ //else if is to be moved to another page
+
+            // have page i that has enough free space
+            void* pageDataVoid = malloc(PAGE_SIZE);
+            char* pageDataV2 = (char *) pageDataVoid;
+
+            //read contents of page with enough free space
+            if(fileHandle.readPage(i, pageDataV2))
+                    return RBFM_READ_FAILED;
+
+            // grab header of newly read page
+            SlotDirectoryHeader headerV2 = getSlotDirectoryHeader(pageDataV2);
+
+            //set pointer to start of freespace and load in updated record
+            pageDataV2 += (headerV2.freeSpaceOffset - to_load_recordSize);
+            memcpy(pageDataV2, data, to_load_recordSize);
+
+            headerV2.freeSpaceOffset = headerV2.freeSpaceOffset - to_load_recordSize;
+
+            //coalesce
+            // double check this below line is right
+            uint32_t to_shift_data_size =  record.offset - header.freeSpaceOffset;
+            //load to_shift_data into buffer
+            memcpy(records_to_load, to_shift_data, to_shift_data_size);
+            // clear mem for new memcpy
+            memset(to_shift_data, 0, to_shift_data_size + record.length);
+            //
+            memcpy(to_shift_data + record.length, records_to_load, to_shift_data_size);
+
+            //update headers & slots of original page
+            for(i = 0; i < header.recordEntriesNumber; i++){
+
+                SlotDirectoryRecordEntry upd_entry = getSlotDirectoryRecordEntry(pageData, i);
+                if(i == rid.slotNum){
+                    // kill rid
+                    upd_entry.offset = 0;
+                }else{
+                    upd_entry.offset += record.length;
+                }
+                // what should the second arg be
+                setSlotDirectoryRecordEntry(pageData, i, upd_entry);
+            }
+
+            // set header for original page
+            header.freeSpaceOffset = header.freeSpaceOffset + record.length;
+            setSlotDirectoryHeader(pageData, header);
+
+            // update information for newly added to page
+            // create a new slot for added record
+            // create new rid
+            rid.pageNum = inserted_pageNum;
+            rid.slotNum = headerV2.recordEntriesNumber + 1;
+
+            SlotDirectoryRecordEntry new_entry;
+            new_entry.offset = headerV2.freeSpaceOffset;
+            new_entry.length = to_load_recordSize;
+            setSlotDirectoryRecordEntry(pageDataV2, headerV2.recordEntriesNumber+1, new_entry);
+            fileHandle.writePage(inserted_pageNum, pageDataV2);
+        }
     }
 
-
-    //check if new record is bigger or smaller than previous
-
-
+    free(pageDataV);
+    free(records_to_load);
+    return 0;
 
 }
 
@@ -589,22 +738,22 @@ RC RecordBasedFileManager::readAttribute(FileHandle &fileHandle, const vector<At
             case TypeInt:
                 int retInt;
                 memcpy(&retInt, data, INT_SIZE);
-                cout << "readAttribute INT: " << retInt << endl; 
-                
+                cout << "readAttribute INT: " << retInt << endl;
+
             break;
             case TypeReal:
                 float retFlot;
                 memcpy(&retFlot, data, REAL_SIZE);
-                cout << "readAttribute float: " << retFlot << endl; 
-  
-                
+                cout << "readAttribute float: " << retFlot << endl;
+
+
             break;
             case TypeVarChar:
                 char retStr[recordDescriptor[i].length];
                //Currently HARDCODED CHANGE FOR DIFFERENT RID
                 memcpy(&retStr, data, 8);
                 retStr[8] = '\0';
-                cout << "readAttribute STR: " << retStr << endl; 
+                cout << "readAttribute STR: " << retStr << endl;
 
             break;
         }
@@ -618,7 +767,7 @@ RC RecordBasedFileManager::readAttribute(FileHandle &fileHandle, const vector<At
  // Support header size and null indicator. If size is less than recordDescriptor size, then trailing records are null
  void RecordBasedFileManager::getRecordAttrAtOffset(void *page, unsigned offset, const vector<Attribute> &recordDescriptor, const string &attributeName, void *data)
  {
-    
+
     // Pointer to start of record
     char *start = (char*) page + offset;
 
