@@ -82,9 +82,15 @@ int RBFTest_DELETE(RecordBasedFileManager *rbfm) {
     cout << endl << "freeSpaceOffsetV3:" << freeSpaceOffsetV3 << endl;
     
 
+    void *attrData = malloc(100);
+    // READ ATTRIBUTE
+     rc = rbfm->readAttribute(fileHandle, recordDescriptor, rid, "Age", attrData);
+     assert(rc == success && "Reading an Attribute should not fail.");
+
+
     // DELETE RECORD
-    rc = rbfm->deleteRecord(fileHandle, recordDescriptor, rid);
-    assert(rc == success && "Deleting a record should not fail.");
+    // rc = rbfm->deleteRecord(fileHandle, recordDescriptor, rid);
+    // assert(rc == success && "Deleting a record should not fail.");
 
 
     // check the slot of the deleted directory 
