@@ -134,19 +134,18 @@ int RBFTest_update(RecordBasedFileManager *rbfm) {
     // check offsets in the middle
     fileHandle.readPage(soup.pageNum, pageDataV);
     unsigned freeSpaceSizeV5 = rbfm->getPageFreeSpaceSize(pageDataV); 
-    cout << endl << "freeSpaceSizeV5:" << freeSpaceSizeV5 << endl;
-    
+    cout << endl << "freeSpaceSizeV5:" << freeSpaceSizeV5 << endl;    
     
     // update RECORD
-    prepareRecord(recordDescriptor2.size(), nullsIndicator, 8, "12345678", 10, 14, 4848, record, &recordSize);
+    prepareRecord(recordDescriptor3.size(), nullsIndicator, 8, "12345678", 10, 140.1, 4848, record, &recordSize);
     cout << endl << "Inserting Data:" << endl;
-    rc = rbfm->updateRecord(fileHandle, recordDescriptor3, record, mips);
-    assert(rc == success && "Updating a record should not fail.");
     rbfm->printRecord(recordDescriptor3, record);
 
-
+    rc = rbfm->updateRecord(fileHandle, recordDescriptor3, record, rid);
+    assert(rc == success && "Updating a record should not fail.");
+    
     // Given the rid, read the record from file
-    rc = rbfm->readRecord(fileHandle, recordDescriptor, mips, returnedData3);
+    rc = rbfm->readRecord(fileHandle, recordDescriptor3, rid, returnedData3);
     assert(rc == success && "Reading a record should not fail.");
 
     cout << endl << "Returned Data:" << endl;
@@ -163,7 +162,7 @@ int RBFTest_update(RecordBasedFileManager *rbfm) {
 
     
 
-   // Compare wfther the two memory blocks are the different
+   // Compare whether the two memory blocks are the different
     // if(memcmp(record, returnedData, recordSize) == 0)
     // {
     //     cout << "[FAIL] Test Case update Failed!" << endl << endl;

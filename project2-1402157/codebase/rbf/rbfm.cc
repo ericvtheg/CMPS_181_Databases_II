@@ -542,6 +542,11 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
     SlotDirectoryRecordEntry record = getSlotDirectoryRecordEntry(pageData, rid.slotNum);
     SlotDirectoryHeader header = getSlotDirectoryHeader(pageData);
 
+    void *page2 = malloc(100);
+
+    // SlotDirectoryRecordEntry erase;
+    // setSlotDirectoryRecordEntry( page2, rid.slotNum, erase );
+
     void * records_to_load = malloc(PAGE_SIZE);
     char * to_shift_data = pageData + header.freeSpaceOffset;
 
@@ -552,10 +557,12 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
 
     if(record.length == to_load_recordSize){
         //straight load it in
+        cout << "hit 1 hit 1 hit 1" << endl;
         memcpy(start_to_upd_record, to_load_data, to_load_recordSize);
+        fileHandle.writePage(rid.pageNum, pageData);
     }
     else if(record.length > to_load_recordSize){ //can read in record but must coalesce rest of records
-
+         cout << "hit 2 hit 2 hit 2" << endl;
         //load in updated info by adding difference of size to properly align records
         unsigned diff = record.length - to_load_recordSize;
         memcpy(start_to_upd_record + diff, to_load_data, to_load_recordSize);
@@ -587,6 +594,7 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
         setSlotDirectoryHeader(pageData, header);
     }
     else{ // else to_load_recordSize is bigger than record.length
+        cout << "hit 3 hit 3 hit 3" << endl;
         bool pageFound = false;
         unsigned i;
         unsigned inserted_pageNum;
