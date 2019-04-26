@@ -156,6 +156,8 @@ IMPORTANT, PLEASE READ: All methods below this comment (other than the construct
 
 public:
 
+unsigned getPageFreeSpaceSize(void * page);
+
 protected:
   RecordBasedFileManager();
   ~RecordBasedFileManager();
@@ -174,7 +176,7 @@ private:
   SlotDirectoryRecordEntry getSlotDirectoryRecordEntry(void * page, unsigned recordEntryNumber);
   void setSlotDirectoryRecordEntry(void * page, unsigned recordEntryNumber, SlotDirectoryRecordEntry recordEntry);
 
-  unsigned getPageFreeSpaceSize(void * page);
+  // unsigned getPageFreeSpaceSize(void * page);
   unsigned getRecordSize(const vector<Attribute> &recordDescriptor, const void *data);
 
   int getNullIndicatorSize(int fieldCount);

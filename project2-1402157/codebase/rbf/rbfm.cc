@@ -466,10 +466,12 @@ RC RecordBasedFileManager::deleteRecord(FileHandle &fileHandle, const vector<Att
     SlotDirectoryHeader header = getSlotDirectoryHeader(pageData);
 
     //Pointer to the "end of the free space"
+    cout << "(headersize, slotsize) : (" << sizeof(SlotDirectoryHeader) << ", " << sizeof(SlotDirectoryRecordEntry) << ") " <<  endl;
     char * headir_end = pageData + sizeof(SlotDirectoryHeader) + (sizeof(SlotDirectoryRecordEntry) * header.recordEntriesNumber);
-
+    cout << "recordEntriesNumber: " << header.recordEntriesNumber << endl;
+    
     uint32_t headir_offset = sizeof(SlotDirectoryHeader) + sizeof(SlotDirectoryRecordEntry) * header.recordEntriesNumber;
-
+    cout << "headir_offset: " << headir_offset << endl;
     // Pointer to the start of the record to be deleted
     //void * record_start = pageData + record.offset - record.length;
     // Zero out the data at that point
@@ -478,16 +480,20 @@ RC RecordBasedFileManager::deleteRecord(FileHandle &fileHandle, const vector<Att
     //Create a pointer to contain the data after the deleted record for shifting
     char * to_shift_data = pageData + header.freeSpaceOffset;
     void * records_to_load = malloc(PAGE_SIZE);
-    uint32_t to_shift_data_size = (record.offset - record.length) - header.freeSpaceOffset;
+    cout << "headerfs: " << header.freeSpaceOffset << endl;
+        cout << "recordos: " << record.offset << endl;
+            cout << "recordl: " << record.length << endl;
+    int to_shift_data_size =  header.freeSpaceOffset- (record.offset) ;
+    cout << "to_shift_data_size: " << to_shift_data_size << endl;
     // Copies over the shifted data
     memcpy(records_to_load, to_shift_data, to_shift_data_size);
 
     //
-    uint32_t freeSpace_size = record.offset - headir_offset;
-
-    memset(headir_end, 0, freeSpace_size);
+    uint32_t freeSpace_size = record.offset - headir_offset + record.length;
+    cout << "freeSpace_size: " << freeSpace_size << endl;
     // added to_shift_data_size ask Rebecca(?)
-    char * freeSpace_pointer = to_shift_data + record.length + to_shift_data_size;
+    memset(headir_end, 0, freeSpace_size);
+    char * freeSpace_pointer = to_shift_data + record.length;
     memcpy(freeSpace_pointer, records_to_load, to_shift_data_size);
 
     for(size_t i = 0; i < header.recordEntriesNumber; i++){
@@ -495,16 +501,19 @@ RC RecordBasedFileManager::deleteRecord(FileHandle &fileHandle, const vector<Att
         SlotDirectoryRecordEntry upd_entry = getSlotDirectoryRecordEntry(pageData, i);
 
         if(i == rid.slotNum){
-            upd_entry.offset *= -1;
+            upd_entry.offset = 0;
         }else{
             upd_entry.offset += record.length;
         }
-        setSlotDirectoryRecordEntry( pageData, rid.slotNum, upd_entry);
+        setSlotDirectoryRecordEntry( pageData, i, upd_entry);
     }
+     cout << "Here"<< endl;
 
     // move freespaceOffset size of deleted record
     header.freeSpaceOffset += record.length;
+    cout << "After headerfs: " << header.freeSpaceOffset << endl;
     setSlotDirectoryHeader(pageData, header);
+     cout << "Here"<< endl;
 
     fileHandle.writePage(rid.pageNum, pageData);
     free(pageDataV);
@@ -512,7 +521,7 @@ RC RecordBasedFileManager::deleteRecord(FileHandle &fileHandle, const vector<Att
     return 0;
 }
 
-RC updateRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, const RID &rid){
+RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, const RID &rid){
 
     // malloc new page
     void *pageDataV = malloc(PAGE_SIZE);
