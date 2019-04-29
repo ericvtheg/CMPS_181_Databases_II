@@ -185,6 +185,8 @@ private:
   void setRecordAtOffset(void *page, unsigned offset, const vector<Attribute> &recordDescriptor, const void *data);
   void getRecordAtOffset(void *record, unsigned offset, const vector<Attribute> &recordDescriptor, void *data);
   void getRecordAttrAtOffset(void *page, unsigned offset, const vector<Attribute> &recordDescriptor, const string &attributeName, void *data);
+
+  RID findRID(FileHandle &fileHandle, void *page, const RID &rid);
 };
 
 #endif

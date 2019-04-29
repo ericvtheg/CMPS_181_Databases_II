@@ -65,9 +65,9 @@ int RBFTest_update(RecordBasedFileManager *rbfm) {
 
     // check offsets in beginning
     fileHandle.readPage(rid.pageNum, pageDataV);
-    unsigned freeSpaceSizeV2 = rbfm->getPageFreeSpaceSize(pageDataV); 
+    unsigned freeSpaceSizeV2 = rbfm->getPageFreeSpaceSize(pageDataV);
     cout << endl << "freeSpaceSizeV2:" << freeSpaceSizeV2 << endl;
-    
+
 
     // Insert a record into a file and print the record
     prepareRecord(recordDescriptor.size(), nullsIndicator, 8, "UCSCSlug", 24, 170.1, 5000, record, &recordSize);
@@ -86,9 +86,9 @@ int RBFTest_update(RecordBasedFileManager *rbfm) {
     rbfm->printRecord(recordDescriptor, returnedData);
 
     // check offsets in the middle
-    
+
     fileHandle.readPage(rid.pageNum, pageDataV);
-    unsigned freeSpaceSizeV3 = rbfm->getPageFreeSpaceSize(pageDataV); 
+    unsigned freeSpaceSizeV3 = rbfm->getPageFreeSpaceSize(pageDataV);
     cout << endl << "freeSpaceSizeV3:" << freeSpaceSizeV3 << endl;
 
     RID mips;
@@ -110,40 +110,75 @@ int RBFTest_update(RecordBasedFileManager *rbfm) {
 
     // check offsets in the middle
     fileHandle.readPage(mips.pageNum, pageDataV);
-    unsigned freeSpaceSizeV4 = rbfm->getPageFreeSpaceSize(pageDataV); 
+    unsigned freeSpaceSizeV4 = rbfm->getPageFreeSpaceSize(pageDataV);
     cout << endl << "freeSpaceSizeV4:" << freeSpaceSizeV4 << endl;
+
+    // update RECORD copied
+    prepareRecord(recordDescriptor3.size(), nullsIndicator, 10, "1234567890", 10, 140.1, 4848, record, &recordSize);
+    cout << endl << "Inserting Data:" << endl;
+    rbfm->printRecord(recordDescriptor3, record);
+
+    cout << "test rid: pgnum, slotnum" << rid.pageNum << " " << rid.slotNum << endl;
+
+    rc = rbfm->insertRecord(fileHandle, recordDescriptor3, record, rid);
+    assert(rc == success && "Updating a record should not fail.");
 
 
     RID soup;
 
     // Insert a record into a file and print the record
-    prepareRecord(recordDescriptor2.size(), nullsIndicator, 10, "thirdsoups", 15, 183.1, 6688, record, &recordSize);
-    cout << endl << "Inserting Data:" << endl;
-    rbfm->printRecord(recordDescriptor2, record);
+    for(int i = 0; i < 30; i++){
+        prepareRecord(recordDescriptor2.size(), nullsIndicator, 10, "thirdsoups", 15, 183.1, 6688, record, &recordSize);
+        cout << endl << "Inserting Data:" << endl;
+        rbfm->printRecord(recordDescriptor2, record);
 
-    rc = rbfm->insertRecord(fileHandle, recordDescriptor2, record, soup);
-    assert(rc == success && "Inserting a record should not fail.");
+        rc = rbfm->insertRecord(fileHandle, recordDescriptor2, record, soup);
+        assert(rc == success && "Inserting a record should not fail.");
 
-    // Given the rid, read the record from file
-    rc = rbfm->readRecord(fileHandle, recordDescriptor2, soup, returnedData2);
-    assert(rc == success && "Reading a record should not fail.");
+        // Given the rid, read the record from file
+        rc = rbfm->readRecord(fileHandle, recordDescriptor2, soup, returnedData2);
+        assert(rc == success && "Reading a record should not fail.");
+    }
 
     cout << endl << "Returned Data:" << endl;
     rbfm->printRecord(recordDescriptor2, returnedData2);
 
     // check offsets in the middle
     fileHandle.readPage(soup.pageNum, pageDataV);
-    unsigned freeSpaceSizeV5 = rbfm->getPageFreeSpaceSize(pageDataV); 
-    cout << endl << "freeSpaceSizeV5:" << freeSpaceSizeV5 << endl;    
-    
-    // update RECORD
-    prepareRecord(recordDescriptor3.size(), nullsIndicator, 8, "12345678", 10, 140.1, 4848, record, &recordSize);
-    cout << endl << "Inserting Data:" << endl;
+    unsigned freeSpaceSizeV5 = rbfm->getPageFreeSpaceSize(pageDataV);
+    cout << endl << "freeSpaceSizeV5:" << freeSpaceSizeV5 << endl;
+
+    // // update RECORD
+    // prepareRecord(recordDescriptor3.size(), nullsIndicator, 15, "123456789012345", 10, 140.1, 4848, record, &recordSize);
+    // cout << endl << "Inserting Data:" << endl;
+    // rbfm->printRecord(recordDescriptor3, record);
+    //
+    // cout << "test rid: pgnum, slotnum" << rid.pageNum << " " << rid.slotNum << endl;
+    //
+    // rc = rbfm->insertRecord(fileHandle, recordDescriptor3, record, rid);
+    // assert(rc == success && "Updating a record should not fail.");
+
+    // rid.pageNum = 2;
+    // rid.slotNum = 1;
+
+    // Given the rid, read the record from file
+    rc = rbfm->readRecord(fileHandle, recordDescriptor3, rid, returnedData3);
+    assert(rc == success && "Reading a record should not fail.");
+
+    cout << endl << "Returned Data:" << endl;
+    rbfm->printRecord(recordDescriptor3, returnedData3);
+
+    // second insert
+    prepareRecord(recordDescriptor3.size(), nullsIndicator, 20, "12345678901234567890", 10, 140.1, 4848, record, &recordSize);
+    cout << endl << "Updating Data:" << endl;
     rbfm->printRecord(recordDescriptor3, record);
 
     rc = rbfm->updateRecord(fileHandle, recordDescriptor3, record, rid);
     assert(rc == success && "Updating a record should not fail.");
-    
+
+    // rid.pageNum = 2;
+    // rid.slotNum = 1;
+
     // Given the rid, read the record from file
     rc = rbfm->readRecord(fileHandle, recordDescriptor3, rid, returnedData3);
     assert(rc == success && "Reading a record should not fail.");
@@ -153,14 +188,11 @@ int RBFTest_update(RecordBasedFileManager *rbfm) {
 
      // check offsets in the end
     fileHandle.readPage(soup.pageNum, pageDataV);
-    unsigned freeSpaceSizeV6 = rbfm->getPageFreeSpaceSize(pageDataV); 
+    unsigned freeSpaceSizeV6 = rbfm->getPageFreeSpaceSize(pageDataV);
     cout << endl << "freeSpaceSizeV6:" << freeSpaceSizeV6 << endl;
 
-
-    // check the slot of the updated directory 
-    cout << "test" << endl; 
-
-    
+    // check the slot of the updated directory
+    cout << "test" << endl;
 
    // Compare whether the two memory blocks are the different
     // if(memcmp(record, returnedData, recordSize) == 0)
