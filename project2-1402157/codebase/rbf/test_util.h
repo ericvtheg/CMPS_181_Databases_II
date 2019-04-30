@@ -182,6 +182,59 @@ void createRecordDescriptor(vector<Attribute> &recordDescriptor) {
 
 }
 
+void createWantedAttrNameVector(vector<string> &attrVector) {
+
+    string attrName;
+    attrName = "EmpName";
+    attrVector.push_back(attrName);
+
+    attrName = "Height";
+    attrVector.push_back(attrName);
+
+}
+
+void createLargeWantedAttrNameVector(vector<string> &attrVector) {
+
+    string attrName;
+    attrName = "Char0";
+    attrVector.push_back(attrName);
+
+    attrName = "Int0";
+    attrVector.push_back(attrName);
+
+}
+
+
+void createWantedAttrNameDesc(vector<Attribute> &attrDesc) {
+
+    Attribute attr;
+    attr.name = "EmpName";
+    attr.type = TypeVarChar;
+    attr.length = (AttrLength)30;
+    attrDesc.push_back(attr);
+
+    attr.name = "Height";
+    attr.type = TypeReal;
+    attr.length = (AttrLength)4;
+    attrDesc.push_back(attr);
+}
+
+void createLargeWantedAttrNameDesc(vector<Attribute> &attrDesc) {
+
+    Attribute attr;
+    attr.name = "Char0";
+    attr.type = TypeVarChar;
+    attr.length = (AttrLength)50;
+    attrDesc.push_back(attr);
+
+    attr.name = "Int0";
+    attr.type = TypeInt;
+    attr.length = (AttrLength)4;
+    attrDesc.push_back(attr);
+}
+
+
+
 void createLargeRecordDescriptor(vector<Attribute> &recordDescriptor)
 {
     char *suffix = (char *)malloc(10);

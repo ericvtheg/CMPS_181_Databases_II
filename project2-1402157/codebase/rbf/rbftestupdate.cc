@@ -127,7 +127,7 @@ int RBFTest_update(RecordBasedFileManager *rbfm) {
     RID soup;
 
     // Insert a record into a file and print the record
-    for(int i = 0; i < 30; i++){
+    for(int i = 0; i < 300; i++){
         prepareRecord(recordDescriptor2.size(), nullsIndicator, 10, "thirdsoups", 15, 183.1, 6688, record, &recordSize);
         cout << endl << "Inserting Data:" << endl;
         rbfm->printRecord(recordDescriptor2, record);
@@ -176,15 +176,15 @@ int RBFTest_update(RecordBasedFileManager *rbfm) {
     rc = rbfm->updateRecord(fileHandle, recordDescriptor3, record, rid);
     assert(rc == success && "Updating a record should not fail.");
 
-    // rid.pageNum = 2;
-    // rid.slotNum = 1;
-
     // Given the rid, read the record from file
     rc = rbfm->readRecord(fileHandle, recordDescriptor3, rid, returnedData3);
     assert(rc == success && "Reading a record should not fail.");
 
     cout << endl << "Returned Data:" << endl;
     rbfm->printRecord(recordDescriptor3, returnedData3);
+
+    rc = rbfm->deleteRecord(fileHandle, recordDescriptor3, rid);
+    assert(rc == success && "Deleting a record should not fail.");
 
      // check offsets in the end
     fileHandle.readPage(soup.pageNum, pageDataV);

@@ -1,6 +1,6 @@
 include ../makefile.inc
 
-all: librbf.a rbftestdelete rbftestdelete2 rbftestupdate 
+all: librbf.a rbftestdelete rbftestdelete2 rbftestupdate rbftestscan
 
 
 # c file dependencies
@@ -14,6 +14,7 @@ librbf.a: librbf.a(rbfm.o)
 rbftestdelete.o: pfm.h rbfm.h
 rbftestdelete2.o: pfm.h rbfm.h
 rbftestupdate.o: pfm.h rbfm.h
+rbftestscan.o: pfm.h rbfm.h
 
 
 
@@ -21,6 +22,7 @@ rbftestupdate.o: pfm.h rbfm.h
 rbftestdelete: rbftestdelete.o librbf.a $(CODEROOT)/rbf/librbf.a
 rbftestdelete2: rbftestdelete2.o librbf.a $(CODEROOT)/rbf/librbf.a
 rbftestupdate: rbftestupdate.o librbf.a $(CODEROOT)/rbf/librbf.a
+rbftestscan: rbftestscan.o librbf.a $(CODEROOT)/rbf/librbf.a
 
 # dependencies to compile used libraries
 .PHONY: $(CODEROOT)/rbf/librbf.a
@@ -29,4 +31,4 @@ $(CODEROOT)/rbf/librbf.a:
 
 .PHONY: clean
 clean:
-	-rm rbftestdelete rbftestdelete2 rbftestupdate  *.a *.o *~
+	-rm rbftestdelete rbftestdelete2 rbftestupdate  rbftestscan *.a *.o *~

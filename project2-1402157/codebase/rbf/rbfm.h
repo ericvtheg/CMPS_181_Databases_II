@@ -18,6 +18,8 @@
 #define RBFM_READ_FAILED   5
 #define RBFM_WRITE_FAILED  6
 #define RBFM_SLOT_DN_EXIST 7
+#define RBFM_DELETE_FAILED 8
+#define RBFM_UPDATE_FAILED 9
 
 using namespace std;
 
@@ -83,22 +85,53 @@ The scan iterator is NOT required to be implemented for the part 1 of the projec
 //    process the data;
 //  }
 //  rbfmScanIterator.close();
-
+class RecordBasedFileManager;
 class RBFM_ScanIterator {
+
+private:
+	FileHandle fH;
+    vector<Attribute> recordDesc;
+	string condAttr;
+	CompOp compOper;
+	const void * compValue;                  // used in the comparison
+	vector<string> wantedAttrs;
+	unsigned fieldNum;
+	RID currRID;
+	bool initScanDone;
+	RecordBasedFileManager * rbfm;
+
 public:
+  friend class RecordBasedFileManager;
   RBFM_ScanIterator() {};
   ~RBFM_ScanIterator() {};
 
   // Never keep the results in the memory. When getNextRecord() is called,
   // a satisfying record needs to be fetched from the file.
   // "data" follows the same format as RecordBasedFileManager::insertRecord().
-  RC getNextRecord(RID &rid, void *data) { return RBFM_EOF; };
-  RC close() { return -1; };
+  //RC getNextRecord(RID &rid, void *data) { return RBFM_EOF; };
+  RC initializeScanIterator(
+  FileHandle &fileHandle,
+ 	const vector<Attribute> &recordDescriptor,
+ 	const string &conditionAttribute,
+ 	const CompOp compOp,
+ 	const void *value,
+ 	const vector<string> &attributeNames,
+  const unsigned fieldNumber);
+  RC getNextRecord(RID &rid, void *data);
+  void updateRID(RID &rid) {
+     currRID.slotNum = rid.slotNum;
+     currRID.pageNum = rid.pageNum;
+  };
+  bool compare(const uint32_t &data, const uint32_t &value, CompOp compOp);
+  bool compare(const char * data, const char * value, CompOp compOp);
+  bool compare(const float &data, const float &value, CompOp compOp);
+  RC close() {return SUCCESS;};
+  //RC close() { return -1; };
 };
 
 
 class RecordBasedFileManager
-{
+{friend class RBFM_ScanIterator;
 public:
   static RecordBasedFileManager* instance();
 
@@ -127,6 +160,7 @@ public:
   RC insertRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, RID &rid);
 
   RC readRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const RID &rid, void *data);
+  RC readRecordWithAttrs(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor,  const vector<string> &attributeNames, const RID &rid, void *data);
 
   // This method will be mainly used for debugging/testing.
   // The format is as follows:
@@ -141,7 +175,7 @@ IMPORTANT, PLEASE READ: All methods below this comment (other than the construct
   RC deleteRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const RID &rid);
 
   // Assume the RID does not change after an update
-  RC updateRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, RID &rid);
+  RC updateRecord(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const void *data, const RID &rid);
 
   RC readAttribute(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, const RID &rid, const string &attributeName, void *data);
 
@@ -157,6 +191,7 @@ IMPORTANT, PLEASE READ: All methods below this comment (other than the construct
 public:
 
 unsigned getPageFreeSpaceSize(void * page);
+friend class RBFM_ScanIterator;
 
 protected:
   RecordBasedFileManager();
@@ -184,9 +219,11 @@ private:
 
   void setRecordAtOffset(void *page, unsigned offset, const vector<Attribute> &recordDescriptor, const void *data);
   void getRecordAtOffset(void *record, unsigned offset, const vector<Attribute> &recordDescriptor, void *data);
+  void getRecordwithGivenAttrsAtOffset(void *page, unsigned offset, const vector<Attribute> &recordDescriptor, const vector<string> &attributeNames, void *data);
   void getRecordAttrAtOffset(void *page, unsigned offset, const vector<Attribute> &recordDescriptor, const string &attributeName, void *data);
-
+  void getRecordAttrAtOffsetWithNull(void *page, unsigned offset, const vector<Attribute> &recordDescriptor, const string &attributeName, void *data);
   RID findRID(FileHandle &fileHandle, void *page, const RID &rid);
 };
+
 
 #endif
