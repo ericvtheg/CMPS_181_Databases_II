@@ -192,6 +192,7 @@ public:
 
 unsigned getPageFreeSpaceSize(void * page);
 friend class RBFM_ScanIterator;
+friend class RelationManager;
 
 protected:
   RecordBasedFileManager();
@@ -223,6 +224,7 @@ private:
   void getRecordAttrAtOffset(void *page, unsigned offset, const vector<Attribute> &recordDescriptor, const string &attributeName, void *data);
   void getRecordAttrAtOffsetWithNull(void *page, unsigned offset, const vector<Attribute> &recordDescriptor, const string &attributeName, void *data);
   RID findRID(FileHandle &fileHandle, void *page, const RID &rid);
+
 };
 
 

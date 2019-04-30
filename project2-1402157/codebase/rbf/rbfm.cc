@@ -1503,6 +1503,7 @@ void RecordBasedFileManager::getRecordAttrAtOffsetWithNull(void *page, unsigned 
      }
  }
 
+
 /*
 
  bool RecordBasedFileManager::isFowardAddress(void *page, unsigned recordEntryNumber){
