@@ -7,6 +7,8 @@
 
 #include "../rbf/rbfm.h"
 
+#define RM_CREATE_FAILED 1
+
 using namespace std;
 
 # define RM_EOF (-1)  // end of a scan operator
@@ -69,6 +71,7 @@ protected:
 
 private:
   static RelationManager *_rm;
+  static RecordBasedFileManager *_rbf_manager;
 };
 
 #endif
