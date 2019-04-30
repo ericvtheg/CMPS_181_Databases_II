@@ -24,14 +24,242 @@ RelationManager::~RelationManager()
 
 RC RelationManager::createCatalog()
 {
+    string fileName = "Table.tbl";
     // initialize catalog tables
-    if (_rbf_manager->createFile("Tables.tbl"))
-        return RM_CREATE_FAILED;
+    if (_rbf_manager->createFile(fileName))
+        return RBFM_CREATE_FAILED;
+    
+    FileHandle fileHandle;
+
+    if (_rbf_manager->openFile(fileName.c_str(), fileHandle))
+        return RBFM_OPEN_FAILED;
+
+    vector<Attribute> sysTblVec;
+    createTableDesc(sysTblVec);
+    int nullIndicatorSize = int(ceil((double) sysTblVec.size()/ CHAR_BIT));
+    unsigned char * nullsIndicator = (unsigned char *)(malloc(nullIndicatorSize));
+    memset(nullsIndicator, 0, nullIndicatorSize);
+
+    void * data = malloc(PAGE_SIZE);
+    int datasize = 0;
+    RID rid;
+
+    prepareTableRecord((int) sysTblVec.size(), nullsIndicator, 1, 6, "Tables", 10, "Tables.tbl", data, &datasize);
+    
+
+    vector<Attribute> sysColVec;
+    createColumnDesc(sysColVec);
+    memset(nullsIndicator, 0, nullIndicatorSize);
+    memset(data, 0, PAGE_SIZE);
+
+    prepareTableRecord(sysTblVec.size(), nullsIndicator, 2, 7, "Columns", 11 , "Columns.tbl", data, &datasize);
+
+    _rbf_manager->insertRecord(fileHandle, sysTblVec, data , rid);
+    _rbf_manager->closeFile(fileHandle);
+
+    fileName = "Columns.tbl";
 
     if (_rbf_manager->createFile("Columns.tbl"))
         return RM_CREATE_FAILED;
 
-return 0;
+
+    if (_rbf_manager->openFile(fileName.c_str(), fileHandle))
+        return RBFM_OPEN_FAILED;
+
+    for(unsigned i = 0; i < sysTblVec.size() ; i++){
+        memset(nullsIndicator, 0, nullIndicatorSize);
+        memset(data, 0, PAGE_SIZE);
+        int varcharlen =  sysTblVec[i].name.length() - 1;
+        string name = sysTblVec[i].name;
+        AttrType t = sysTblVec[i].type;
+        unsigned l = sysTblVec[i].length;
+        prepareColumnRecord((int)sysColVec.size(), nullsIndicator, 1,varcharlen, name , t, l ,i + 1, data, &datasize);
+        //prepareColumnRecord(sysColVec.size(), nullsIndicator, 1,varcharlen, sysTblVec[i].name , sysTblVec[i].type, sysTblVec[i].length ,i + 1, data, datasize);
+        _rbf_manager->insertRecord(fileHandle, sysColVec, data, rid );
+
+    }
+
+    for(unsigned i = 0; i < sysColVec.size() ; i++){
+        memset(nullsIndicator, 0, nullIndicatorSize);
+        memset(data, 0, PAGE_SIZE);
+         int varcharlen =  sysColVec[i].name.length() - 1; 
+        string name = sysColVec[i].name;
+        AttrType t = sysColVec[i].type;
+        unsigned l = sysColVec[i].length;
+        prepareColumnRecord((int)sysColVec.size(), nullsIndicator, 2, varcharlen, name , t, l, i + 1, data, &datasize);
+        //prepareColumnRecord(sysColVec.size(), nullsIndicator, 2, varcharlen, sysColVec[i].name , sysColVec[i].type, sysColVec[i].length ,i + 1, data, datasize);
+        
+        _rbf_manager->insertRecord(fileHandle, sysColVec, data, rid );
+
+    }
+
+    _rbf_manager->closeFile(fileHandle);
+
+
+return SUCCESS;
+
+}
+
+// Create an employee table
+RC RelationManager::createTableDesc(vector<Attribute> retVec)
+{
+ 
+    Attribute attr;
+
+    attr.name = "table-id";
+    attr.type = TypeInt;
+    attr.length = (AttrLength)4;
+    retVec.push_back(attr);
+
+    attr.name = "table-name";
+    attr.type = TypeVarChar;
+    attr.length = (AttrLength)50;
+    retVec.push_back(attr);
+
+    attr.name = "file-name";
+    attr.type = TypeVarChar;
+    attr.length = (AttrLength)50;
+    retVec.push_back(attr);
+
+    return SUCCESS;
+}
+
+// Create an employee table
+RC RelationManager::createColumnDesc(vector<Attribute> retVec)
+{
+ 
+    Attribute attr;
+
+    attr.name = "table-id";
+    attr.type = TypeInt;
+    attr.length = (AttrLength)4;
+    retVec.push_back(attr);
+   
+    attr.name = "column-name";
+    attr.type = TypeVarChar;
+    attr.length = (AttrLength)50;
+    retVec.push_back(attr);
+
+    attr.name = "column-type";
+    attr.type = TypeInt;
+    attr.length = (AttrLength)4;
+    retVec.push_back(attr);
+
+    attr.name = "column-length";
+    attr.type = TypeInt;
+    attr.length = (AttrLength)4;
+    retVec.push_back(attr);
+
+    attr.name = "column-position";
+    attr.type = TypeInt;
+    attr.length = (AttrLength)4;
+    retVec.push_back(attr);
+
+    return SUCCESS;
+}
+
+// Function to prepare the data in the correct form to be inserted/read
+void prepareTableRecord(int fieldCount, unsigned char *nullFieldsIndicator, const int tableid, const int namesize, const string &name, const int filenamesize, const string &filename, void *buffer, int *recordSize)
+{
+    int offset = 0;
+
+    // Null-indicators
+    bool nullBit = false;
+    int nullFieldsIndicatorActualSize = ceil((double) fieldCount / CHAR_BIT);
+
+    // Null-indicator for the fields
+    memcpy((char *)buffer + offset, nullFieldsIndicator, nullFieldsIndicatorActualSize);
+    offset += nullFieldsIndicatorActualSize;
+
+    // Beginning of the actual data    
+    // Note that the left-most bit represents the first field. Thus, the offset is 7 from right, not 0.
+    // e.g., if a record consists of four fields and they are all nulls, then the bit representation will be: [11110000]
+
+    // Is the name field not-NULL?
+    nullBit = nullFieldsIndicator[0] & (1 << 7);
+
+    // Is the age field not-NULL?
+    nullBit = nullFieldsIndicator[0] & (1 << 6);
+    if (!nullBit) {
+        memcpy((char *)buffer + offset, &tableid, sizeof(int));
+        offset += sizeof(int);
+    }
+    nullBit = nullFieldsIndicator[0] & (1 << 5);
+    if (!nullBit) {
+        memcpy((char *)buffer + offset, &namesize, sizeof(int));
+        offset += sizeof(int);
+        memcpy((char *)buffer + offset, name.c_str(), namesize);
+        offset += namesize;
+    }
+    nullBit = nullFieldsIndicator[0] & (1 << 4);
+    if (!nullBit) {
+        memcpy((char *)buffer + offset, &filenamesize, sizeof(int));
+        offset += sizeof(int);
+        memcpy((char *)buffer + offset, filename.c_str(), filenamesize);
+        offset += filenamesize;
+    }
+
+    *recordSize = offset;
+}
+
+
+void prepareColumnRecord(int fieldCount, unsigned char *nullFieldsIndicator, const int tableid, const int columnnamesize, const string &columnname, const int columntype, const int columnlength,const int columnposition, void *buffer, int *recordSize)
+{
+    int offset = 0;
+
+    // Null-indicators
+    bool nullBit = false;
+    int nullFieldsIndicatorActualSize = ceil((double) fieldCount / CHAR_BIT);;
+    
+
+    // Null-indicator for the fields
+    memcpy((char *)buffer + offset, nullFieldsIndicator, nullFieldsIndicatorActualSize);
+    offset += nullFieldsIndicatorActualSize;
+
+    // Beginning of the actual data    
+    // Note that the left-most bit represents the first field. Thus, the offset is 7 from right, not 0.
+    // e.g., if a record consists of four fields and they are all nulls, then the bit representation will be: [11110000]
+
+    // Is the name field not-NULL?
+    nullBit = nullFieldsIndicator[0] & (1 << 7);
+
+    // Is the age field not-NULL?
+    nullBit = nullFieldsIndicator[0] & (1 << 6);
+    if (!nullBit) {
+        memcpy((char *)buffer + offset, &tableid, sizeof(int));
+        offset += sizeof(int);
+    }
+
+    nullBit = nullFieldsIndicator[0] & (1 << 5);
+    if (!nullBit) {
+        memcpy((char *)buffer + offset, &columnnamesize, sizeof(int));
+        offset += sizeof(int);
+        memcpy((char *)buffer + offset, columnname.c_str(), columnnamesize);
+        offset += columnnamesize;
+    }
+
+     // Is the age field not-NULL?
+    nullBit = nullFieldsIndicator[0] & (1 << 4);
+    if (!nullBit) {
+        memcpy((char *)buffer + offset, &columntype, sizeof(int));
+        offset += sizeof(int);
+    }
+
+        // Is the age field not-NULL?
+    nullBit = nullFieldsIndicator[0] & (1 << 3);
+    if (!nullBit) {
+        memcpy((char *)buffer + offset, &columnlength, sizeof(int));
+        offset += sizeof(int);
+    }
+
+      // Is the age field not-NULL?
+    nullBit = nullFieldsIndicator[0] & (1 << 2);
+    if (!nullBit) {
+        memcpy((char *)buffer + offset, &columnposition, sizeof(int));
+        offset += sizeof(int);
+    }
+
+    *recordSize = offset;
 
 }
 
@@ -50,7 +278,7 @@ RC RelationManager::createTable(const string &tableName, const vector<Attribute>
     FileHandle fileHandle; 
 
     // create new table, should start after catalogs were made// why do we have so many tables
-    if (_rbf_manager->createFile(tableName + ".tbl"))
+    if (_rbf_manager->createFile(tableName))
         return RM_CREATE_FAILED;
 
     // edit the catalog
@@ -138,6 +366,11 @@ RC RelationManager::scan(const string &tableName,
 {
     return -1;
 }
+
+// Calculate actual bytes for nulls-indicator for the given field counts
+int getActualByteForNullsIndicator(int fieldCount) {
+    return ceil((double) fieldCount / CHAR_BIT);
+};
 
 
 

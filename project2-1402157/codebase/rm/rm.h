@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <cmath>
 
 #include "../rbf/rbfm.h"
 
@@ -33,6 +34,14 @@ public:
 
   RC createCatalog();
 
+  RC createTableDesc(vector<Attribute> retVec);
+
+  RC prepareTableRecord(int fieldCount, unsigned char *nullFieldsIndicator, const int tableid, const int namesize, const string &name, const int filenamesize, const string &filename, void *buffer, int *recordSize);
+
+  RC createColumnDesc(vector<Attribute> retVec);
+
+  RC prepareColumnRecord(int fieldCount, unsigned char *nullFieldsIndicator, const int tableid, const int columnnamesize, const string &columnname, const int columntype, const int columnlength,const int columnposition, void *buffer, int *recordSize);
+
   RC deleteCatalog();
 
   RC createTable(const string &tableName, const vector<Attribute> &attrs);
@@ -49,6 +58,8 @@ public:
 
   RC readTuple(const string &tableName, const RID &rid, void *data);
 
+  RC prepareRecord(int fieldCount, unsigned char *nullFieldsIndicator, const int tableid, const int namesize, const string &name, const int filenamesize, const string $filename, void *buffer, int *recordSize);
+
   // Print a tuple that is passed to this utility method.
   // The format is the same as printRecord().
   RC printTuple(const vector<Attribute> &attrs, const void *data);
@@ -63,6 +74,8 @@ public:
       const void *value,                    // used in the comparison
       const vector<string> &attributeNames, // a list of projected attributes
       RM_ScanIterator &rm_ScanIterator);
+
+
 
 
 protected:
