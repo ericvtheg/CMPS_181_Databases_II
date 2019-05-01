@@ -97,6 +97,7 @@ private:
 	vector<string> wantedAttrs;
 	unsigned fieldNum;
 	RID currRID;
+	bool attrNameFound;
 	bool initScanDone;
 	RecordBasedFileManager * rbfm;
 
@@ -116,6 +117,7 @@ public:
  	const CompOp compOp,
  	const void *value,
  	const vector<string> &attributeNames,
+ 	const bool wasNameFound,
   const unsigned fieldNumber);
   RC getNextRecord(RID &rid, void *data);
   void updateRID(RID &rid) {
@@ -123,7 +125,7 @@ public:
      currRID.pageNum = rid.pageNum;
   };
   bool compare(const uint32_t &data, const uint32_t &value, CompOp compOp);
-  bool compare(const char * data, const char * value, CompOp compOp);
+  bool compare(const string &data, const string &value, CompOp compOp);
   bool compare(const float &data, const float &value, CompOp compOp);
   RC close() {return SUCCESS;};
   //RC close() { return -1; };

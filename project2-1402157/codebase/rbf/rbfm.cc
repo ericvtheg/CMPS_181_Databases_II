@@ -1141,21 +1141,18 @@ void RecordBasedFileManager::getRecordAttrAtOffsetWithNull(void *page, unsigned 
  	RBFM_ScanIterator &rbfm_ScanIterator)
  {
 
-     bool attrNameFound = false;
+     bool attrFound = false;
      unsigned i;
      for(i = 0; i < recordDescriptor.size(); i++){
      	//If the condition attribute matchs any of the given attributes, initialize the fields of the scan iterator, else throw an error
      	if(!(conditionAttribute.compare(recordDescriptor[i].name))){
             //Matching attr name found
-            attrNameFound = true;
+            attrFound = true;
             break;
      	}
      }
 
      //Attr not found, return err code
-     if(!attrNameFound){
-     	return 1;
-     }
 
      rbfm_ScanIterator.initializeScanIterator(
      	fileHandle,
@@ -1164,8 +1161,12 @@ void RecordBasedFileManager::getRecordAttrAtOffsetWithNull(void *page, unsigned 
      	compOp,
      	value,
      	attributeNames,
+     	attrFound,
      	i );
 
+     if(!attrFound){
+     	return 1;
+     }
      if(compOp == NO_OP){
      	return SUCCESS;
      }
@@ -1182,6 +1183,7 @@ void RecordBasedFileManager::getRecordAttrAtOffsetWithNull(void *page, unsigned 
  	const CompOp compOp,
  	const void *value,
  	const vector<string> &attributeNames,
+ 	const bool wasNameFound,
   	const unsigned fieldNumber)
  {; //Set fields that are directly passed in
 
@@ -1193,6 +1195,7 @@ void RecordBasedFileManager::getRecordAttrAtOffsetWithNull(void *page, unsigned 
  	wantedAttrs = attributeNames;
  	initScanDone = false;
  	rbfm = RecordBasedFileManager::instance();
+ 	attrNameFound = wasNameFound;
  	//Initilize RID to start searching
  	currRID.slotNum = 0;
  	currRID.pageNum = 0;
@@ -1202,10 +1205,158 @@ void RecordBasedFileManager::getRecordAttrAtOffsetWithNull(void *page, unsigned 
  	return SUCCESS;
  };
 
+RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
+ 	 if(!attrNameFound){
+  		return RBFM_EOF;
+  	}
+
+ 	 cout << "In Get Next Record " << endl;
+  	void *pageData = malloc(PAGE_SIZE);
+  	if (pageData == NULL)
+    	return RBFM_MALLOC_FAILED;
+  	
+  	bool matchingFieldFound = false;
+ 	// unsigned recordSize = getRecordSize(recordDesc, data);;
+  	unsigned numPages = fH.getNumberOfPages();
+  	unsigned j, k;
+
+  	if(initScanDone == true){
+  		k = currRID.slotNum + 1;
+  	}else{
+  		k = currRID.slotNum ;
+  		initScanDone = true;
+  	}
+  	SlotDirectoryHeader header;
+
+  	for (j = currRID.pageNum; j < numPages; j++){
+  		cout << "pageNum: " << j << endl;
+     	if (fH.readPage(j, pageData)){
+        	return RBFM_READ_FAILED;
+      	}else{
+      		header = rbfm->getSlotDirectoryHeader(pageData);
+     	}
 
 
- RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
+     	for(; k < header.recordEntriesNumber; k++){
+     		//getrecord
+  	    	cout << "slotNum: " << k << endl;
+      		//For each slot retrieve the actual entry
+      		SlotDirectoryRecordEntry recordEntry = rbfm->getSlotDirectoryRecordEntry(pageData, k);
 
+         	// if forwarded RID skip, cuz we'll find it eventually
+         	if(recordEntry.offset <= 0){
+         	    rid.slotNum = k;
+         		cout << "Found True With NULL EQ_OP" << endl;
+         		rid.pageNum = j;
+         		currRID.slotNum = k;
+         		currRID.pageNum = j;	
+            	continue;
+         	}
+
+
+            //Allocate enough memory for incoming data for the attr and the null indicator  and INT incase
+      	    void *returnedFieldData = malloc(recordDesc[fieldNum].length + 1 + INT_SIZE);
+
+      	    //Get the actual attr
+            rbfm->getRecordAttrAtOffsetWithNull(pageData, recordEntry.offset, recordDesc, condAttr, returnedFieldData);
+         	//If NULL skip field completely, should result in a null pointer
+
+            //Initialize the NUll Indicator, should only really be 1 bit i.e. takes up 1 byte
+            int nullIndicatorSize = rbfm->getNullIndicatorSize(1);
+            char nullIndicator[nullIndicatorSize];
+            memset(nullIndicator, 0, nullIndicatorSize);
+
+            memcpy(nullIndicator, returnedFieldData, nullIndicatorSize);
+
+            //If null and EQ_OP we can return the record
+            if((rbfm->fieldIsNull(nullIndicator, 1)) ){
+            	if(compValue == NULL && compOper == EQ_OP){
+            		
+         		    rid.slotNum = k;
+         	        cout << "Found True With NULL EQ_OP" << endl;
+         		    rid.pageNum = j;
+         		    currRID.slotNum = k;
+         		    currRID.pageNum = j;	
+         		    rbfm->getRecordwithGivenAttrsAtOffset(pageData, recordEntry.offset, recordDesc, wantedAttrs, data);
+         		    return SUCCESS;
+            	}
+            }
+
+            if((rbfm->fieldIsNull(nullIndicator, 1)) ){
+            	//if the op was not EQ_OP just continue
+            	continue;
+            }
+
+            switch (recordDesc[fieldNum].type)
+         	{
+         	    case TypeInt:
+	         	    uint32_t data_integer, compInt;
+	         	    memcpy(&data_integer, (char *)returnedFieldData+ nullIndicatorSize, INT_SIZE);
+	         	    memcpy(&compInt, compValue, INT_SIZE);
+	         	    cout << "" << data_integer << endl;
+         	       
+         	        matchingFieldFound = compare(data_integer, compInt, compOper);
+         	    break;
+         	    case TypeReal:
+
+         	        float data_real, compReal;
+         	        memcpy(&data_real, (char *)returnedFieldData + nullIndicatorSize, REAL_SIZE);
+         	        memcpy(&compReal, compValue, REAL_SIZE);
+     
+     	            cout << "" << data_real << endl;
+         	        
+         	        matchingFieldFound = compare(data_real, compReal, compOper);
+         	    break;
+         	    case TypeVarChar:
+                    
+                    //Grab the size of the attribute for the string and grab the string
+         	        uint32_t varcharSize;
+         	        memcpy(&varcharSize, (char *)returnedFieldData + nullIndicatorSize, INT_SIZE);
+         	        char *datachar = (char *)malloc(varcharSize + 1);
+
+         	        memcpy(datachar,(char*)returnedFieldData + nullIndicatorSize + INT_SIZE, varcharSize);
+         	        datachar[varcharSize + 1] = '\0';
+         	        string dataString(datachar);         	        
+
+         	        memset(datachar, 0 , varcharSize+1);
+         	        memcpy(&varcharSize, compValue, INT_SIZE);
+
+         	        memcpy(datachar, (char *)compValue + INT_SIZE, varcharSize);
+         	        datachar[varcharSize + 1] = '\0';
+         	        string valueString(datachar);
+
+
+
+         	        matchingFieldFound = compare(dataString, valueString, compOper);
+
+         	        cout << dataString << endl;
+         	    
+         	        free(datachar);
+         	        free(datachar);
+         	    break;
+         	}
+         	if(matchingFieldFound == true){
+         		//getrecord
+         		currRID.slotNum = k;
+         		currRID.pageNum = j;
+         	    rid.slotNum = k;
+         	    cout << "Found True" << endl;
+         		rid.pageNum = j;
+         		rbfm->getRecordwithGivenAttrsAtOffset(pageData, recordEntry.offset, recordDesc, wantedAttrs, data);
+         		return SUCCESS;
+         	}
+
+    	}
+    	k = 0;
+
+	}
+	return RBFM_EOF;
+};
+
+
+
+/* RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
+     cout << "In Get Next Record " << endl;
      void *pageData = malloc(PAGE_SIZE);
      if (pageData == NULL)
          return RBFM_MALLOC_FAILED;
@@ -1345,7 +1496,7 @@ void RecordBasedFileManager::getRecordAttrAtOffsetWithNull(void *page, unsigned 
 
 	}
 	return RBFM_EOF;
- };
+ };*/
 
 
  bool RBFM_ScanIterator::compare(const uint32_t &data, const uint32_t &value, CompOp compOp){
@@ -1388,37 +1539,42 @@ void RecordBasedFileManager::getRecordAttrAtOffsetWithNull(void *page, unsigned 
     }
     return false;
  };
- bool RBFM_ScanIterator::compare(const char * data, const char * value, CompOp compOp){
+ bool RBFM_ScanIterator::compare(const string &data, const string &value, CompOp compOp){
+
+ 	//<0	the first character that does not match has a lower value in ptr1 than in ptr2
+ 	//0	the contents of both strings are equal
+ 	//>0	the first character that does not match has a greater value in ptr1 than in ptr2
+ 	int diffvalue = data.compare(value);
  	switch(compOp)
  	{    case EQ_OP:
- 		    if(data == value)
+ 		    if(!diffvalue)
  		    	return true;
  		    else return false;
  		 break;
          case LT_OP:      // <
-	         if(data < value)
+	         if( diffvalue < 0)
 	         	return true;
 	         else return false;
 
          break;
          case LE_OP:      // <=
-	         if(data <= value)
+	         if(diffvalue <= 0)
 	         	return true;
 	         else return false;
 
          break;
          case GT_OP:      // >
-	         if(data > value)
+	         if(diffvalue > 0)
 	         	return true;
 	         else return false;
          break;
          case GE_OP:      // >=
-	         if(data >= value)
+	         if(diffvalue >= 0)
 	         	return true;
 	         else return false;
          break;
          case NE_OP:      // !=
-	         if(data != value)
+	         if(diffvalue)
 	         	return true;
 	         else return false;
 
