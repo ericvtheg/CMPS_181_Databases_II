@@ -19,7 +19,7 @@ RelationManager::RelationManager()
 
 RelationManager::~RelationManager()
 {
-    
+
 }
 
 RC RelationManager::createCatalog()
@@ -28,7 +28,7 @@ RC RelationManager::createCatalog()
     // initialize catalog tables
     if (_rbf_manager->createFile(fileName))
         return RBFM_CREATE_FAILED;
-    
+
     FileHandle fileHandle;
 
     if (_rbf_manager->openFile(fileName.c_str(), fileHandle))
@@ -50,7 +50,7 @@ RC RelationManager::createCatalog()
     _rbf_manager->printRecord(sysTblVec, data);
     _rbf_manager->insertRecord(fileHandle, sysTblVec, data, rid );
     cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
-    
+
 
     vector<Attribute> sysColVec;
     createColumnDesc(sysColVec);
@@ -94,7 +94,7 @@ RC RelationManager::createCatalog()
         memset(data, 0, PAGE_SIZE);
         prepareColumnRecord((int)sysColVec.size(), nullsIndicator, 2, sysColVec[i].name.length(), sysColVec[i].name , sysColVec[i].type, sysColVec[i].length ,i + 1, data, &datasize);
         //prepareColumnRecord(sysColVec.size(), nullsIndicator, 2, varcharlen, sysColVec[i].name , sysColVec[i].type, sysColVec[i].length ,i + 1, data, datasize);
-        
+
         _rbf_manager->insertRecord(fileHandle, sysColVec, data, rid );
         cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
         _rbf_manager->printRecord(sysColVec, data);
@@ -112,7 +112,7 @@ return SUCCESS;
 // Create an employee table
 RC RelationManager::createTableDesc(vector<Attribute> &retVec)
 {
- 
+
     Attribute attr;
 
     attr.name = "table-id";
@@ -136,14 +136,14 @@ RC RelationManager::createTableDesc(vector<Attribute> &retVec)
 // Create an employee table
 RC RelationManager::createColumnDesc(vector<Attribute> &retVec)
 {
- 
+
     Attribute attr;
 
     attr.name = "table-id";
     attr.type = TypeInt;
     attr.length = (AttrLength)4;
     retVec.push_back(attr);
-   
+
     attr.name = "column-name";
     attr.type = TypeVarChar;
     attr.length = (AttrLength)50;
@@ -181,7 +181,7 @@ void RelationManager::prepareTableRecord(int fieldCount, unsigned char *nullFiel
     memcpy((char *)buffer + offset, nullFieldsIndicator, nullFieldsIndicatorActualSize);
     offset += nullFieldsIndicatorActualSize;
 
-    // Beginning of the actual data    
+    // Beginning of the actual data
     // Note that the left-most bit represents the first field. Thus, the offset is 7 from right, not 0.
     // e.g., if a record consists of four fields and they are all nulls, then the bit representation will be: [11110000]
     nullBit = nullFieldsIndicator[0] & (1 << 7);
@@ -221,13 +221,13 @@ void RelationManager::prepareColumnRecord(int fieldCount, unsigned char *nullFie
     // Null-indicators
     bool nullBit = false;
     int nullFieldsIndicatorActualSize = ceil((double) fieldCount / CHAR_BIT);;
-    
+
 
     // Null-indicator for the fields
     memcpy((char *)buffer + offset, nullFieldsIndicator, nullFieldsIndicatorActualSize);
     offset += nullFieldsIndicatorActualSize;
 
-    // Beginning of the actual data    
+    // Beginning of the actual data
     // Note that the left-most bit represents the first field. Thus, the offset is 7 from right, not 0.
     // e.g., if a record consists of four fields and they are all nulls, then the bit representation will be: [11110000]
 
@@ -269,7 +269,7 @@ void RelationManager::prepareColumnRecord(int fieldCount, unsigned char *nullFie
 
 RC RelationManager::deleteCatalog()
 {
-     
+
     _rbf_manager->destroyFile("Tables.tbl");
     _rbf_manager->destroyFile("Columns.tbl");
 
@@ -279,7 +279,7 @@ RC RelationManager::deleteCatalog()
 RC RelationManager::createTable(const string &tableName, const vector<Attribute> &attrs)
 {
 
-    FileHandle fileHandle; 
+    FileHandle fileHandle;
 
     // create new table, should start after catalogs were made// why do we have so many tables
     if (_rbf_manager->createFile(tableName))
@@ -299,7 +299,7 @@ RC RelationManager::createTable(const string &tableName, const vector<Attribute>
     int nullIndicatorSize = int(ceil((double) sysTblVec.size()/ CHAR_BIT));
     unsigned char * nullsIndicator = (unsigned char *)(malloc(nullIndicatorSize));
     memset(nullsIndicator, 0, nullIndicatorSize);
-  
+
 
     void * data = malloc(PAGE_SIZE);
     memset(data, 0, PAGE_SIZE);
@@ -329,7 +329,7 @@ RC RelationManager::createTable(const string &tableName, const vector<Attribute>
         memset(data, 0, PAGE_SIZE);
         prepareColumnRecord((int)sysColVec.size(), nullsIndicator, lastTblID + 1, attrs[i].name.length(), attrs[i].name , attrs[i].type, attrs[i].length ,i + 1, data, &datasize);
         //prepareColumnRecord(sysColVec.size(), nullsIndicator, 2, varcharlen, sysColVec[i].name , sysColVec[i].type, sysColVec[i].length ,i + 1, data, datasize);
-        
+
         _rbf_manager->insertRecord(fileHandle, sysColVec, data, rid );
         cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
         _rbf_manager->printRecord(sysColVec, data);
@@ -357,7 +357,7 @@ RC RelationManager::getLastTblID(FileHandle &fileHandle,  const vector<Attribute
    unsigned numPages = fileHandle.getNumberOfPages();
    if (fileHandle.readPage(numPages - 1, pageData))
            return RBFM_READ_FAILED;
-   
+
    SlotDirectoryHeader slotHeader = _rbf_manager->getSlotDirectoryHeader(pageData);
 
    //Using the header, grab the last record entry for a read
@@ -371,7 +371,7 @@ RC RelationManager::getLastTblID(FileHandle &fileHandle,  const vector<Attribute
 }
 
 RC RelationManager::deleteTable(const string &tableName)
-{   
+{
     FileHandle fileHandle;
 
     // destroy given table given
@@ -389,10 +389,65 @@ RC RelationManager::deleteTable(const string &tableName)
 
 RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &attrs)
 {
+    // initalize
+    vector<Attribute> sysTblVec;
+    vector<Attribute> sysColVec;
+    createTableDesc(sysTblVec);
+    createColumnDesc(sysColVec);
 
-    // not sure what this does over a read?
-   return 0;
-    // return -1;
+    FileHandle fileHandle;
+    RID new_rid;
+
+    // it might be good to create  a
+    // functions that takes in the data and converts
+    // them to attributes to put on in a vector?
+
+    // error check
+    // if (_rbf_manager->openFile("Tables.tbl", fileHandle)){
+    //     _rbf_manager->closeFile(fileHandle);
+    //     return RM_CREATE_FAILED;
+    // }
+
+    _rbf_manager->openFile("Tables.tbl", fileHandle);
+
+    RBFM_ScanIterator rbfmsi;
+
+    cout << "hit in getAttr" << endl;
+
+    vector<string> attrNames;
+    attrNames.push_back("table-id");
+
+    void *returnedDataScan = malloc(PAGE_SIZE);
+
+    _rbf_manager->scan(fileHandle, sysTblVec, "table-name", EQ_OP, tableName.c_str(), attrNames, rbfmsi);
+    cout << "hit in getAttr" << endl;
+    while(rbfmsi.getNextRecord(new_rid, returnedDataScan) != RM_EOF) {
+        // rbfm->printRecord(attrDesc, returnedDataScan);
+        cout << "hit in getAttr" << endl;
+    }
+
+    // table_id =
+
+    free(returnedDataScan);
+    returnedDataScan = malloc(PAGE_SIZE);
+    RBFM_ScanIterator rbfmsC;
+
+    vector<string> colAttrNames;
+
+
+    colAttrNames.push_back("column-name");
+    colAttrNames.push_back("column-type");
+    colAttrNames.push_back("column-length");
+
+    // once have table id
+    // _rbf_manager->scan(fileHandle, sysColVec, "table-id", EQ_OP, table_id, colAttrNames, rbfmsC);
+    // while(rbfmsi.getNextRecord(rbfmsi.currRID, returnedDataScan) != RM_EOF) {
+    //     // rbfm->printRecord(attrDesc, returnedDataScan);
+    //     // break;
+    // }
+
+    free(returnedDataScan);
+    return 0;
 }
 
 RC RelationManager::insertTuple(const string &tableName, const void *data, RID &rid)
@@ -424,27 +479,22 @@ RC RelationManager::readTuple(const string &tableName, const RID &rid, void *dat
 RC RelationManager::printTuple(const vector<Attribute> &attrs, const void *data)
 {
     _rbf_manager->printRecord(attrs, data);
-	
+
 	return 0;
 }
 
 RC RelationManager::readAttribute(const string &tableName, const RID &rid, const string &attributeName, void *data)
 {
-    
+
     return -1;
 }
 
 RC RelationManager::scan(const string &tableName,
       const string &conditionAttribute,
-      const CompOp compOp,                  
-      const void *value,                    
+      const CompOp compOp,
+      const void *value,
       const vector<string> &attributeNames,
       RM_ScanIterator &rm_ScanIterator)
 {
     return -1;
 }
-
-
-
-
-
