@@ -3,8 +3,10 @@
 #define _rm_h_
 
 #include <string>
+#include <cstring>
 #include <vector>
 #include <cmath>
+#include <iostream>
 
 #include "../rbf/rbfm.h"
 
@@ -31,17 +33,19 @@ class RelationManager
 {
 public:
   static RelationManager* instance();
-
+friend class RecordBasedFileManager;
   RC createCatalog();
 
-  RC createTableDesc(vector<Attribute> retVec);
+  RC createTableDesc(vector<Attribute> &retVec);
 
-  RC prepareTableRecord(int fieldCount, unsigned char *nullFieldsIndicator, const int tableid, const int namesize, const string &name, const int filenamesize, const string &filename, void *buffer, int *recordSize);
+  void prepareTableRecord(int fieldCount, unsigned char *nullFieldsIndicator, const int tableid, const int namesize, const string &name, const int filenamesize, const string &filename, void *buffer, int *recordSize);
 
-  RC createColumnDesc(vector<Attribute> retVec);
+  RC createColumnDesc(vector<Attribute> &retVec);
 
-  RC prepareColumnRecord(int fieldCount, unsigned char *nullFieldsIndicator, const int tableid, const int columnnamesize, const string &columnname, const int columntype, const int columnlength,const int columnposition, void *buffer, int *recordSize);
+  void prepareColumnRecord(int fieldCount, unsigned char *nullFieldsIndicator, const int tableid, const int columnnamesize, const string &columnname, const int columntype, const int columnlength,const int columnposition, void *buffer, int *recordSize);
 
+  RC getLastTblID(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, void * data);
+ 
   RC deleteCatalog();
 
   RC createTable(const string &tableName, const vector<Attribute> &attrs);
