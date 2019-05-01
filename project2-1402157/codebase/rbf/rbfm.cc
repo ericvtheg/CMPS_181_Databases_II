@@ -69,6 +69,7 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
     if (pageData == NULL)
         return RBFM_MALLOC_FAILED;
     bool pageFound = false;
+    int slotFound = 1;
     unsigned i;
     unsigned numPages = fileHandle.getNumberOfPages();
     for (i = 0; i < numPages; i++)
@@ -93,8 +94,19 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
     SlotDirectoryHeader slotHeader = getSlotDirectoryHeader(pageData);
 
     // Setting up the return RID.
+
+    unsigned useSlotNum = slotHeader.recordEntriesNumber;
+
+    for(int j = 0; j < slotHeader.recordEntriesNumber; j++){
+        SlotDirectoryRecordEntry temp = getSlotDirectoryRecordEntry(pageData, j);
+        if(temp.offset == 0){
+            useSlotNum = j;
+            slotFound = 0; // set this to 0 cuz then we aren't adding a slot
+        }
+    }
+
     rid.pageNum = i;
-    rid.slotNum = slotHeader.recordEntriesNumber;
+    rid.slotNum = useSlotNum;
 
     // Adding the new record reference in the slot directory.
     SlotDirectoryRecordEntry newRecordEntry;
@@ -104,7 +116,7 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
 
     // Updating the slot directory header.
     slotHeader.freeSpaceOffset = newRecordEntry.offset;
-    slotHeader.recordEntriesNumber += 1;
+    slotHeader.recordEntriesNumber += slotFound;
     setSlotDirectoryHeader(pageData, slotHeader);
 
     // Adding the record data.
@@ -568,28 +580,67 @@ RID RecordBasedFileManager::findRID(FileHandle &fileHandle, void *pageData, cons
     cout << "hit in findRID" << endl;
     unsigned new_pageNum = rid.pageNum;
     unsigned new_slotNum = rid.slotNum;
-    SlotDirectoryHeader header;
+    unsigned prev_slotNum = -1;
+    unsigned prev_pageNum = 0;
+    bool dbl_jump = false;
     RID new_rid;
+    void * firstPageData = malloc(PAGE_SIZE);//this points to og page right?
 
     fileHandle.readPage(rid.pageNum, pageData);
+    fileHandle.readPage(rid.pageNum, firstPageData);
 
-    SlotDirectoryRecordEntry record = getSlotDirectoryRecordEntry(pageData, rid.slotNum);
+    SlotDirectoryRecordEntry first_rec = getSlotDirectoryRecordEntry(firstPageData, rid.slotNum);
+    SlotDirectoryRecordEntry record = first_rec;
     cout << "Offset:" << record.offset << "Length:" << record.length << endl;
 
+    new_rid.slotNum = -1;
+    new_rid.pageNum = 0;
 
     while(record.offset < 0){
-        new_rid.slotNum = -1;
-        new_rid.pageNum = 0;
+        prev_slotNum = new_slotNum;
+        prev_pageNum = new_pageNum;
         new_pageNum = (unsigned) record.offset * -1;
         new_slotNum = (unsigned) record.length;
+        if(dbl_jump){
+            first_rec.offset = (unsigned) record.offset;
+            first_rec.length = new_slotNum;
+            // check if this below line is updating it properly
+            // seems like none of these sets are working
+            setSlotDirectoryRecordEntry(firstPageData, rid.slotNum, first_rec);
+
+            if(fileHandle.writePage(rid.pageNum, firstPageData))
+                    return new_rid;
+
+            first_rec.offset = 0;
+            first_rec.length = 0;
+            setSlotDirectoryRecordEntry(pageData, prev_slotNum, first_rec);
+
+            if(fileHandle.writePage(prev_pageNum, pageData))
+                    return new_rid;
+
+            // first_rec = getSlotDirectoryRecordEntry(pageData, prev_slotNum);
+            // cout << "first_rec Offset:" << first_rec.offset << "Length:" << first_rec.length << endl;
+            cout << "hit in double jump" << endl;
+        }
         if(fileHandle.readPage(new_pageNum, pageData))
-                return new_rid; //returns error coded rid
+            return new_rid; //returns error coded rid
         record = getSlotDirectoryRecordEntry(pageData, new_slotNum);
-        header = getSlotDirectoryHeader(pageData);
+        cout << "Offset:" << record.offset << "Length:" << record.length << endl;
+        // header = getSlotDirectoryHeader(pageData);
+
+        dbl_jump = true;
     }
+
+    // if(record.offset == 0){
+    //     first_rec.offset = 0;
+    //     first_rec.length = 0;
+    //     setSlotDirectoryRecordEntry(pageData, rid.slotNum, first_rec);
+    // }
+
     new_rid.pageNum = new_pageNum;
     new_rid.slotNum = new_slotNum;
 
+    free(firstPageData);
     return new_rid;
 }
 
@@ -720,6 +771,7 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
                 }
             }
         }
+
         // If we can't find a page with enough space, we create a new one
         if(!pageFound)
         {
