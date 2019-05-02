@@ -43,7 +43,7 @@ void prepareTuple(int attributeCount, unsigned char *nullAttributesIndicator, co
     memcpy((char *)buffer + offset, nullAttributesIndicator, nullAttributesIndicatorActualSize);
 	offset += nullAttributesIndicatorActualSize;
 
-	// Beginning of the actual data    
+	// Beginning of the actual data
 	// Note that the left-most bit represents the first field. Thus, the offset is 7 from right, not 0.
 	// e.g., if a tuple consists of four attributes and they are all nulls, then the bit representation will be: [11110000]
 
@@ -56,7 +56,7 @@ void prepareTuple(int attributeCount, unsigned char *nullAttributesIndicator, co
 		memcpy((char *)buffer + offset, name.c_str(), nameLength);
 		offset += nameLength;
 	}
-	
+
 	// Is the age field not-NULL?
 	nullBit = nullAttributesIndicator[0] & (1 << 6);
 
@@ -64,8 +64,8 @@ void prepareTuple(int attributeCount, unsigned char *nullAttributesIndicator, co
 		memcpy((char *)buffer + offset, &age, sizeof(int));
 		offset += sizeof(int);
 	}
-	
-	
+
+
 	// Is the height field not-NULL?
 	nullBit = nullAttributesIndicator[0] & (1 << 5);
 
@@ -73,8 +73,8 @@ void prepareTuple(int attributeCount, unsigned char *nullAttributesIndicator, co
 		memcpy((char *)buffer + offset, &height, sizeof(float));
 		offset += sizeof(float);
 	}
-	
-	
+
+
 	// Is the height field not-NULL?
 	nullBit = nullAttributesIndicator[0] & (1 << 4);
 
@@ -82,7 +82,7 @@ void prepareTuple(int attributeCount, unsigned char *nullAttributesIndicator, co
 		memcpy((char *)buffer + offset, &salary, sizeof(int));
 		offset += sizeof(int);
 	}
-	
+
     *tupleSize = offset;
 }
 

@@ -106,15 +106,15 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
 
    unsigned useSlotNum = slotHeader.recordEntriesNumber;
 
-   for(int j = 0; j < slotHeader.recordEntriesNumber; j++){
-       SlotDirectoryRecordEntry temp = getSlotDirectoryRecordEntry(pageData, j);
-       if(temp.offset == 0){
-           //cout << "hit in yaya" << endl;
-           useSlotNum = j;
-           slotFound = 0; // set this to 0 cuz then we aren't adding a slot
-           break;
-       }
-   }
+   // for(int j = 0; j < slotHeader.recordEntriesNumber; j++){
+   //     SlotDirectoryRecordEntry temp = getSlotDirectoryRecordEntry(pageData, j);
+   //     if(temp.offset == 0){
+   //         //cout << "hit in yaya" << endl;
+   //         useSlotNum = j;
+   //         slotFound = 0; // set this to 0 cuz then we aren't adding a slot
+   //         break;
+   //     }
+   // }
 
    rid.pageNum = i;
    rid.slotNum = useSlotNum;
@@ -225,10 +225,10 @@ RC RecordBasedFileManager::printRecord(const vector<Attribute> &recordDescriptor
    // We've read in the null indicator, so we can skip past it now
    unsigned offset = nullIndicatorSize;
 
-   //cout << "----" << endl;
+   cout << "----" << endl;
    for (unsigned i = 0; i < (unsigned) recordDescriptor.size(); i++)
    {
-       //cout << setw(10) << left << recordDescriptor[i].name << ": ";
+       cout << setw(10) << left << recordDescriptor[i].name << ": ";
        // If the field is null, don't print it
        bool isNull = fieldIsNull(nullIndicator, i);
        if (isNull)
@@ -243,14 +243,14 @@ RC RecordBasedFileManager::printRecord(const vector<Attribute> &recordDescriptor
                memcpy(&data_integer, ((char*) data + offset), INT_SIZE);
                offset += INT_SIZE;
 
-               //cout << "" << data_integer << endl;
+               cout << "" << data_integer << endl;
            break;
            case TypeReal:
                float data_real;
                memcpy(&data_real, ((char*) data + offset), REAL_SIZE);
                offset += REAL_SIZE;
 
-               //cout << "" << data_real << endl;
+               cout << "" << data_real << endl;
            break;
            case TypeVarChar:
                // First VARCHAR_LENGTH_SIZE bytes describe the varchar length
@@ -268,12 +268,12 @@ RC RecordBasedFileManager::printRecord(const vector<Attribute> &recordDescriptor
                data_string[varcharSize] = '\0';
                offset += varcharSize;
 
-               //cout << data_string << endl;
+               cout << data_string << endl;
                free(data_string);
            break;
        }
    }
-   //cout << "----" << endl;
+   cout << "----" << endl;
 
    return SUCCESS;
 }
@@ -638,8 +638,7 @@ RID RecordBasedFileManager::findRID(FileHandle &fileHandle, void *pageData, cons
        if(dbl_jump){
            first_rec.offset = (unsigned) record.offset;
            first_rec.length = new_slotNum;
-           // check if this below line is updating it properly
-           // seems like none of these sets are working
+
            setSlotDirectoryRecordEntry(firstPageData, rid.slotNum, first_rec);
 
            if(fileHandle.writePage(rid.pageNum, firstPageData))
@@ -719,7 +718,7 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
    // SlotDirectoryRecordEntry erase;
    // setSlotDirectoryRecordEntry( page2, found_rid.slotNum, erase );
 
-   void * records_to_load = calloc(1, PAGE_SIZE);
+   void * records_to_load = malloc(PAGE_SIZE);
    char * to_shift_data = pageData + header.freeSpaceOffset;
 
    char * start_to_upd_record = pageData + record.offset;
@@ -793,7 +792,7 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
        //cout << "hit0" << endl;
 
        if(getPageFreeSpaceSize(pageData) >= sizeof(SlotDirectoryRecordEntry) + to_load_recordSize){
-           //cout << "hit1" << endl;
+           cout << "enough freespace on found_rid Page" << endl;
            inserted_pageNum = found_rid.pageNum;
            i = found_rid.pageNum;
            pageFound = true;
@@ -804,13 +803,14 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
                if(i == found_rid.pageNum)
                     continue;
 
-               // pageDataVoid = (void*) pageData;
+               //pageDataVoid = (void*) pageData;
                memset(pageDataVoid, 0, PAGE_SIZE);
                if (fileHandle.readPage(i, pageDataVoid))
                     return RBFM_WRITE_FAILED;
 
                if (getPageFreeSpaceSize(pageDataVoid) >= sizeof(SlotDirectoryRecordEntry) + to_load_recordSize){
                    //cout << "hit4" << endl;
+                   cout << "Page Found at: " << i <<endl;
                    inserted_pageNum = i;
                    pageFound = true;
                    //cout << "found page " << inserted_pageNum << " with enough space" << endl;
@@ -829,30 +829,32 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
            if(fileHandle.appendPage(pageDataVoid)) //may need records_to_load as arg
                return RBFM_APPEND_FAILED;
            i = fileHandle.getNumberOfPages()-1;
-           //cout << "Num Pages: " << i+1 << endl;
+           cout << "Num Pages: " << i+1 << endl;
            inserted_pageNum = i;
-           //cout << "no page found with enough space, appending" << endl;
+
+           cout << "no page found with enough space, appending" << endl;
        }
 
        if(found_rid.pageNum == i){ // if page found is same page as original record
            // write updated record to page
-           //cout << "updating greater sized record in original page" << endl;
-
-           header.freeSpaceOffset = header.freeSpaceOffset - to_load_recordSize + record.length;
+           cout << "updating greater sized record in original page" << endl;
+           header.freeSpaceOffset = header.freeSpaceOffset - to_load_recordSize;
            // memcpy(pageData + header.freeSpaceOffset, data, to_load_recordSize);
            setRecordAtOffset(pageData, header.freeSpaceOffset, recordDescriptor, data);
 
-           // to_shift_data = pageData + header.freeSpaceOffset;
-           // //coalesce
-           // uint32_t to_shift_data_size = record.offset - header.freeSpaceOffset;
-           //load to_shift_data into buffer
-           // memmove(records_to_load, to_shift_data, to_shift_data_size);
-           // // clear mem for new memcpy
-           // memset(to_shift_data, 0, to_shift_data_size);
-           // //load buffer into page, coalesced
-           // memmove(to_shift_data + record.length, records_to_load, to_shift_data_size);
 
-           // header.freeSpaceOffset += record.length;
+           to_shift_data = pageData + header.freeSpaceOffset;
+           //coalesce
+           uint32_t to_shift_data_size = record.offset - header.freeSpaceOffset;
+           // load to_shift_data into buffer
+           memmove(records_to_load, to_shift_data, to_shift_data_size);
+           // clear mem for new memcpy
+           memset(to_shift_data, 0, to_shift_data_size + record.length);
+           //load buffer into page, coalesced
+           memmove(to_shift_data + record.length, records_to_load, to_shift_data_size);
+
+
+           header.freeSpaceOffset += record.length;
 
            //update headers & slots
            for(i = 0; i < header.recordEntriesNumber; i++){
@@ -1406,12 +1408,14 @@ RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
         		return SUCCESS;
         	}
 
+    free(returnedFieldData);
    	}
    	k = 0;
 
 	}
    //cout << "hit in scan" << endl;
    free(pageData);
+
 	return RBFM_EOF;
 };
 
