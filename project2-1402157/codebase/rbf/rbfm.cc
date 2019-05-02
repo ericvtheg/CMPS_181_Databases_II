@@ -397,6 +397,7 @@ void RecordBasedFileManager::getRecordAtOffset(void *page, unsigned offset, cons
    int nullIndicatorSize = getNullIndicatorSize(recordDescriptor.size());
    char nullIndicator[nullIndicatorSize];
    memset(nullIndicator, 0, nullIndicatorSize);
+   // nullIndicator[nullIndicatorSize+1] = '\0';
 
    // Get number of columns and size of the null indicator for this record
    RecordLength len = 0;
@@ -728,36 +729,35 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
 
    if(record.length == to_load_recordSize){
        //straight load it in
-       //cout << "hit 1 hit 1 hit 1" << endl;
+       cout << "hit 1 hit 1 hit 1" << endl;
        // memcpy(start_to_upd_record, to_load_data, to_load_recordSize);
        setRecordAtOffset(pageData, record.offset, recordDescriptor, data);
        if (fileHandle.writePage(found_rid.pageNum, pageData))
            return RBFM_WRITE_FAILED;
    }
    else if(record.length > to_load_recordSize){ //can read in record but must coalesce rest of records
-       //cout << "hit 2 hit 2 hit 2" << endl;
+       cout << "hit 2 hit 2 hit 2" << endl;
        //load in updated info by adding difference of size to properly align records
        unsigned diff = record.length - to_load_recordSize;
        // memcpy(start_to_upd_record + diff, to_load_data, to_load_recordSize);
-       setRecordAtOffset(pageData + diff, record.offset, recordDescriptor, data);
-
-       // record.length = 10
-       // newrecord.length = 4
-       // diff 6
+       // setRecordAtOffset(pageData + diff, record.offset, recordDescriptor, data);
 
        //coalesce
-       //subtract diff to make up for change in record size
        uint32_t to_shift_data_size =  record.offset - header.freeSpaceOffset;
 
-       // cout << "record.offset: " << record.offset << endl;
-       // cout << "header.freeSpaceOffset: " << header.freeSpaceOffset << endl;
-       // cout << "diff: " << diff << endl;;
-       // cout << "to_shift_data_size: " << to_shift_data_size << endl;
+       cout << "record.offset: " << record.offset << endl;
+       cout << "header.freeSpaceOffset: " << header.freeSpaceOffset << endl;
+       cout << "diff: " << diff << endl;
+       cout << "to_shift_data_size: " << to_shift_data_size << endl;
 
        // load into buffer
        memmove(records_to_load, to_shift_data, to_shift_data_size);
-       memset(to_shift_data, 0, to_shift_data_size + diff);
-       memmove(to_shift_data + diff, records_to_load, to_shift_data_size);
+       memset(to_shift_data, 0, to_shift_data_size + record.length);//check what this gets
+       memmove(to_shift_data + record.length, records_to_load, to_shift_data_size);
+
+       header.freeSpaceOffset += diff;
+
+       setRecordAtOffset(pageData, header.freeSpaceOffset, recordDescriptor, data);
 
        //update headers & slots
        for(size_t i = 0; i < header.recordEntriesNumber; i++){
@@ -767,14 +767,16 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
            if(i == found_rid.slotNum){ //dont kill rid
                upd_entry.offset = record.offset + diff;
                upd_entry.length = to_load_recordSize;
-           }else{
-               upd_entry.offset += diff;
+           }else if(record.offset > upd_entry.offset){
+               upd_entry.offset += record.length;
+           }else{ //else dont update
+               continue;
            }
            // is the second arg right?
            setSlotDirectoryRecordEntry(pageData, i, upd_entry);
        }
 
-       header.freeSpaceOffset += diff;
+       // header.freeSpaceOffset += diff;
        setSlotDirectoryHeader(pageData, header);
 
        if (fileHandle.writePage(found_rid.pageNum, pageData))
@@ -865,13 +867,14 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
                    upd_entry.offset = header.freeSpaceOffset;
                    setSlotDirectoryRecordEntry(pageData, i, upd_entry);
                }else if(record.offset > upd_entry.offset){
-                   // upd_entry.offset += record.length;
-                   // setSlotDirectoryRecordEntry(pageData, i, upd_entry);
+                   upd_entry.offset += record.length;
+                   setSlotDirectoryRecordEntry(pageData, i, upd_entry);
                }
            }
 
            setSlotDirectoryHeader(pageData, header);
            fileHandle.writePage(inserted_pageNum, pageData);
+           free(pageDataVoid);
 
        }else{ //else if is to be moved to another page
            //cout << "moving record to another page" << endl;
@@ -890,7 +893,7 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
            // //cout<< "hit 1" << endl;
 
            //set pointer to start of freespace and load in updated record
-           uint16_t fpOffset = headerV2.freeSpaceOffset - to_load_recordSize;
+           unsigned fpOffset = headerV2.freeSpaceOffset - to_load_recordSize;
 
            // //cout<< "hit 2" << endl;
            //cout<< "freeSpaceOffset: " << headerV2.freeSpaceOffset << endl;
@@ -907,11 +910,11 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
            // double check this below line is right
            uint32_t to_shift_data_size =  record.offset - header.freeSpaceOffset;
            //load to_shift_data into buffer
-           memcpy(records_to_load, to_shift_data, to_shift_data_size);
+           memmove(records_to_load, to_shift_data, to_shift_data_size);
            // clear mem for new memcpy
            memset(to_shift_data, 0, to_shift_data_size + record.length);
            //load in now coalecsed data
-           memcpy(to_shift_data + record.length, records_to_load, to_shift_data_size);
+           memmove(to_shift_data + record.length, records_to_load, to_shift_data_size);
 
            //update headers & slots of original page
            for(i = 0; i < header.recordEntriesNumber; i++){
@@ -922,7 +925,7 @@ RC RecordBasedFileManager::updateRecord(FileHandle &fileHandle, const vector<Att
                    // dont add below line + 1 because we want that indice
                    upd_entry.length = headerV2.recordEntriesNumber;
                    upd_entry.offset = inserted_pageNum * -1;
-               }else{
+               }else if(record.offset > upd_entry.offset){
                    upd_entry.offset += record.length;
                }
                setSlotDirectoryRecordEntry(pageData, i, upd_entry);
