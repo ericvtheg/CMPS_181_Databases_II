@@ -46,10 +46,10 @@ RC RelationManager::createCatalog()
     RID rid;
 
     prepareTableRecord((int) sysTblVec.size(), nullsIndicator, 1, 6, "Tables", 10, "Tables.tbl", data, &datasize);
-    cout << "size: "<<datasize << endl;
+    ////cout << "size: "<<datasize << endl;
     // _rbf_manager->printRecord(sysTblVec, data);
     _rbf_manager->insertRecord(fileHandle, sysTblVec, data, rid );
-    cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
+    //cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
 
 
     vector<Attribute> sysColVec;
@@ -60,7 +60,7 @@ RC RelationManager::createCatalog()
     prepareTableRecord(sysTblVec.size(), nullsIndicator, 2, 7, "Columns", 11 , "Columns.tbl", data, &datasize);
     // _rbf_manager->printRecord(sysTblVec, data);
     _rbf_manager->insertRecord(fileHandle, sysTblVec, data, rid );
-    cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
+    //cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
     _rbf_manager->closeFile(fileHandle);
 
     fileName = "Columns.tbl";
@@ -84,7 +84,7 @@ RC RelationManager::createCatalog()
         prepareColumnRecord((int)sysColVec.size(), nullsIndicator, 1, sysTblVec[i].name.length(), sysTblVec[i].name , sysTblVec[i].type, sysTblVec[i].length ,i + 1, data, &datasize);
         //prepareColumnRecord(sysColVec.size(), nullsIndicator, 1,varcharlen, sysTblVec[i].name , sysTblVec[i].type, sysTblVec[i].length ,i + 1, data, datasize);
         _rbf_manager->insertRecord(fileHandle, sysColVec, data, rid );
-        cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
+        //cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
         // _rbf_manager->printRecord(sysColVec, data);
 
     }
@@ -96,7 +96,7 @@ RC RelationManager::createCatalog()
         //prepareColumnRecord(sysColVec.size(), nullsIndicator, 2, varcharlen, sysColVec[i].name , sysColVec[i].type, sysColVec[i].length ,i + 1, data, datasize);
 
         _rbf_manager->insertRecord(fileHandle, sysColVec, data, rid );
-        cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
+        //cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
         // _rbf_manager->printRecord(sysColVec, data);
 
     }
@@ -200,7 +200,7 @@ void RelationManager::prepareTableRecord(int fieldCount, unsigned char *nullFiel
     // Null-indicators
     bool nullBit = false;
     int nullFieldsIndicatorActualSize = ceil((double) fieldCount / CHAR_BIT);
-    cout <<"nullIndicatorSize: " << nullFieldsIndicatorActualSize << endl;
+    //cout <<"nullIndicatorSize: " << nullFieldsIndicatorActualSize << endl;
 
     // Null-indicator for the fields
     memcpy((char *)buffer + offset, nullFieldsIndicator, nullFieldsIndicatorActualSize);
@@ -210,29 +210,29 @@ void RelationManager::prepareTableRecord(int fieldCount, unsigned char *nullFiel
     // Note that the left-most bit represents the first field. Thus, the offset is 7 from right, not 0.
     // e.g., if a record consists of four fields and they are all nulls, then the bit representation will be: [11110000]
     nullBit = nullFieldsIndicator[0] & (1 << 7);
-    //cout << "nullbit1: " << nullBit << endl;
+    ////cout << "nullbit1: " << nullBit << endl;
     if (!nullBit) {
         memcpy((char *)buffer + offset, &tableid, sizeof(int));
         offset += sizeof(int);
-        cout << "int offset: " << offset << endl;
+        //cout << "int offset: " << offset << endl;
     }
     nullBit = nullFieldsIndicator[0] & (1 << 6);
-    //cout << "nullbit2: " << nullBit << endl;
+    ////cout << "nullbit2: " << nullBit << endl;
     if (!nullBit) {
         memcpy((char *)buffer + offset, &namesize, sizeof(int));
         offset += sizeof(int);
         memcpy((char *)buffer + offset, name.c_str(), namesize);
         offset += namesize;
-        cout << "namesize offset: " << offset << endl;
+        //cout << "namesize offset: " << offset << endl;
     }
     nullBit = nullFieldsIndicator[0] & (1 << 5);
-    //cout << "nullbit3: " << nullBit << endl;
+    ////cout << "nullbit3: " << nullBit << endl;
     if (!nullBit) {
         memcpy((char *)buffer + offset, &filenamesize, sizeof(int));
         offset += sizeof(int);
         memcpy((char *)buffer + offset, filename.c_str(), filenamesize);
         offset += filenamesize;
-        cout << "filenamesize offset: " << offset << endl;
+        //cout << "filenamesize offset: " << offset << endl;
     }
 
     *recordSize = offset;
@@ -334,13 +334,13 @@ RC RelationManager::createTable(const string &tableName, const vector<Attribute>
     int lastTblID;
     RID rid;
     getLastTblID(fileHandle,  sysTblVec , &lastTblID);
-    cout << "Laste Records: " << lastTblID << endl;
+    //cout << "Laste Records: " << lastTblID << endl;
 
     memset(nullsIndicator, 0, nullIndicatorSize);
     memset(data, 0, PAGE_SIZE);
 
     prepareTableRecord((int) sysTblVec.size(), nullsIndicator, lastTblID + 1 , tableName.length(), tableName , tableName.length(), tableName , data, &datasize);
-    cout << "size: "<<datasize << endl;
+    //cout << "size: "<<datasize << endl;
     // _rbf_manager->printRecord(sysTblVec, data);
     _rbf_manager->insertRecord(fileHandle, sysTblVec, data, rid );
 
@@ -356,17 +356,17 @@ RC RelationManager::createTable(const string &tableName, const vector<Attribute>
         //prepareColumnRecord(sysColVec.size(), nullsIndicator, 2, varcharlen, sysColVec[i].name , sysColVec[i].type, sysColVec[i].length ,i + 1, data, datasize);
 
         _rbf_manager->insertRecord(fileHandle, sysColVec, data, rid );
-        cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
+        //cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
         // _rbf_manager->printRecord(sysColVec, data);
 
     }
 
-    cout << "HERE" << endl;
+    //cout << "HERE" << endl;
     _rbf_manager->closeFile(fileHandle);
     free(data);
     free(nullsIndicator);
 
-    cout << "HERE" << endl;
+    //cout << "HERE" << endl;
 
     return SUCCESS;
 }
@@ -414,12 +414,11 @@ RC RelationManager::deleteTable(const string &tableName)
     memcpy((char*) valuePointer + INT_SIZE, tableName.c_str(), bytes);
 
     // edit the catalog
-    // _rbf_manager->openFile("Tables.tbl", fileHandle);
     // _rbf_manager->scan(fileHandle, s, "table-name", EQ_OP, valuePointer, n, rbfmsi);
     // while(rbfmsi.getNextRecord(new_rid, returnedDataScan) == SUCCESS){
     // }
 
-    cout << "hit before delete record *****************************************" << endl;
+    //cout << "hit before delete record *****************************************" << endl;
 
     // destroy given table
     if ( _rbf_manager->destroyFile(tableName))
@@ -427,9 +426,8 @@ RC RelationManager::deleteTable(const string &tableName)
 
     // _rbf_manager->deleteRecord(fileHandle, s,new_rid);
 
-    // _rbf_manager->closeFile(fileHandle);
 
-    cout << "hit after delete record *****************************************" << endl;
+    //cout << "hit after delete record *****************************************" << endl;
 
     free(returnedDataScan);
     free(valuePointer);
@@ -450,21 +448,21 @@ RC RelationManager::parseDataScan(void * returnedDataScan, vector<Attribute> &ne
     data_ptr[varCharSize] = '\0';
     string dataString(data_ptr);
     newAtt.name = dataString;
-    cout << "newAtt.name: " << newAtt.name << endl;
+    //cout << "newAtt.name: " << newAtt.name << endl;
     offset += varCharSize;
 
     memcpy(&newAtt.type, iter_ptr + offset, INT_SIZE );
-    cout << "newAtt.type: " << newAtt.type << endl;
+    //cout << "newAtt.type: " << newAtt.type << endl;
     offset += INT_SIZE;
 
     memcpy(&newAtt.length, iter_ptr + offset, INT_SIZE );
-    cout << "newAtt.length: " << newAtt.length << endl;
+    //cout << "newAtt.length: " << newAtt.length << endl;
     offset += INT_SIZE;
 
     newColAttr.push_back(newAtt);
 
     //memcpy(&newAtt.position, iter_ptr + offset, INT_SIZE );
-    //cout << "newAtt.position: " << newAtt.position << endl;
+    ////cout << "newAtt.position: " << newAtt.position << endl;
 
     free(data_ptr);
 
@@ -491,8 +489,8 @@ RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &at
     attrNames.push_back("table-id");
     void *returnedDataScan = malloc(PAGE_SIZE);
 
-    cout << "tableName length: "<<  tableName.length() << endl;
-    cout << "tableName size: "<<  sizeof(tableName) << endl;
+    // cout << "tableName length: "<<  tableName.length() << endl;
+    // cout << "tableName size: "<<  sizeof(tableName) << endl;
 
     void *valuePointer = malloc(PAGE_SIZE);
     int32_t bytes = tableName.length();
@@ -502,16 +500,15 @@ RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &at
 
     _rbf_manager->scan(fileHandle, sysTblVec, "table-name", EQ_OP, valuePointer, attrNames, rbfmsi);
 
-    // rbfmsi.value
-    cout << "valuePointer: " << valuePointer << endl;
-    cout << "returnedDataScan: " << returnedDataScan << endl;
-    cout << "hit before 1st getNextRecord" << endl;
+    // cout << "valuePointer: " << valuePointer << endl;
+    // cout << "returnedDataScan: " << returnedDataScan << endl;
+    // cout << "hit before 1st getNextRecord" << endl;
     // _rbf_manager->printRecord(sysTblVec, returnedDataScan);
     while( rbfmsi.getNextRecord(new_rid, returnedDataScan) != EOF) {
         // _rbf_manager->printRecord(sysTblVec, returnedDataScan);
-        cout << "hit in 1st getNextRecord" << endl;
+        //cout << "hit in 1st getNextRecord" << endl;
     }
-     cout << "hit after 1st getNextRecord" << endl;
+     // cout << "hit after 1st getNextRecord" << endl;
     // _rbf_manager->printRecord(sysTblVec,returnedDataScan);
 
     _rbf_manager->closeFile(fileHandle);
@@ -519,7 +516,7 @@ RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &at
 
     int tableid = 0;
     memcpy(&tableid, (char *)returnedDataScan + 1, INT_SIZE );
-    cout << "tableid after initial scan: " << tableid << endl;
+    // cout << "tableid after initial scan: " << tableid << endl;
 
     vector<string> colAttr;
     colAttr.push_back("column-name");
@@ -532,19 +529,19 @@ RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &at
 
     _rbf_manager->scan(fileHandle, sysColVec, "table-id", EQ_OP, &tableid, colAttr, rbfmsi);
 
-    cout << "right before big while loop" << endl;
+    // cout << "right before big while loop" << endl;
     while( rbfmsi.getNextRecord(new_rid, returnedDataScan) == SUCCESS) {
         //_rbf_manager->printRecord(sysColVec, returnedDataScan);
         parseDataScan(returnedDataScan, newColDesc, attrs);
-        cout << "hit in 1st getNextRecord" << endl;
+        //cout << "hit in 1st getNextRecord" << endl;
     }
-    cout << "right after big while loop" << endl;
+    // cout << "right after big while loop" << endl;
 
 
     free(valuePointer);
     free(returnedDataScan);
 
-    // closeFile(fileHandle);
+    _rbf_manager->closeFile(fileHandle);
     return SUCCESS;
 }
 
@@ -597,7 +594,6 @@ RC RelationManager::readTuple(const string &tableName, const RID &rid, void *dat
 
     vector<Attribute> recordDescriptor;
     getAttributes(tableName, recordDescriptor);
-    _rbf_manager->openFile(tableName, fileHandle);
     RC rc = _rbf_manager->readRecord(fileHandle, recordDescriptor, rid, data);
     _rbf_manager->closeFile(fileHandle);
     return rc;

@@ -51,7 +51,7 @@ public:
 	unsigned readPageCounter;
 	unsigned writePageCounter;
 	unsigned appendPageCounter;
-	
+
     FileHandle();                                                    	// Default constructor
     ~FileHandle();                                                   	// Destructor
 
@@ -70,6 +70,6 @@ private:
     // Private helper methods
     void setfd(FILE *fd);
     FILE *getfd();
-}; 
+};
 
 #endif

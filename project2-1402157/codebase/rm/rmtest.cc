@@ -464,8 +464,6 @@ RC TEST_RM_8(const string &tableName, vector<RID> &rids, vector<int> &sizes)
     // Insert 2000 tuples into table
     for(int i = 0; i < numTuples; i++)
     {
-        if(i == 897)
-            continue;
         // Test insert Tuple
         int size = 0;
         memset(tuple, 0, 2000);
@@ -510,16 +508,20 @@ RC TEST_RM_09(const string &tableName, vector<RID> &rids, vector<int> &sizes)
     RC rc = rm->getAttributes(tableName, attrs);
     assert(rc == success && "RelationManager::getAttributes() should not fail.");
 
+    cout << "hit before get Attributes in test 10" << endl;
+
     int nullAttributesIndicatorActualSize = getActualByteForNullsIndicator(attrs.size());
     unsigned char *nullsIndicator = (unsigned char *) malloc(nullAttributesIndicatorActualSize);
 	memset(nullsIndicator, 0, nullAttributesIndicatorActualSize);
 
+    cout << "hit before while loop in rmtest" << endl;
     for(int i = 0; i < numTuples; i++)
     {
         memset(tuple, 0, 2000);
         memset(returnedData, 0, 2000);
         rc = rm->readTuple(tableName, rids[i], returnedData);
         assert(rc == success && "RelationManager::readTuple() should not fail.");
+        cout << "i: " << i << endl;
 
         size = 0;
         prepareLargeTuple(attrs.size(), nullsIndicator, i, tuple, &size);
@@ -565,6 +567,7 @@ RC TEST_RM_10(const string &tableName, vector<RID> &rids, vector<int> &sizes)
     int size = 0;
     for(int i = 0; i < 1000; i++)
     {
+        cout << "i: " << i << endl;
         memset(tuple, 0, 2000);
         RID rid = rids[i];
 
@@ -619,6 +622,7 @@ RC TEST_RM_11(const string &tableName, vector<RID> &rids)
     // Delete the first 1000 tuples
     for(int i = 0; i < 1000; i++)
     {
+        cout << "hit right before deleteTuple" << endl;
         rc = rm->deleteTuple(tableName, rids[i]);
         assert(rc == success && "RelationManager::deleteTuple() should not fail.");
     }
@@ -1008,19 +1012,19 @@ int main()
     // Get Attributes
     RC rcmain = TEST_RM_0("tbl_employee");
 
-    // rcmain = TEST_RM_1("tbl_employee", 8, "Anteater", 27, 6.2, 10000);
-    //
-    // rcmain = TEST_RM_2("tbl_employee", 6, "Peters", 23, 5.9, 8000);
-    //
-    // rcmain = TEST_RM_3("tbl_employee", 6, "Thomas", 28, 6.5, 6000);
-    //
-    // rcmain = TEST_RM_4("tbl_employee", 7, "Hoffman", 31, 5.8, 9999);
-    //
-    // rcmain = TEST_RM_5("tbl_employee", 6, "Martin", 26, 173.6, 8000);
-    //
-    // rcmain = TEST_RM_6("tbl_employee3");
-    //
-    // rcmain = TEST_RM_7("tbl_employee3");
+    rcmain = TEST_RM_1("tbl_employee", 8, "Anteater", 27, 6.2, 10000);
+
+    rcmain = TEST_RM_2("tbl_employee", 6, "Peters", 23, 5.9, 8000);
+
+    rcmain = TEST_RM_3("tbl_employee", 6, "Thomas", 28, 6.5, 6000);
+
+    rcmain = TEST_RM_4("tbl_employee", 7, "Hoffman", 31, 5.8, 9999);
+
+    rcmain = TEST_RM_5("tbl_employee", 6, "Martin", 26, 173.6, 8000);
+
+    rcmain = TEST_RM_6("tbl_employee3");
+
+    rcmain = TEST_RM_7("tbl_employee3");
 
     vector<RID> rids;
     vector<int> sizes;
