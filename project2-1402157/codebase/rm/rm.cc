@@ -398,56 +398,44 @@ RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &at
     FileHandle fileHandle;
     RID new_rid;
 
-    // it might be good to create  a
-    // functions that takes in the data and converts
-    // them to attributes to put on in a vector?
-
-    // error check
-    // if (_rbf_manager->openFile("Tables.tbl", fileHandle)){
-    //     _rbf_manager->closeFile(fileHandle);
-    //     return RM_CREATE_FAILED;
-    // }
-
     _rbf_manager->openFile("Tables.tbl", fileHandle);
-
+    
     RBFM_ScanIterator rbfmsi;
-
-    cout << "hit in getAttr" << endl;
 
     vector<string> attrNames;
     attrNames.push_back("table-id");
-
     void *returnedDataScan = malloc(PAGE_SIZE);
 
-    _rbf_manager->scan(fileHandle, sysTblVec, "table-name", EQ_OP, tableName.c_str(), attrNames, rbfmsi);
-    cout << "hit in getAttr" << endl;
-    while(rbfmsi.getNextRecord(new_rid, returnedDataScan) != RM_EOF) {
-        // rbfm->printRecord(attrDesc, returnedDataScan);
-        cout << "hit in getAttr" << endl;
+    cout << "tableName length: "<<  tableName.length() << endl;
+    cout << "tableName size: "<<  sizeof(tableName) << endl;
+
+    void *valuePointer = malloc(PAGE_SIZE);
+    int32_t bytes = tableName.length();
+
+    memcpy(valuePointer, &bytes, INT_SIZE);
+    memcpy((char*) valuePointer + INT_SIZE, tableName.c_str(), bytes);
+
+
+
+    _rbf_manager->scan(fileHandle, sysTblVec, "table-name", EQ_OP, valuePointer, attrNames, rbfmsi);
+
+    // rbfmsi.value
+    cout << "valuePointer: " << valuePointer << endl;
+    cout << "returnedDataScan: " << returnedDataScan << endl;
+    cout << "hit before 1st getNextRecord" << endl;
+    _rbf_manager->printRecord(sysTblVec, returnedDataScan);
+    while( rbfmsi.getNextRecord(new_rid, returnedDataScan) == SUCCESS) {
+        _rbf_manager->printRecord(sysTblVec, returnedDataScan);
+        cout << "hit in 1st getNextRecord" << endl;
     }
+     cout << "hit after 1st getNextRecord" << endl;
+     cout << "returnedDataScan: " << returnedDataScan << endl;
 
-    // table_id =
-
+    free(valuePointer);
     free(returnedDataScan);
-    returnedDataScan = malloc(PAGE_SIZE);
-    RBFM_ScanIterator rbfmsC;
 
-    vector<string> colAttrNames;
-
-
-    colAttrNames.push_back("column-name");
-    colAttrNames.push_back("column-type");
-    colAttrNames.push_back("column-length");
-
-    // once have table id
-    // _rbf_manager->scan(fileHandle, sysColVec, "table-id", EQ_OP, table_id, colAttrNames, rbfmsC);
-    // while(rbfmsi.getNextRecord(rbfmsi.currRID, returnedDataScan) != RM_EOF) {
-    //     // rbfm->printRecord(attrDesc, returnedDataScan);
-    //     // break;
-    // }
-
-    free(returnedDataScan);
-    return 0;
+    // closeFile(fileHandle);
+    return SUCCESS;
 }
 
 RC RelationManager::insertTuple(const string &tableName, const void *data, RID &rid)

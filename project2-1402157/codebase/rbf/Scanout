@@ -4233,9 +4233,1690 @@ xx
 Int9      : 99
 Real9     : 100
 ----
-fs: 2
-Returned Data:
+initialScanDone first time: 0
+pageNum: 0
+slotNum: 0
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 0
+data_integer: 0
+slotNum, pageNum: 0, 0
+nullIndicator: field Size: 3
+rec_offset: 69
+field Size: 4
+wump: 0
+rec_offset: 73
+rec_offset: 77
+rec_offset: 80
+rec_offset: 84
+rec_offset: 88
+rec_offset: 91
+rec_offset: 95
+rec_offset: 99
+rec_offset: 102
+rec_offset: 106
+rec_offset: 110
+rec_offset: 113
+rec_offset: 117
+rec_offset: 121
+rec_offset: 124
+rec_offset: 128
+rec_offset: 132
+rec_offset: 135
+rec_offset: 139
+rec_offset: 143
+rec_offset: 146
+rec_offset: 150
+rec_offset: 154
+rec_offset: 157
+rec_offset: 161
+rec_offset: 165
+rec_offset: 168
+rec_offset: 172
+rec_offset: 176
+before print
 ----
-Char0     : NULL
-Int0      : 33557504
+Char0     : afterlenread: 3
+ccc
+Int0      : 0
 ----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 1
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 1
+data_integer: 1
+slotNum, pageNum: 1, 0
+nullIndicator: field Size: 4
+rec_offset: 70
+field Size: 4
+wump: 1
+rec_offset: 74
+rec_offset: 78
+rec_offset: 82
+rec_offset: 86
+rec_offset: 90
+rec_offset: 94
+rec_offset: 98
+rec_offset: 102
+rec_offset: 106
+rec_offset: 110
+rec_offset: 114
+rec_offset: 118
+rec_offset: 122
+rec_offset: 126
+rec_offset: 130
+rec_offset: 134
+rec_offset: 138
+rec_offset: 142
+rec_offset: 146
+rec_offset: 150
+rec_offset: 154
+rec_offset: 158
+rec_offset: 162
+rec_offset: 166
+rec_offset: 170
+rec_offset: 174
+rec_offset: 178
+rec_offset: 182
+rec_offset: 186
+before print
+----
+Char0     : afterlenread: 4
+dddd
+Int0      : 1
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 2
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 2
+data_integer: 2
+slotNum, pageNum: 2, 0
+nullIndicator: field Size: 5
+rec_offset: 71
+field Size: 4
+wump: 2
+rec_offset: 75
+rec_offset: 79
+rec_offset: 84
+rec_offset: 88
+rec_offset: 92
+rec_offset: 97
+rec_offset: 101
+rec_offset: 105
+rec_offset: 110
+rec_offset: 114
+rec_offset: 118
+rec_offset: 123
+rec_offset: 127
+rec_offset: 131
+rec_offset: 136
+rec_offset: 140
+rec_offset: 144
+rec_offset: 149
+rec_offset: 153
+rec_offset: 157
+rec_offset: 162
+rec_offset: 166
+rec_offset: 170
+rec_offset: 175
+rec_offset: 179
+rec_offset: 183
+rec_offset: 188
+rec_offset: 192
+rec_offset: 196
+before print
+----
+Char0     : afterlenread: 5
+eeeee
+Int0      : 2
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 3
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 3
+data_integer: 3
+slotNum, pageNum: 3, 0
+nullIndicator: field Size: 6
+rec_offset: 72
+field Size: 4
+wump: 3
+rec_offset: 76
+rec_offset: 80
+rec_offset: 86
+rec_offset: 90
+rec_offset: 94
+rec_offset: 100
+rec_offset: 104
+rec_offset: 108
+rec_offset: 114
+rec_offset: 118
+rec_offset: 122
+rec_offset: 128
+rec_offset: 132
+rec_offset: 136
+rec_offset: 142
+rec_offset: 146
+rec_offset: 150
+rec_offset: 156
+rec_offset: 160
+rec_offset: 164
+rec_offset: 170
+rec_offset: 174
+rec_offset: 178
+rec_offset: 184
+rec_offset: 188
+rec_offset: 192
+rec_offset: 198
+rec_offset: 202
+rec_offset: 206
+before print
+----
+Char0     : afterlenread: 6
+ffffff
+Int0      : 3
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 4
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 4
+data_integer: 4
+slotNum, pageNum: 4, 0
+nullIndicator: field Size: 7
+rec_offset: 73
+field Size: 4
+wump: 4
+rec_offset: 77
+rec_offset: 81
+rec_offset: 88
+rec_offset: 92
+rec_offset: 96
+rec_offset: 103
+rec_offset: 107
+rec_offset: 111
+rec_offset: 118
+rec_offset: 122
+rec_offset: 126
+rec_offset: 133
+rec_offset: 137
+rec_offset: 141
+rec_offset: 148
+rec_offset: 152
+rec_offset: 156
+rec_offset: 163
+rec_offset: 167
+rec_offset: 171
+rec_offset: 178
+rec_offset: 182
+rec_offset: 186
+rec_offset: 193
+rec_offset: 197
+rec_offset: 201
+rec_offset: 208
+rec_offset: 212
+rec_offset: 216
+before print
+----
+Char0     : afterlenread: 7
+ggggggg
+Int0      : 4
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 5
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 5
+data_integer: 5
+slotNum, pageNum: 5, 0
+nullIndicator: field Size: 8
+rec_offset: 74
+field Size: 4
+wump: 5
+rec_offset: 78
+rec_offset: 82
+rec_offset: 90
+rec_offset: 94
+rec_offset: 98
+rec_offset: 106
+rec_offset: 110
+rec_offset: 114
+rec_offset: 122
+rec_offset: 126
+rec_offset: 130
+rec_offset: 138
+rec_offset: 142
+rec_offset: 146
+rec_offset: 154
+rec_offset: 158
+rec_offset: 162
+rec_offset: 170
+rec_offset: 174
+rec_offset: 178
+rec_offset: 186
+rec_offset: 190
+rec_offset: 194
+rec_offset: 202
+rec_offset: 206
+rec_offset: 210
+rec_offset: 218
+rec_offset: 222
+rec_offset: 226
+before print
+----
+Char0     : afterlenread: 8
+hhhhhhhh
+Int0      : 5
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 6
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 6
+data_integer: 6
+slotNum, pageNum: 6, 0
+nullIndicator: field Size: 9
+rec_offset: 75
+field Size: 4
+wump: 6
+rec_offset: 79
+rec_offset: 83
+rec_offset: 92
+rec_offset: 96
+rec_offset: 100
+rec_offset: 109
+rec_offset: 113
+rec_offset: 117
+rec_offset: 126
+rec_offset: 130
+rec_offset: 134
+rec_offset: 143
+rec_offset: 147
+rec_offset: 151
+rec_offset: 160
+rec_offset: 164
+rec_offset: 168
+rec_offset: 177
+rec_offset: 181
+rec_offset: 185
+rec_offset: 194
+rec_offset: 198
+rec_offset: 202
+rec_offset: 211
+rec_offset: 215
+rec_offset: 219
+rec_offset: 228
+rec_offset: 232
+rec_offset: 236
+before print
+----
+Char0     : afterlenread: 9
+iiiiiiiii
+Int0      : 6
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 7
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 7
+data_integer: 7
+slotNum, pageNum: 7, 0
+nullIndicator: field Size: 10
+rec_offset: 76
+field Size: 4
+wump: 7
+rec_offset: 80
+rec_offset: 84
+rec_offset: 94
+rec_offset: 98
+rec_offset: 102
+rec_offset: 112
+rec_offset: 116
+rec_offset: 120
+rec_offset: 130
+rec_offset: 134
+rec_offset: 138
+rec_offset: 148
+rec_offset: 152
+rec_offset: 156
+rec_offset: 166
+rec_offset: 170
+rec_offset: 174
+rec_offset: 184
+rec_offset: 188
+rec_offset: 192
+rec_offset: 202
+rec_offset: 206
+rec_offset: 210
+rec_offset: 220
+rec_offset: 224
+rec_offset: 228
+rec_offset: 238
+rec_offset: 242
+rec_offset: 246
+before print
+----
+Char0     : afterlenread: 10
+jjjjjjjjjj
+Int0      : 7
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 8
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 8
+data_integer: 8
+slotNum, pageNum: 8, 0
+nullIndicator: field Size: 11
+rec_offset: 77
+field Size: 4
+wump: 8
+rec_offset: 81
+rec_offset: 85
+rec_offset: 96
+rec_offset: 100
+rec_offset: 104
+rec_offset: 115
+rec_offset: 119
+rec_offset: 123
+rec_offset: 134
+rec_offset: 138
+rec_offset: 142
+rec_offset: 153
+rec_offset: 157
+rec_offset: 161
+rec_offset: 172
+rec_offset: 176
+rec_offset: 180
+rec_offset: 191
+rec_offset: 195
+rec_offset: 199
+rec_offset: 210
+rec_offset: 214
+rec_offset: 218
+rec_offset: 229
+rec_offset: 233
+rec_offset: 237
+rec_offset: 248
+rec_offset: 252
+rec_offset: 256
+before print
+----
+Char0     : afterlenread: 11
+kkkkkkkkkkk
+Int0      : 8
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 9
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 9
+data_integer: 9
+slotNum, pageNum: 9, 0
+nullIndicator: field Size: 12
+rec_offset: 78
+field Size: 4
+wump: 9
+rec_offset: 82
+rec_offset: 86
+rec_offset: 98
+rec_offset: 102
+rec_offset: 106
+rec_offset: 118
+rec_offset: 122
+rec_offset: 126
+rec_offset: 138
+rec_offset: 142
+rec_offset: 146
+rec_offset: 158
+rec_offset: 162
+rec_offset: 166
+rec_offset: 178
+rec_offset: 182
+rec_offset: 186
+rec_offset: 198
+rec_offset: 202
+rec_offset: 206
+rec_offset: 218
+rec_offset: 222
+rec_offset: 226
+rec_offset: 238
+rec_offset: 242
+rec_offset: 246
+rec_offset: 258
+rec_offset: 262
+rec_offset: 266
+before print
+----
+Char0     : afterlenread: 12
+llllllllllll
+Int0      : 9
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 10
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 10
+data_integer: 10
+slotNum, pageNum: 10, 0
+nullIndicator: field Size: 13
+rec_offset: 79
+field Size: 4
+wump: 10
+rec_offset: 83
+rec_offset: 87
+rec_offset: 100
+rec_offset: 104
+rec_offset: 108
+rec_offset: 121
+rec_offset: 125
+rec_offset: 129
+rec_offset: 142
+rec_offset: 146
+rec_offset: 150
+rec_offset: 163
+rec_offset: 167
+rec_offset: 171
+rec_offset: 184
+rec_offset: 188
+rec_offset: 192
+rec_offset: 205
+rec_offset: 209
+rec_offset: 213
+rec_offset: 226
+rec_offset: 230
+rec_offset: 234
+rec_offset: 247
+rec_offset: 251
+rec_offset: 255
+rec_offset: 268
+rec_offset: 272
+rec_offset: 276
+before print
+----
+Char0     : afterlenread: 13
+mmmmmmmmmmmmm
+Int0      : 10
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 11
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 11
+data_integer: 11
+slotNum, pageNum: 11, 0
+nullIndicator: field Size: 14
+rec_offset: 80
+field Size: 4
+wump: 11
+rec_offset: 84
+rec_offset: 88
+rec_offset: 102
+rec_offset: 106
+rec_offset: 110
+rec_offset: 124
+rec_offset: 128
+rec_offset: 132
+rec_offset: 146
+rec_offset: 150
+rec_offset: 154
+rec_offset: 168
+rec_offset: 172
+rec_offset: 176
+rec_offset: 190
+rec_offset: 194
+rec_offset: 198
+rec_offset: 212
+rec_offset: 216
+rec_offset: 220
+rec_offset: 234
+rec_offset: 238
+rec_offset: 242
+rec_offset: 256
+rec_offset: 260
+rec_offset: 264
+rec_offset: 278
+rec_offset: 282
+rec_offset: 286
+before print
+----
+Char0     : afterlenread: 14
+nnnnnnnnnnnnnn
+Int0      : 11
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 12
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 12
+data_integer: 12
+slotNum, pageNum: 12, 0
+nullIndicator: field Size: 15
+rec_offset: 81
+field Size: 4
+wump: 12
+rec_offset: 85
+rec_offset: 89
+rec_offset: 104
+rec_offset: 108
+rec_offset: 112
+rec_offset: 127
+rec_offset: 131
+rec_offset: 135
+rec_offset: 150
+rec_offset: 154
+rec_offset: 158
+rec_offset: 173
+rec_offset: 177
+rec_offset: 181
+rec_offset: 196
+rec_offset: 200
+rec_offset: 204
+rec_offset: 219
+rec_offset: 223
+rec_offset: 227
+rec_offset: 242
+rec_offset: 246
+rec_offset: 250
+rec_offset: 265
+rec_offset: 269
+rec_offset: 273
+rec_offset: 288
+rec_offset: 292
+rec_offset: 296
+before print
+----
+Char0     : afterlenread: 15
+ooooooooooooooo
+Int0      : 12
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 13
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 13
+data_integer: 13
+slotNum, pageNum: 13, 0
+nullIndicator: field Size: 16
+rec_offset: 82
+field Size: 4
+wump: 13
+rec_offset: 86
+rec_offset: 90
+rec_offset: 106
+rec_offset: 110
+rec_offset: 114
+rec_offset: 130
+rec_offset: 134
+rec_offset: 138
+rec_offset: 154
+rec_offset: 158
+rec_offset: 162
+rec_offset: 178
+rec_offset: 182
+rec_offset: 186
+rec_offset: 202
+rec_offset: 206
+rec_offset: 210
+rec_offset: 226
+rec_offset: 230
+rec_offset: 234
+rec_offset: 250
+rec_offset: 254
+rec_offset: 258
+rec_offset: 274
+rec_offset: 278
+rec_offset: 282
+rec_offset: 298
+rec_offset: 302
+rec_offset: 306
+before print
+----
+Char0     : afterlenread: 16
+pppppppppppppppp
+Int0      : 13
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 14
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 14
+data_integer: 14
+slotNum, pageNum: 14, 0
+nullIndicator: field Size: 17
+rec_offset: 83
+field Size: 4
+wump: 14
+rec_offset: 87
+rec_offset: 91
+rec_offset: 108
+rec_offset: 112
+rec_offset: 116
+rec_offset: 133
+rec_offset: 137
+rec_offset: 141
+rec_offset: 158
+rec_offset: 162
+rec_offset: 166
+rec_offset: 183
+rec_offset: 187
+rec_offset: 191
+rec_offset: 208
+rec_offset: 212
+rec_offset: 216
+rec_offset: 233
+rec_offset: 237
+rec_offset: 241
+rec_offset: 258
+rec_offset: 262
+rec_offset: 266
+rec_offset: 283
+rec_offset: 287
+rec_offset: 291
+rec_offset: 308
+rec_offset: 312
+rec_offset: 316
+before print
+----
+Char0     : afterlenread: 17
+qqqqqqqqqqqqqqqqq
+Int0      : 14
+----
+after print
+initialScanDone 
+pageNum: 0
+slotNum: 15
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 48
+data_integer: 48
+pageNum: 1
+slotNum: 0
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 15
+data_integer: 15
+slotNum, pageNum: 0, 1
+nullIndicator: field Size: 18
+rec_offset: 84
+field Size: 4
+wump: 15
+rec_offset: 88
+rec_offset: 92
+rec_offset: 110
+rec_offset: 114
+rec_offset: 118
+rec_offset: 136
+rec_offset: 140
+rec_offset: 144
+rec_offset: 162
+rec_offset: 166
+rec_offset: 170
+rec_offset: 188
+rec_offset: 192
+rec_offset: 196
+rec_offset: 214
+rec_offset: 218
+rec_offset: 222
+rec_offset: 240
+rec_offset: 244
+rec_offset: 248
+rec_offset: 266
+rec_offset: 270
+rec_offset: 274
+rec_offset: 292
+rec_offset: 296
+rec_offset: 300
+rec_offset: 318
+rec_offset: 322
+rec_offset: 326
+before print
+----
+Char0     : afterlenread: 18
+rrrrrrrrrrrrrrrrrr
+Int0      : 15
+----
+after print
+initialScanDone 
+pageNum: 1
+slotNum: 1
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 16
+data_integer: 16
+slotNum, pageNum: 1, 1
+nullIndicator: field Size: 19
+rec_offset: 85
+field Size: 4
+wump: 16
+rec_offset: 89
+rec_offset: 93
+rec_offset: 112
+rec_offset: 116
+rec_offset: 120
+rec_offset: 139
+rec_offset: 143
+rec_offset: 147
+rec_offset: 166
+rec_offset: 170
+rec_offset: 174
+rec_offset: 193
+rec_offset: 197
+rec_offset: 201
+rec_offset: 220
+rec_offset: 224
+rec_offset: 228
+rec_offset: 247
+rec_offset: 251
+rec_offset: 255
+rec_offset: 274
+rec_offset: 278
+rec_offset: 282
+rec_offset: 301
+rec_offset: 305
+rec_offset: 309
+rec_offset: 328
+rec_offset: 332
+rec_offset: 336
+before print
+----
+Char0     : afterlenread: 19
+sssssssssssssssssss
+Int0      : 16
+----
+after print
+initialScanDone 
+pageNum: 1
+slotNum: 2
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 17
+data_integer: 17
+slotNum, pageNum: 2, 1
+nullIndicator: field Size: 20
+rec_offset: 86
+field Size: 4
+wump: 17
+rec_offset: 90
+rec_offset: 94
+rec_offset: 114
+rec_offset: 118
+rec_offset: 122
+rec_offset: 142
+rec_offset: 146
+rec_offset: 150
+rec_offset: 170
+rec_offset: 174
+rec_offset: 178
+rec_offset: 198
+rec_offset: 202
+rec_offset: 206
+rec_offset: 226
+rec_offset: 230
+rec_offset: 234
+rec_offset: 254
+rec_offset: 258
+rec_offset: 262
+rec_offset: 282
+rec_offset: 286
+rec_offset: 290
+rec_offset: 310
+rec_offset: 314
+rec_offset: 318
+rec_offset: 338
+rec_offset: 342
+rec_offset: 346
+before print
+----
+Char0     : afterlenread: 20
+tttttttttttttttttttt
+Int0      : 17
+----
+after print
+initialScanDone 
+pageNum: 1
+slotNum: 3
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 18
+data_integer: 18
+slotNum, pageNum: 3, 1
+nullIndicator: field Size: 21
+rec_offset: 87
+field Size: 4
+wump: 18
+rec_offset: 91
+rec_offset: 95
+rec_offset: 116
+rec_offset: 120
+rec_offset: 124
+rec_offset: 145
+rec_offset: 149
+rec_offset: 153
+rec_offset: 174
+rec_offset: 178
+rec_offset: 182
+rec_offset: 203
+rec_offset: 207
+rec_offset: 211
+rec_offset: 232
+rec_offset: 236
+rec_offset: 240
+rec_offset: 261
+rec_offset: 265
+rec_offset: 269
+rec_offset: 290
+rec_offset: 294
+rec_offset: 298
+rec_offset: 319
+rec_offset: 323
+rec_offset: 327
+rec_offset: 348
+rec_offset: 352
+rec_offset: 356
+before print
+----
+Char0     : afterlenread: 21
+uuuuuuuuuuuuuuuuuuuuu
+Int0      : 18
+----
+after print
+initialScanDone 
+pageNum: 1
+slotNum: 4
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 19
+data_integer: 19
+slotNum, pageNum: 4, 1
+nullIndicator: field Size: 22
+rec_offset: 88
+field Size: 4
+wump: 19
+rec_offset: 92
+rec_offset: 96
+rec_offset: 118
+rec_offset: 122
+rec_offset: 126
+rec_offset: 148
+rec_offset: 152
+rec_offset: 156
+rec_offset: 178
+rec_offset: 182
+rec_offset: 186
+rec_offset: 208
+rec_offset: 212
+rec_offset: 216
+rec_offset: 238
+rec_offset: 242
+rec_offset: 246
+rec_offset: 268
+rec_offset: 272
+rec_offset: 276
+rec_offset: 298
+rec_offset: 302
+rec_offset: 306
+rec_offset: 328
+rec_offset: 332
+rec_offset: 336
+rec_offset: 358
+rec_offset: 362
+rec_offset: 366
+before print
+----
+Char0     : afterlenread: 22
+vvvvvvvvvvvvvvvvvvvvvv
+Int0      : 19
+----
+after print
+initialScanDone 
+pageNum: 1
+slotNum: 5
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 20
+data_integer: 20
+slotNum, pageNum: 5, 1
+nullIndicator: field Size: 23
+rec_offset: 89
+field Size: 4
+wump: 20
+rec_offset: 93
+rec_offset: 97
+rec_offset: 120
+rec_offset: 124
+rec_offset: 128
+rec_offset: 151
+rec_offset: 155
+rec_offset: 159
+rec_offset: 182
+rec_offset: 186
+rec_offset: 190
+rec_offset: 213
+rec_offset: 217
+rec_offset: 221
+rec_offset: 244
+rec_offset: 248
+rec_offset: 252
+rec_offset: 275
+rec_offset: 279
+rec_offset: 283
+rec_offset: 306
+rec_offset: 310
+rec_offset: 314
+rec_offset: 337
+rec_offset: 341
+rec_offset: 345
+rec_offset: 368
+rec_offset: 372
+rec_offset: 376
+before print
+----
+Char0     : afterlenread: 23
+wwwwwwwwwwwwwwwwwwwwwww
+Int0      : 20
+----
+after print
+initialScanDone 
+pageNum: 1
+slotNum: 6
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 21
+data_integer: 21
+slotNum, pageNum: 6, 1
+nullIndicator: field Size: 24
+rec_offset: 90
+field Size: 4
+wump: 21
+rec_offset: 94
+rec_offset: 98
+rec_offset: 122
+rec_offset: 126
+rec_offset: 130
+rec_offset: 154
+rec_offset: 158
+rec_offset: 162
+rec_offset: 186
+rec_offset: 190
+rec_offset: 194
+rec_offset: 218
+rec_offset: 222
+rec_offset: 226
+rec_offset: 250
+rec_offset: 254
+rec_offset: 258
+rec_offset: 282
+rec_offset: 286
+rec_offset: 290
+rec_offset: 314
+rec_offset: 318
+rec_offset: 322
+rec_offset: 346
+rec_offset: 350
+rec_offset: 354
+rec_offset: 378
+rec_offset: 382
+rec_offset: 386
+before print
+----
+Char0     : afterlenread: 24
+xxxxxxxxxxxxxxxxxxxxxxxx
+Int0      : 21
+----
+after print
+initialScanDone 
+pageNum: 1
+slotNum: 7
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 22
+data_integer: 22
+slotNum, pageNum: 7, 1
+nullIndicator: field Size: 25
+rec_offset: 91
+field Size: 4
+wump: 22
+rec_offset: 95
+rec_offset: 99
+rec_offset: 124
+rec_offset: 128
+rec_offset: 132
+rec_offset: 157
+rec_offset: 161
+rec_offset: 165
+rec_offset: 190
+rec_offset: 194
+rec_offset: 198
+rec_offset: 223
+rec_offset: 227
+rec_offset: 231
+rec_offset: 256
+rec_offset: 260
+rec_offset: 264
+rec_offset: 289
+rec_offset: 293
+rec_offset: 297
+rec_offset: 322
+rec_offset: 326
+rec_offset: 330
+rec_offset: 355
+rec_offset: 359
+rec_offset: 363
+rec_offset: 388
+rec_offset: 392
+rec_offset: 396
+before print
+----
+Char0     : afterlenread: 25
+yyyyyyyyyyyyyyyyyyyyyyyyy
+Int0      : 22
+----
+after print
+initialScanDone 
+pageNum: 1
+slotNum: 8
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 23
+data_integer: 23
+slotNum, pageNum: 8, 1
+nullIndicator: field Size: 26
+rec_offset: 92
+field Size: 4
+wump: 23
+rec_offset: 96
+rec_offset: 100
+rec_offset: 126
+rec_offset: 130
+rec_offset: 134
+rec_offset: 160
+rec_offset: 164
+rec_offset: 168
+rec_offset: 194
+rec_offset: 198
+rec_offset: 202
+rec_offset: 228
+rec_offset: 232
+rec_offset: 236
+rec_offset: 262
+rec_offset: 266
+rec_offset: 270
+rec_offset: 296
+rec_offset: 300
+rec_offset: 304
+rec_offset: 330
+rec_offset: 334
+rec_offset: 338
+rec_offset: 364
+rec_offset: 368
+rec_offset: 372
+rec_offset: 398
+rec_offset: 402
+rec_offset: 406
+before print
+----
+Char0     : afterlenread: 26
+zzzzzzzzzzzzzzzzzzzzzzzzzz
+Int0      : 23
+----
+after print
+initialScanDone 
+pageNum: 1
+slotNum: 9
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 24
+data_integer: 24
+slotNum, pageNum: 9, 1
+nullIndicator: field Size: 27
+rec_offset: 93
+field Size: 4
+wump: 24
+rec_offset: 97
+rec_offset: 101
+rec_offset: 128
+rec_offset: 132
+rec_offset: 136
+rec_offset: 163
+rec_offset: 167
+rec_offset: 171
+rec_offset: 198
+rec_offset: 202
+rec_offset: 206
+rec_offset: 233
+rec_offset: 237
+rec_offset: 241
+rec_offset: 268
+rec_offset: 272
+rec_offset: 276
+rec_offset: 303
+rec_offset: 307
+rec_offset: 311
+rec_offset: 338
+rec_offset: 342
+rec_offset: 346
+rec_offset: 373
+rec_offset: 377
+rec_offset: 381
+rec_offset: 408
+rec_offset: 412
+rec_offset: 416
+before print
+----
+Char0     : afterlenread: 27
+aaaaaaaaaaaaaaaaaaaaaaaaaaa
+Int0      : 24
+----
+after print
+initialScanDone 
+pageNum: 1
+slotNum: 10
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 49
+data_integer: 49
+pageNum: 2
+slotNum: 0
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 25
+data_integer: 25
+slotNum: 1
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 26
+data_integer: 26
+slotNum: 2
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 27
+data_integer: 27
+slotNum: 3
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 28
+data_integer: 28
+slotNum: 4
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 29
+data_integer: 29
+slotNum: 5
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 30
+data_integer: 30
+slotNum: 6
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 31
+data_integer: 31
+slotNum: 7
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 32
+data_integer: 32
+slotNum: 8
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 50
+data_integer: 50
+pageNum: 3
+slotNum: 0
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 33
+data_integer: 33
+slotNum: 1
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 34
+data_integer: 34
+slotNum: 2
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 35
+data_integer: 35
+slotNum: 3
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 36
+data_integer: 36
+slotNum: 4
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 37
+data_integer: 37
+slotNum: 5
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 38
+data_integer: 38
+slotNum: 6
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 39
+data_integer: 39
+slotNum: 7
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 51
+data_integer: 51
+pageNum: 4
+slotNum: 0
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 40
+data_integer: 40
+slotNum: 1
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 41
+data_integer: 41
+slotNum: 2
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 42
+data_integer: 42
+slotNum: 3
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 43
+data_integer: 43
+slotNum: 4
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 44
+data_integer: 44
+slotNum: 5
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 45
+data_integer: 45
+slotNum: 6
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 52
+data_integer: 52
+slotNum: 7
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 53
+data_integer: 53
+pageNum: 5
+slotNum: 0
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 46
+data_integer: 46
+slotNum: 1
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 47
+data_integer: 47
+slotNum: 2
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 54
+data_integer: 54
+slotNum: 3
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 55
+data_integer: 55
+slotNum: 4
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 56
+data_integer: 56
+slotNum: 5
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 57
+data_integer: 57
+slotNum: 6
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 58
+data_integer: 58
+slotNum: 7
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 59
+data_integer: 59
+slotNum: 8
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 60
+data_integer: 60
+slotNum: 9
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 61
+data_integer: 61
+slotNum: 10
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 62
+data_integer: 62
+slotNum: 11
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 63
+data_integer: 63
+pageNum: 6
+slotNum: 0
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 64
+data_integer: 64
+slotNum: 1
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 65
+data_integer: 65
+slotNum: 2
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 66
+data_integer: 66
+slotNum: 3
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 67
+data_integer: 67
+slotNum: 4
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 68
+data_integer: 68
+slotNum: 5
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 69
+data_integer: 69
+slotNum: 6
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 70
+data_integer: 70
+slotNum: 7
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 71
+data_integer: 71
+slotNum: 8
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 72
+data_integer: 72
+slotNum: 9
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 73
+data_integer: 73
+slotNum: 10
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 98
+data_integer: 98
+slotNum: 11
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 99
+data_integer: 99
+pageNum: 7
+slotNum: 0
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 74
+data_integer: 74
+slotNum: 1
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 75
+data_integer: 75
+slotNum: 2
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 76
+data_integer: 76
+slotNum: 3
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 77
+data_integer: 77
+slotNum: 4
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 78
+data_integer: 78
+slotNum: 5
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 79
+data_integer: 79
+slotNum: 6
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 80
+data_integer: 80
+slotNum: 7
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 81
+data_integer: 81
+pageNum: 8
+slotNum: 0
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 82
+data_integer: 82
+slotNum: 1
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 83
+data_integer: 83
+slotNum: 2
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 84
+data_integer: 84
+slotNum: 3
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 85
+data_integer: 85
+slotNum: 4
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 86
+data_integer: 86
+slotNum: 5
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 87
+data_integer: 87
+slotNum: 6
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 88
+data_integer: 88
+pageNum: 9
+slotNum: 0
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 89
+data_integer: 89
+slotNum: 1
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 90
+data_integer: 90
+slotNum: 2
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 91
+data_integer: 91
+slotNum: 3
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 92
+data_integer: 92
+slotNum: 4
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 93
+data_integer: 93
+slotNum: 5
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 94
+data_integer: 94
+pageNum: 10
+slotNum: 0
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 95
+data_integer: 95
+slotNum: 1
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 96
+data_integer: 96
+slotNum: 2
+len: 30
+fieldNum: 0
+fieldNum: 1
+readAttribute INT: 97
+data_integer: 97
