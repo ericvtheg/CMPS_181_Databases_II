@@ -464,8 +464,8 @@ RC TEST_RM_8(const string &tableName, vector<RID> &rids, vector<int> &sizes)
     // Insert 2000 tuples into table
     for(int i = 0; i < numTuples; i++)
     {
-        // if(i == 897)
-        //     continue;
+        if(i == 897)
+            continue;
         // Test insert Tuple
         int size = 0;
         memset(tuple, 0, 2000);
@@ -1008,19 +1008,19 @@ int main()
     // Get Attributes
     RC rcmain = TEST_RM_0("tbl_employee");
 
-    rcmain = TEST_RM_1("tbl_employee", 8, "Anteater", 27, 6.2, 10000);
-
-    rcmain = TEST_RM_2("tbl_employee", 6, "Peters", 23, 5.9, 8000);
-
-    rcmain = TEST_RM_3("tbl_employee", 6, "Thomas", 28, 6.5, 6000);
-
-    rcmain = TEST_RM_4("tbl_employee", 7, "Hoffman", 31, 5.8, 9999);
-
-    rcmain = TEST_RM_5("tbl_employee", 6, "Martin", 26, 173.6, 8000);
-
-    rcmain = TEST_RM_6("tbl_employee3");
-
-    rcmain = TEST_RM_7("tbl_employee3");
+    // rcmain = TEST_RM_1("tbl_employee", 8, "Anteater", 27, 6.2, 10000);
+    //
+    // rcmain = TEST_RM_2("tbl_employee", 6, "Peters", 23, 5.9, 8000);
+    //
+    // rcmain = TEST_RM_3("tbl_employee", 6, "Thomas", 28, 6.5, 6000);
+    //
+    // rcmain = TEST_RM_4("tbl_employee", 7, "Hoffman", 31, 5.8, 9999);
+    //
+    // rcmain = TEST_RM_5("tbl_employee", 6, "Martin", 26, 173.6, 8000);
+    //
+    // rcmain = TEST_RM_6("tbl_employee3");
+    //
+    // rcmain = TEST_RM_7("tbl_employee3");
 
     vector<RID> rids;
     vector<int> sizes;

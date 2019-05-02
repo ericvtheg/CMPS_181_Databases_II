@@ -106,15 +106,15 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
 
    unsigned useSlotNum = slotHeader.recordEntriesNumber;
 
-   for(int j = 0; j < slotHeader.recordEntriesNumber; j++){
-       SlotDirectoryRecordEntry temp = getSlotDirectoryRecordEntry(pageData, j);
-       if(temp.offset == 0){
-           cout << "hit in yaya" << endl;
-           useSlotNum = j;
-           slotFound = 0; // set this to 0 cuz then we aren't adding a slot
-           break;
-       }
-   }
+   // for(int j = 0; j < slotHeader.recordEntriesNumber; j++){
+   //     SlotDirectoryRecordEntry temp = getSlotDirectoryRecordEntry(pageData, j);
+   //     if(temp.offset == 0){
+   //         cout << "hit in yaya" << endl;
+   //         useSlotNum = j;
+   //         slotFound = 0; // set this to 0 cuz then we aren't adding a slot
+   //         break;
+   //     }
+   // }
 
    rid.pageNum = i;
    rid.slotNum = useSlotNum;

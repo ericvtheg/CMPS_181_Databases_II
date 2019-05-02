@@ -552,10 +552,11 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
 {
     FileHandle fileHandle;
 
-    if(_rbf_manager->openFile(tableName, fileHandle))
-        return RBFM_OPEN_FAILED;
+
 
     vector<Attribute> recordDescriptor;
+    if(_rbf_manager->openFile(tableName, fileHandle))
+        return RBFM_OPEN_FAILED;
     getAttributes(tableName, recordDescriptor);
     _rbf_manager->insertRecord(fileHandle, recordDescriptor, data, rid);
     _rbf_manager->closeFile(fileHandle);
