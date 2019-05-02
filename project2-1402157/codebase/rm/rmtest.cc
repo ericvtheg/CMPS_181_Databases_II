@@ -464,6 +464,8 @@ RC TEST_RM_8(const string &tableName, vector<RID> &rids, vector<int> &sizes)
     // Insert 2000 tuples into table
     for(int i = 0; i < numTuples; i++)
     {
+        // if(i == 897)
+        //     continue;
         // Test insert Tuple
         int size = 0;
         memset(tuple, 0, 2000);
@@ -471,9 +473,12 @@ RC TEST_RM_8(const string &tableName, vector<RID> &rids, vector<int> &sizes)
 
         rc = rm->insertTuple(tableName, tuple, rid);
         assert(rc == success && "RelationManager::insertTuple() should not fail.");
+        cout << "i:" << i << endl;
 
         rids.push_back(rid);
         sizes.push_back(size);
+        cout << "i:" << i << endl;
+        cout << "rid: slot & page" << rid.slotNum << " " << rid.pageNum << endl;
     }
 
     free(tuple);

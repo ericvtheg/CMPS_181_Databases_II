@@ -109,8 +109,10 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
    for(int j = 0; j < slotHeader.recordEntriesNumber; j++){
        SlotDirectoryRecordEntry temp = getSlotDirectoryRecordEntry(pageData, j);
        if(temp.offset == 0){
+           cout << "hit in yaya" << endl;
            useSlotNum = j;
            slotFound = 0; // set this to 0 cuz then we aren't adding a slot
+           break;
        }
    }
 
@@ -1267,6 +1269,7 @@ RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
  		cout << "pageNum: " << j << endl;
     	if (fH.readPage(j, pageData)){
        	return RBFM_READ_FAILED;
+        cout << "after read Page" << endl;
      	}else{
      		header = rbfm->getSlotDirectoryHeader(pageData);
     	}
@@ -1372,7 +1375,7 @@ RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
         	        // cout << "Value String: "<< valueString << endl;
 
                     matchingFieldFound = compare(datachar, datachar2, compOper);
-
+                    free(datachar2);
         	        free(datachar);
         	    break;
         	}
@@ -1384,6 +1387,7 @@ RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
         	    cout << "Found True" << endl;
         		rid.pageNum = j;
         		rbfm->getRecordwithGivenAttrsAtOffset(pageData, recordEntry.offset, recordDesc, wantedAttrs, data);
+                free(pageData);
                 free(returnedFieldData);
         		return SUCCESS;
         	}
@@ -1393,6 +1397,7 @@ RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
 
 	}
    cout << "hit in scan" << endl;
+   free(pageData);
 	return RBFM_EOF;
 };
 
