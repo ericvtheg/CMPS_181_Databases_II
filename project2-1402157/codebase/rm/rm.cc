@@ -167,6 +167,31 @@ RC RelationManager::createColumnDesc(vector<Attribute> &retVec)
     return SUCCESS;
 }
 
+// Create an employee table
+RC RelationManager::createNewDesc(vector<Attribute> &retVec)
+{
+
+    Attribute attr;
+
+    attr.name = "column-name";
+    attr.type = TypeVarChar;
+    attr.length = (AttrLength)50;
+    retVec.push_back(attr);
+
+    attr.name = "column-type";
+    attr.type = TypeInt;
+    attr.length = (AttrLength)4;
+    retVec.push_back(attr);
+
+    attr.name = "column-length";
+    attr.type = TypeInt;
+    attr.length = (AttrLength)4;
+    retVec.push_back(attr);
+
+    return SUCCESS;
+}
+
+
 // Function to prepare the data in the correct form to be inserted/read
 void RelationManager::prepareTableRecord(int fieldCount, unsigned char *nullFieldsIndicator, const int tableid, const int namesize, const string &name, const int filenamesize, const string &filename, void *buffer, int *recordSize)
 {
@@ -387,6 +412,41 @@ RC RelationManager::deleteTable(const string &tableName)
     return -1;
 }
 
+
+RC RelationManager::parseDataScan(void * returnedDataScan, vector<Attribute> &newColDesc, vector<Attribute> &newColAttr){
+    int32_t null_t = 0;
+    char * iter_ptr = (char * )returnedDataScan;
+    Attribute newAtt;
+    int32_t varCharSize = 0;
+    int offset = 1;
+
+    memcpy(&varCharSize, iter_ptr + offset, INT_SIZE );
+    offset += INT_SIZE;
+    char * data_ptr = (char*) malloc(varCharSize);
+    memcpy(data_ptr, iter_ptr + offset, varCharSize );
+    data_ptr[varCharSize] = '\0';
+    string dataString(data_ptr);
+    newAtt.name = dataString;
+    cout << "newAtt.name: " << newAtt.name << endl;
+    offset += varCharSize;
+    memcpy(&newAtt.type, iter_ptr + offset, INT_SIZE );
+    cout << "newAtt.type: " << newAtt.type << endl;
+    offset += INT_SIZE;
+    memcpy(&newAtt.length, iter_ptr + offset, INT_SIZE );
+    cout << "newAtt.length: " << newAtt.length << endl;
+    offset += INT_SIZE;
+
+    newColAttr.push_back(newAtt);
+
+    //memcpy(&newAtt.position, iter_ptr + offset, INT_SIZE );
+    //cout << "newAtt.position: " << newAtt.position << endl;
+
+    free(data_ptr);
+
+    return SUCCESS;
+
+}
+
 RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &attrs)
 {
     // initalize
@@ -399,7 +459,7 @@ RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &at
     RID new_rid;
 
     _rbf_manager->openFile("Tables.tbl", fileHandle);
-    
+
     RBFM_ScanIterator rbfmsi;
 
     vector<string> attrNames;
@@ -429,7 +489,32 @@ RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &at
         cout << "hit in 1st getNextRecord" << endl;
     }
      cout << "hit after 1st getNextRecord" << endl;
-     cout << "returnedDataScan: " << returnedDataScan << endl;
+    _rbf_manager->printRecord(sysTblVec,returnedDataScan);
+
+    _rbf_manager->closeFile(fileHandle);
+    _rbf_manager->openFile("Columns.tbl", fileHandle);
+
+    int tableid = 0;
+    memcpy(&tableid, (char *)returnedDataScan + 1, INT_SIZE );
+    cout << "tableid after initial scan: " << tableid << endl;
+
+    vector<string> colAttr;
+    colAttr.push_back("column-name");
+    colAttr.push_back("column-type");
+    colAttr.push_back("column-length");
+    colAttr.push_back("column-position");
+
+    vector<Attribute> newColDesc;
+    createNewDesc(newColDesc);
+
+    _rbf_manager->scan(fileHandle, sysColVec, "table-id", EQ_OP, &tableid, colAttr, rbfmsi);
+
+    while( rbfmsi.getNextRecord(new_rid, returnedDataScan) == SUCCESS) {
+        //_rbf_manager->printRecord(sysColVec, returnedDataScan);
+        parseDataScan(returnedDataScan, newColDesc, attrs);
+        cout << "hit in 1st getNextRecord" << endl;
+    }
+
 
     free(valuePointer);
     free(returnedDataScan);

@@ -45,7 +45,7 @@ friend class RecordBasedFileManager;
   void prepareColumnRecord(int fieldCount, unsigned char *nullFieldsIndicator, const int tableid, const int columnnamesize, const string &columnname, const int columntype, const int columnlength,const int columnposition, void *buffer, int *recordSize);
 
   RC getLastTblID(FileHandle &fileHandle, const vector<Attribute> &recordDescriptor, void * data);
- 
+
   RC deleteCatalog();
 
   RC createTable(const string &tableName, const vector<Attribute> &attrs);
@@ -89,6 +89,8 @@ protected:
 private:
   static RelationManager *_rm;
   static RecordBasedFileManager *_rbf_manager;
+  RC parseDataScan(void * returnedDataScan, vector<Attribute> &newColDesc, vector<Attribute> &newColAttr);
+  RC createNewDesc(vector<Attribute> &retVec);
 };
 
 #endif

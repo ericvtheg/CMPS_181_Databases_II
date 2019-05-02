@@ -1350,7 +1350,7 @@ RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
         	    cout << "Found True" << endl;
         		rid.pageNum = j;
         		rbfm->getRecordwithGivenAttrsAtOffset(pageData, recordEntry.offset, recordDesc, wantedAttrs, data);
-               free(returnedFieldData);
+                free(returnedFieldData);
         		return SUCCESS;
         	}
 
