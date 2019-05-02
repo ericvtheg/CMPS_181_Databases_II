@@ -24,6 +24,15 @@ RecordBasedFileManager::~RecordBasedFileManager()
 {
 }
 
+bool RecordBasedFileManager::compRID(const RID &rid1, const RID &rid2 ){
+    if(rid1.slotNum == rid2.slotNum && rid1.pageNum == rid2.pageNum ){
+        cout << "compRID: TRUE " << endl;
+        return true;
+    }else{
+        return false;
+    }
+}
+
 RC RecordBasedFileManager::createFile(const string &fileName) {
    // Creating a new paged file.
    if (_pf_manager->createFile(fileName))
@@ -143,8 +152,17 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
    cout << endl << "hit in read record" << endl;
    // Retrieve the specified page
    void * pageData = malloc(PAGE_SIZE);
+   void * orPageData = malloc(PAGE_SIZE);
    if (fileHandle.readPage(rid.pageNum, pageData))
        return RBFM_READ_FAILED;
+
+   if(rid.slotNum < 0 )
+       return RBFM_READ_FAILED;
+
+   SlotDirectoryHeader slotHeader = getSlotDirectoryHeader(orPageData);
+
+   if(rid.slotNum >= slotHeader.recordEntriesNumber)
+       return RBFM_SLOT_DN_EXIST;
 
    cout << "rid slotNum:" << rid.slotNum << endl;
    cout << "rid pageNum:" << rid.pageNum << endl;
@@ -162,21 +180,35 @@ RC RecordBasedFileManager::readRecord(FileHandle &fileHandle, const vector<Attri
    cout << "rid pageNum:" << new_rid.pageNum << endl;
 
    // Checks if the specific slot id exists in the page
-   SlotDirectoryHeader slotHeader = getSlotDirectoryHeader(pageData);
-
-   if(slotHeader.recordEntriesNumber < new_rid.slotNum)
-       return RBFM_SLOT_DN_EXIST;
+   slotHeader = getSlotDirectoryHeader(pageData);
 
    // Gets the slot directory record entry data
    SlotDirectoryRecordEntry recordEntry = getSlotDirectoryRecordEntry(pageData, new_rid.slotNum);
 
-   if(recordEntry.offset == 0){
-       return RBFM_UPDATE_FAILED;
+   // if(recordEntry.offset == 0){
+   //     return RBFM_UPDATE_FAILED;
+   // }
+   if(compRID(rid, new_rid) && (recordEntry.offset == 0)){
+       cout << " Same RID " << endl;
+       free(orPageData);
+       free(pageData);
+       return RBFM_SLOT_DN_EXIST;
+   }else if(!compRID(rid, new_rid) && (recordEntry.offset == 0)){
+       SlotDirectoryRecordEntry updatedRecordEntry;
+       updatedRecordEntry.offset = 0;
+       updatedRecordEntry.length = 0;
+       setSlotDirectoryRecordEntry(orPageData, rid.slotNum, updatedRecordEntry);
+       if (fileHandle.writePage(rid.pageNum, orPageData))
+        return RBFM_WRITE_FAILED;
+       free(orPageData);
+       free(pageData);
+       return RBFM_SLOT_DN_EXIST;
    }
 
    // Retrieve the actual entry data
    getRecordAtOffset(pageData, recordEntry.offset, recordDescriptor, data);
 
+   free(orPageData);
    free(pageData);
    return SUCCESS;
 }
@@ -1242,7 +1274,7 @@ RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
 
     	for(; k < header.recordEntriesNumber; k++){
     		//getrecord
- 	    	cout << "slotNum: " << k << endl;
+ 	    	// cout << "slotNum: " << k << endl;
      		//For each slot retrieve the actual entry
      		SlotDirectoryRecordEntry recordEntry = rbfm->getSlotDirectoryRecordEntry(pageData, k);
 
@@ -1266,7 +1298,7 @@ RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
            vector<Attribute> one;
            one.push_back(recordDesc[fieldNum]);
 
-           rbfm->printRecord( one,returnedFieldData);
+           // rbfm->printRecord( one,returnedFieldData);
         	//If NULL skip field completely, should result in a null pointer
 
            //Initialize the NUll Indicator, should only really be 1 bit i.e. takes up 1 byte
@@ -1319,25 +1351,27 @@ RC RBFM_ScanIterator::getNextRecord(RID &rid, void *data){
         	    case TypeVarChar:
 
                    //Grab the size of the attribute for the string and grab the string
-        	        uint32_t varcharSize;
+        	        int varcharSize;
         	        memcpy(&varcharSize, (char *)returnedFieldData + nullIndicatorSize, INT_SIZE);
 
-                   cout << "VarCharSize: " << varcharSize << endl;
-        	        char *datachar = (char *)malloc(varcharSize + 1);
-
+                   // cout << "VarCharSize: " << varcharSize << endl;
+        	        char *datachar = (char *)malloc(recordDesc[fieldNum].length);
+                    memset(datachar, 0 , recordDesc[fieldNum].length);
         	        memcpy(datachar,(char*)returnedFieldData + nullIndicatorSize + INT_SIZE, varcharSize);
         	        datachar[varcharSize + 1] = '\0';
-        	        string dataString(datachar);
+        	        //string dataString(datachar);
 
                    memcpy(&varcharSize, compValue, INT_SIZE);
-                   char *datachar2 = (char *)malloc(varcharSize + 1);
+                   //char *datachar2 = (char *)malloc(varcharSize + 1);
+                   char *datachar2 = (char *)malloc(recordDesc[fieldNum].length);
+                   memset(datachar2, 0 , recordDesc[fieldNum].length);
                    memcpy(datachar2,(char*)compValue + INT_SIZE, varcharSize);
                    datachar2[varcharSize + 1] = '\0';
-                   string valueString(datachar2);
+                   //string valueString(datachar2);
 
-        	        cout << "Value String: "<< valueString << endl;
+        	        // cout << "Value String: "<< valueString << endl;
 
-                    matchingFieldFound = compare(dataString, valueString, compOper);
+                    matchingFieldFound = compare(datachar, datachar2, compOper);
 
         	        free(datachar);
         	    break;
@@ -1548,14 +1582,113 @@ bool RBFM_ScanIterator::compare(const uint32_t &data, const uint32_t &value, Com
    }
    return false;
 };
-bool RBFM_ScanIterator::compare(const string &data, const string &value, CompOp compOp){
+// bool RBFM_ScanIterator::compare(const string &data, const string &value, CompOp compOp){
+//    cout << "In string compare" <<endl;
+//    cout << "data length: " << data.length() << endl;
+//    cout << "value length: " << value.length() << endl;
+//    cout << "data: " << data << endl;
+//    cout << "value: " << value << endl;
+//
+// 	//<0	the first character that does not match has a lower value in ptr1 than in ptr2
+// 	//0	the contents of both strings are equal
+// 	//>0	the first character that does not match has a greater value in ptr1 than in ptr2
+// 	int diffvalue = data.compare(value);
+// 	switch(compOp)
+// 	{    case EQ_OP:
+// 		    if(diffvalue == 0){
+//                cout << "true" << endl;
+// 		    	return true;
+//            }
+// 		    else{ cout << "false" << endl;
+//                return false;}
+// 		 break;
+//         case LT_OP:      // <
+// 	         if( diffvalue < 0)
+// 	         	return true;
+// 	         else return false;
+//
+//         break;
+//         case LE_OP:      // <=
+// 	         if(diffvalue <= 0)
+// 	         	return true;
+// 	         else return false;
+//
+//         break;
+//         case GT_OP:      // >
+// 	         if(diffvalue > 0)
+// 	         	return true;
+// 	         else return false;
+//         break;
+//         case GE_OP:      // >=
+// 	         if(diffvalue >= 0)
+// 	         	return true;
+// 	         else return false;
+//         break;
+//         case NE_OP:      // !=
+// 	         if(diffvalue != 0)
+// 	         	return true;
+// 	         else return false;
+//
+//         break;
+//         default:
+//         	return false;
+//    }
+//
+//    return false;
+//
+// };
+bool RBFM_ScanIterator::compare(const float &data, const float &value, CompOp compOp){
+	switch(compOp)
+	{    case EQ_OP:
+		    if(data == value)
+		    	return true;
+		    else return false;
+		 break;
+        case LT_OP:      // <
+	         if(data < value)
+	         	return true;
+	         else return false;
+        break;
+        case LE_OP:      // <=
+	         if(data <= value)
+	         	return true;
+	         else return false;
+
+        break;
+        case GT_OP:      // >
+	         if(data > value)
+	         	return true;
+	         else return false;
+        break;
+        case GE_OP:      // >=
+	         if(data >= value)
+	         	return true;
+	         else return false;
+        break;
+        case NE_OP:      // !=
+	         if(data != value)
+	         	return true;
+	         else return false;
+
+        break;
+        default:
+        	return false;
+   }
+
+   return false;
+
+};
+bool RBFM_ScanIterator::compare(const char * data, const char * value, CompOp compOp){
    cout << "In string compare" <<endl;
-   cout << "data: " << data.length() << endl;
-   cout << "value: " << value.length() << endl;
+   // cout << "data length: " << data.length() << endl;
+   // cout << "value length: " << value.length() << endl;
+   // cout << "data: " << data << endl;
+   // cout << "value: " << value << endl;
+
 	//<0	the first character that does not match has a lower value in ptr1 than in ptr2
 	//0	the contents of both strings are equal
 	//>0	the first character that does not match has a greater value in ptr1 than in ptr2
-	int diffvalue = data.compare(value);
+	int diffvalue = strcmp(data,value);
 	switch(compOp)
 	{    case EQ_OP:
 		    if(diffvalue == 0){
@@ -1589,47 +1722,6 @@ bool RBFM_ScanIterator::compare(const string &data, const string &value, CompOp 
         break;
         case NE_OP:      // !=
 	         if(diffvalue != 0)
-	         	return true;
-	         else return false;
-
-        break;
-        default:
-        	return false;
-   }
-
-   return false;
-
-};
-bool RBFM_ScanIterator::compare(const float &data, const float &value, CompOp compOp){
-	switch(compOp)
-	{    case EQ_OP:
-		    if(data == value)
-		    	return true;
-		    else return false;
-		 break;
-        case LT_OP:      // <
-	         if(data < value)
-	         	return true;
-	         else return false;
-        break;
-        case LE_OP:      // <=
-	         if(data <= value)
-	         	return true;
-	         else return false;
-
-        break;
-        case GT_OP:      // >
-	         if(data > value)
-	         	return true;
-	         else return false;
-        break;
-        case GE_OP:      // >=
-	         if(data >= value)
-	         	return true;
-	         else return false;
-        break;
-        case NE_OP:      // !=
-	         if(data != value)
 	         	return true;
 	         else return false;
 

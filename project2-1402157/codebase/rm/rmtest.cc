@@ -26,10 +26,10 @@ RC TEST_RM_1(const string &tableName, const int nameLength, const string &name, 
     // Functions tested
     // 1. Insert Tuple **
     // 2. Read Tuple **
-    // NOTE: "**" signifies the new functions being tested in this test case. 
+    // NOTE: "**" signifies the new functions being tested in this test case.
     cout << endl << "***** In RM Test Case 1 *****" << endl;
-   
-    RID rid; 
+
+    RID rid;
     int tupleSize = 0;
     void *tuple = malloc(200);
     void *returnedData = malloc(200);
@@ -37,28 +37,34 @@ RC TEST_RM_1(const string &tableName, const int nameLength, const string &name, 
     vector<Attribute> attrs;
     RC rc = rm->getAttributes(tableName, attrs);
     assert(rc == success && "RelationManager::getAttributes() should not fail.");
+    cout << "finished in getAttributes" << endl;
 
     // Initialize a NULL field indicator
     int nullAttributesIndicatorActualSize = getActualByteForNullsIndicator(attrs.size());
     unsigned char *nullsIndicator = (unsigned char *) malloc(nullAttributesIndicatorActualSize);
 	memset(nullsIndicator, 0, nullAttributesIndicatorActualSize);
+    cout << "finished in getActualByte" << endl;
 
     // Insert a tuple into a table
     prepareTuple(attrs.size(), nullsIndicator, nameLength, name, age, height, salary, tuple, &tupleSize);
+    cout << "finished in prepareTuple" << endl;
     cout << "The tuple to be inserted:" << endl;
     rc = rm->printTuple(attrs, tuple);
     cout << endl;
-    
+
     rc = rm->insertTuple(tableName, tuple, rid);
     assert(rc == success && "RelationManager::insertTuple() should not fail.");
-    
+    cout << "Finished in insert" << endl;
+
     // Given the rid, read the tuple from table
     rc = rm->readTuple(tableName, rid, returnedData);
     assert(rc == success && "RelationManager::readTuple() should not fail.");
+    cout << "Finished in readTuple " << endl;
 
     cout << "The returned tuple:" << endl;
     rc = rm->printTuple(attrs, returnedData);
     cout << endl;
+    cout << "Finished in pritn" << endl;
 
     // Compare whether the two memory blocks are the same
     if(memcmp(tuple, returnedData, tupleSize) == 0)
@@ -85,8 +91,8 @@ RC TEST_RM_2(const string &tableName, const int nameLength, const string &name, 
     // 2. Delete Tuple **
     // 3. Read Tuple
     cout << endl << "***** In RM Test Case 2 *****" << endl;
-   
-    RID rid; 
+
+    RID rid;
     int tupleSize = 0;
     void *tuple = malloc(200);
     void *returnedData = malloc(200);
@@ -106,19 +112,19 @@ RC TEST_RM_2(const string &tableName, const int nameLength, const string &name, 
     cout << endl;
     rc = rm->insertTuple(tableName, tuple, rid);
     assert(rc == success && "RelationManager::insertTuple() should not fail.");
-    
+
     // Delete the tuple
     rc = rm->deleteTuple(tableName, rid);
     assert(rc == success && "RelationManager::deleteTuple() should not fail.");
-    
+
     // Read Tuple after deleting it - should fail
     memset(returnedData, 0, 200);
     rc = rm->readTuple(tableName, rid, returnedData);
     assert(rc != success && "Reading a deleted tuple should fail.");
-    
+
     // Compare the two memory blocks to see whether they are different
     if (memcmp(tuple, returnedData, tupleSize) != 0)
-    {   
+    {
         cout << "***** RM Test Case 2 finished. The result will be examined. *****" << endl << endl;
         free(tuple);
         free(returnedData);
@@ -131,24 +137,24 @@ RC TEST_RM_2(const string &tableName, const int nameLength, const string &name, 
         free(returnedData);
         return -1;
     }
-        
+
 }
 
 RC TEST_RM_3(const string &tableName, const int nameLength, const string &name, const int age, const float height, const int salary)
 {
     // Functions Tested
-    // 1. Insert Tuple    
+    // 1. Insert Tuple
     // 2. Update Tuple **
     // 3. Read Tuple
     cout << endl << "***** In RM Test Case 3****" << endl;
-   
-    RID rid; 
+
+    RID rid;
     int tupleSize = 0;
     int updatedTupleSize = 0;
     void *tuple = malloc(200);
     void *updatedTuple = malloc(200);
     void *returnedData = malloc(200);
-   
+
     // Test Insert the Tuple
     vector<Attribute> attrs;
     RC rc = rm->getAttributes(tableName, attrs);
@@ -168,11 +174,11 @@ RC TEST_RM_3(const string &tableName, const int nameLength, const string &name, 
     rc = rm->updateTuple(tableName, updatedTuple, rid);
     assert(rc == success && "RelationManager::updateTuple() should not fail.");
 
-    // Test Read Tuple 
+    // Test Read Tuple
     rc = rm->readTuple(tableName, rid, returnedData);
     assert(rc == success && "RelationManager::readTuple() should not fail.");
-   
-    // Print the tuples 
+
+    // Print the tuples
     cout << "Inserted Data:" << endl;
     rm->printTuple(attrs, tuple);
     cout << endl;
@@ -184,7 +190,7 @@ RC TEST_RM_3(const string &tableName, const int nameLength, const string &name, 
     cout << "Returned Data:" << endl;
     rm->printTuple(attrs, returnedData);
     cout << endl;
-    
+
     if (memcmp(updatedTuple, returnedData, updatedTupleSize) == 0)
     {
         cout << "***** RM Test Case 3 Finished. The result will be examined. *****" << endl << endl;
@@ -210,8 +216,8 @@ RC TEST_RM_4(const string &tableName, const int nameLength, const string &name, 
     // 1. Insert tuple
     // 2. Read Attributes **
     cout << endl << "***** In RM Test Case 4 *****" << endl;
-    
-    RID rid;    
+
+    RID rid;
     int tupleSize = 0;
     void *tuple = malloc(200);
     void *returnedData = malloc(200);
@@ -224,7 +230,7 @@ RC TEST_RM_4(const string &tableName, const int nameLength, const string &name, 
     int nullAttributesIndicatorActualSize = getActualByteForNullsIndicator(attrs.size());
     unsigned char *nullsIndicator = (unsigned char *) malloc(nullAttributesIndicatorActualSize);
 	memset(nullsIndicator, 0, nullAttributesIndicatorActualSize);
-    
+
     prepareTuple(attrs.size(), nullsIndicator, nameLength, name, age, height, salary, tuple, &tupleSize);
     rc = rm->insertTuple(tableName, tuple, rid);
     assert(rc == success && "RelationManager::insertTuple() should not fail.");
@@ -232,7 +238,7 @@ RC TEST_RM_4(const string &tableName, const int nameLength, const string &name, 
     // Test Read Attribute
     rc = rm->readAttribute(tableName, rid, "Salary", returnedData);
     assert(rc == success && "RelationManager::readAttribute() should not fail.");
- 
+
     int salaryBack = *(int *)((char *)returnedData+nullAttributesIndicatorActualSize);
 
     cout << "Salary: " << salary << " Returned Salary: " << salaryBack << endl;
@@ -250,7 +256,7 @@ RC TEST_RM_4(const string &tableName, const int nameLength, const string &name, 
         free(returnedData);
         return -1;
     }
-    
+
 }
 
 RC TEST_RM_5(const string &tableName, const int nameLength, const string &name, const int age, const float height, const int salary)
@@ -262,13 +268,13 @@ RC TEST_RM_5(const string &tableName, const int nameLength, const string &name, 
     // 3. Read Tuple
 	// 4. Insert Tuple
     cout << endl << "***** In RM Test Case 5 *****" << endl;
-   
-    RID rid; 
+
+    RID rid;
     int tupleSize = 0;
     void *tuple = malloc(200);
     void *returnedData = malloc(200);
     void *returnedData1 = malloc(200);
-   
+
     // Test Insert Tuple
     vector<Attribute> attrs;
     RC rc = rm->getAttributes(tableName, attrs);
@@ -282,23 +288,25 @@ RC TEST_RM_5(const string &tableName, const int nameLength, const string &name, 
     rc = rm->insertTuple(tableName, tuple, rid);
     assert(rc == success && "RelationManager::insertTuple() should not fail.");
 
-    // Test Read Tuple 
+    // Test Read Tuple
     rc = rm->readTuple(tableName, rid, returnedData);
     assert(rc == success && "RelationManager::readTuple() should not fail.");
 
     // Test Delete Table
     rc = rm->deleteTable(tableName);
     assert(rc == success && "RelationManager::deleteTable() should not fail.");
-    
+
+    cout << "WE HAVE MADE IT THIS FAR INTO TEST 5, RIGHT BEFORE READ TUPLE" << endl;
+
     // Reading a tuple on a deleted table
     memset((char*)returnedData1, 0, 200);
     rc = rm->readTuple(tableName, rid, returnedData1);
     assert(rc != success && "RelationManager::readTuple() on a deleted table should fail.");
-
+    cout << "WE HAVE MADE IT THIS FAR INTO TEST 5, RIGHT AFTER READ TUPLE" << endl;
     // Inserting a tuple on a deleted table
     rc = rm->insertTuple(tableName, tuple, rid);
     assert(rc != success && "RelationManager::insertTuple() on a deleted table should fail.");
-    
+
     if(memcmp(returnedData, returnedData1, tupleSize) != 0)
     {
         cout << "***** Test Case 5 Finished. The result will be examined. *****" << endl << endl;
@@ -323,7 +331,7 @@ RC TEST_RM_6(const string &tableName)
     // 1. Simple scan **
     cout << endl << "***** In RM Test Case 6 *****" << endl;
 
-    RID rid;    
+    RID rid;
     int tupleSize = 0;
     int numTuples = 100;
     void *tuple;
@@ -339,7 +347,7 @@ RC TEST_RM_6(const string &tableName)
 	memset(nullsIndicator, 0, nullAttributesIndicatorActualSize);
 
     RID rids[numTuples];
-    set<int> ages; 
+    set<int> ages;
     for(int i = 0; i < numTuples; i++)
     {
         tuple = malloc(200);
@@ -362,7 +370,7 @@ RC TEST_RM_6(const string &tableName)
     attributes.push_back(attr);
     rc = rm->scan(tableName, "", NO_OP, NULL, attributes, rmsi);
     assert(rc == success && "RelationManager::scan() should not fail.");
-    
+
     nullAttributesIndicatorActualSize = getActualByteForNullsIndicator(attributes.size());
     while(rmsi.getNextTuple(rid, returnedData) != RM_EOF)
     {
@@ -389,11 +397,11 @@ RC TEST_RM_7(const string &tableName)
 	// 2. Delete the given table
     cout << endl << "***** In RM Test Case 7 *****" << endl;
 
-    RID rid;    
+    RID rid;
     int numTuples = 100;
     void *returnedData = malloc(200);
 
-    set<int> ages; 
+    set<int> ages;
     RC rc = 0;
     for(int i = 0; i < numTuples; i++)
     {
@@ -409,7 +417,7 @@ RC TEST_RM_7(const string &tableName)
     rc = rm->scan(tableName, "", NO_OP, NULL, attributes, rmsi);
     assert(rc == success && "RelationManager::scan() should not fail.");
     int ageReturned = 0;
-    
+
     while(rmsi.getNextTuple(rid, returnedData) != RM_EOF)
     {
         // cout << "Returned Age: " << *(int *)((char *)returnedData+1) << endl;
@@ -423,7 +431,7 @@ RC TEST_RM_7(const string &tableName)
         }
     }
     rmsi.close();
-    
+
     // Delete a Table
     rc = rm->deleteTable(tableName);
     assert(rc == success && "RelationManager::deleteTable() should not fail.");
@@ -440,7 +448,7 @@ RC TEST_RM_8(const string &tableName, vector<RID> &rids, vector<int> &sizes)
     // 2. insert tuple
     cout << endl << "***** In RM Test Case 8 *****" << endl;
 
-    RID rid; 
+    RID rid;
     void *tuple = malloc(2000);
     int numTuples = 2000;
 
@@ -465,7 +473,7 @@ RC TEST_RM_8(const string &tableName, vector<RID> &rids, vector<int> &sizes)
         assert(rc == success && "RelationManager::insertTuple() should not fail.");
 
         rids.push_back(rid);
-        sizes.push_back(size);        
+        sizes.push_back(size);
     }
 
     free(tuple);
@@ -487,7 +495,7 @@ RC TEST_RM_09(const string &tableName, vector<RID> &rids, vector<int> &sizes)
     int numTuples = 2000;
     void *tuple = malloc(2000);
     void *returnedData = malloc(2000);
-    
+
     // read the saved rids and the sizes of records
     readRIDsFromDisk(rids, numTuples);
     readSizesFromDisk(sizes, numTuples);
@@ -521,7 +529,7 @@ RC TEST_RM_09(const string &tableName, vector<RID> &rids, vector<int> &sizes)
     free(returnedData);
 
     cout << "***** Test Case 9 Finished. The result will be examined. *****" << endl << endl;
-    
+
     return success;
 }
 
@@ -535,7 +543,7 @@ RC TEST_RM_10(const string &tableName, vector<RID> &rids, vector<int> &sizes)
     int numTuples = 2000;
     void *tuple = malloc(2000);
     void *returnedData = malloc(2000);
-    
+
     readRIDsFromDisk(rids, numTuples);
     readSizesFromDisk(sizes, numTuples);
 
@@ -600,7 +608,7 @@ RC TEST_RM_11(const string &tableName, vector<RID> &rids)
     int numTuples = 2000;
     RC rc = 0;
     void * returnedData = malloc(2000);
-    
+
     readRIDsFromDisk(rids, numTuples);
 
     // Delete the first 1000 tuples
@@ -625,7 +633,7 @@ RC TEST_RM_11(const string &tableName, vector<RID> &rids)
     cout << "***** Test Case 11 Finished. The result will be examined. *****" << endl << endl;
 
     free(returnedData);
-    
+
     return success;
 }
 
@@ -640,8 +648,8 @@ RC TEST_RM_12(const string &tableName)
     attrs.push_back("attr5");
     attrs.push_back("attr12");
     attrs.push_back("attr28");
-   
-    RC rc = rm->scan(tableName, "", NO_OP, NULL, attrs, rmsi); 
+
+    RC rc = rm->scan(tableName, "", NO_OP, NULL, attrs, rmsi);
     assert(rc == success && "RelationManager::scan() should not fail.");
 
     RID rid;
@@ -658,7 +666,7 @@ RC TEST_RM_12(const string &tableName)
 
             cout << "Real Value: " << *(float *)((char *)returnedData+nullAttributesIndicatorActualSize) << endl;
             offset += 4;
-        
+
             int size = *(int *)((char *)returnedData + offset + nullAttributesIndicatorActualSize);
             cout << "Varchar size: " << size << endl;
             offset += 4;
@@ -667,7 +675,7 @@ RC TEST_RM_12(const string &tableName)
             memcpy(buffer, (char *)returnedData + offset + nullAttributesIndicatorActualSize, size);
             buffer[size] = 0;
             offset += size;
-    
+
             cout << "VarChar Value: " << buffer << endl;
 
             cout << "Integer Value: " << *(int *)((char *)returnedData + offset + nullAttributesIndicatorActualSize) << endl << endl;
@@ -757,7 +765,7 @@ RC TEST_RM_13(const string &tableName)
     free(returnedData);
 
     cout << "***** Test Case 13 Finished. The result will be examined. *****" << endl << endl;
-    
+
     return success;
 }
 
@@ -779,9 +787,9 @@ RC TEST_RM_13b(const string &tableName)
     vector<char *> tuples;
 	string tupleName;
 	char *suffix = (char *)malloc(10);
-	
+
     bool nullBit = false;
-	
+
     // GetAttributes
     vector<Attribute> attrs;
     RC rc = rm->getAttributes(tableName, attrs);
@@ -794,7 +802,7 @@ RC TEST_RM_13b(const string &tableName)
     unsigned char *nullsIndicatorWithNull = (unsigned char *) malloc(nullAttributesIndicatorActualSize);
 	memset(nullsIndicatorWithNull, 0, nullAttributesIndicatorActualSize);
 
-	// age field : NULL 
+	// age field : NULL
 	nullsIndicatorWithNull[0] = 64; // 01000000
 
     for(int i = 0; i < numTuples; i++)
@@ -835,7 +843,7 @@ RC TEST_RM_13b(const string &tableName)
     {
     	// Check the first bit of the returned data since we only return one attribute in this test case
     	// However, the age with NULL should not be returned since the condition NULL > 25 can't hold.
-    	// All comparison operations with NULL should return FALSE 
+    	// All comparison operations with NULL should return FALSE
     	// (e.g., NULL > 25, NULL >= 25, NULL <= 25, NULL < 25, NULL == 25, NULL != 25: ALL FALSE)
 		nullBit = *(unsigned char *)((char *)returnedData) & (1 << 7);
 		if (!nullBit) {
@@ -861,9 +869,9 @@ RC TEST_RM_13b(const string &tableName)
     free(returnedData);
 
 	rc = rm->deleteTable("tbl_b_employee5");
-	
+
     cout << "Test Case 13B Finished. The result will be examined. *****" << endl << endl;
-    
+
     return success;
 }
 
@@ -996,7 +1004,7 @@ int main()
     RC rcmain = TEST_RM_0("tbl_employee");
 
     rcmain = TEST_RM_1("tbl_employee", 8, "Anteater", 27, 6.2, 10000);
-    
+
     rcmain = TEST_RM_2("tbl_employee", 6, "Peters", 23, 5.9, 8000);
 
     rcmain = TEST_RM_3("tbl_employee", 6, "Thomas", 28, 6.5, 6000);
@@ -1026,14 +1034,14 @@ int main()
 
 	 // Update Tuple
     rcmain = TEST_RM_10("tbl_employee4", rids3, sizes3);
-    
+
 
     vector<RID> rids4;
     vector<int> sizes4;
 
 	// Delete Tuple
     rcmain = TEST_RM_11("tbl_employee4", rids4);
-    
+
     // Scan
     rcmain = TEST_RM_12("tbl_employee4");
 
@@ -1050,12 +1058,12 @@ int main()
 
     // Test Catalog Information
     rcmain = TEST_RM_14(catalog_table_name);
-    
+
     // NOTE: your Columns table must be called "Columns"
     string catalog_table_name_columns = "Columns";
 
     // Test Catalog Information
     rcmain = TEST_RM_15(catalog_table_name_columns);
-    
+
     return 0;
 }

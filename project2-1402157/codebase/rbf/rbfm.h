@@ -21,6 +21,7 @@
 #define RBFM_DELETE_FAILED 8
 #define RBFM_UPDATE_FAILED 9
 
+
 using namespace std;
 
 // Record ID
@@ -125,7 +126,7 @@ public:
      currRID.pageNum = rid.pageNum;
   };
   bool compare(const uint32_t &data, const uint32_t &value, CompOp compOp);
-  bool compare(const string &data, const string &value, CompOp compOp);
+  bool compare(const char * data, const char *value, CompOp compOp);
   bool compare(const float &data, const float &value, CompOp compOp);
   RC close() {return SUCCESS;};
   //RC close() { return -1; };
@@ -136,6 +137,8 @@ class RecordBasedFileManager
 {friend class RBFM_ScanIterator;
 public:
   static RecordBasedFileManager* instance();
+
+  bool compRID(const RID &rid1, const RID &rid2);
 
   RC createFile(const string &fileName);
 

@@ -47,7 +47,7 @@ RC RelationManager::createCatalog()
 
     prepareTableRecord((int) sysTblVec.size(), nullsIndicator, 1, 6, "Tables", 10, "Tables.tbl", data, &datasize);
     cout << "size: "<<datasize << endl;
-    _rbf_manager->printRecord(sysTblVec, data);
+    // _rbf_manager->printRecord(sysTblVec, data);
     _rbf_manager->insertRecord(fileHandle, sysTblVec, data, rid );
     cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
 
@@ -58,7 +58,7 @@ RC RelationManager::createCatalog()
     memset(data, 0, PAGE_SIZE);
 
     prepareTableRecord(sysTblVec.size(), nullsIndicator, 2, 7, "Columns", 11 , "Columns.tbl", data, &datasize);
-    _rbf_manager->printRecord(sysTblVec, data);
+    // _rbf_manager->printRecord(sysTblVec, data);
     _rbf_manager->insertRecord(fileHandle, sysTblVec, data, rid );
     cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
     _rbf_manager->closeFile(fileHandle);
@@ -85,7 +85,7 @@ RC RelationManager::createCatalog()
         //prepareColumnRecord(sysColVec.size(), nullsIndicator, 1,varcharlen, sysTblVec[i].name , sysTblVec[i].type, sysTblVec[i].length ,i + 1, data, datasize);
         _rbf_manager->insertRecord(fileHandle, sysColVec, data, rid );
         cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
-        _rbf_manager->printRecord(sysColVec, data);
+        // _rbf_manager->printRecord(sysColVec, data);
 
     }
 
@@ -97,7 +97,7 @@ RC RelationManager::createCatalog()
 
         _rbf_manager->insertRecord(fileHandle, sysColVec, data, rid );
         cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
-        _rbf_manager->printRecord(sysColVec, data);
+        // _rbf_manager->printRecord(sysColVec, data);
 
     }
 
@@ -341,7 +341,7 @@ RC RelationManager::createTable(const string &tableName, const vector<Attribute>
 
     prepareTableRecord((int) sysTblVec.size(), nullsIndicator, lastTblID + 1 , tableName.length(), tableName , tableName.length(), tableName , data, &datasize);
     cout << "size: "<<datasize << endl;
-    _rbf_manager->printRecord(sysTblVec, data);
+    // _rbf_manager->printRecord(sysTblVec, data);
     _rbf_manager->insertRecord(fileHandle, sysTblVec, data, rid );
 
     _rbf_manager->closeFile(fileHandle);
@@ -357,7 +357,7 @@ RC RelationManager::createTable(const string &tableName, const vector<Attribute>
 
         _rbf_manager->insertRecord(fileHandle, sysColVec, data, rid );
         cout << "rid: (" <<  rid.slotNum << " ," << rid.pageNum <<")" << endl;
-        _rbf_manager->printRecord(sysColVec, data);
+        // _rbf_manager->printRecord(sysColVec, data);
 
     }
 
@@ -398,40 +398,66 @@ RC RelationManager::getLastTblID(FileHandle &fileHandle,  const vector<Attribute
 RC RelationManager::deleteTable(const string &tableName)
 {
     FileHandle fileHandle;
+    vector<Attribute> s;
+    createTableDesc(s);
+    vector<string> n;
+    RBFM_ScanIterator rbfmsi;
+    void * returnedDataScan = malloc(PAGE_SIZE);
+    RID new_rid;
+
+    n.push_back("table-name");
+
+    void *valuePointer = malloc(PAGE_SIZE);
+    int bytes = tableName.length();
+
+    memcpy(valuePointer, &bytes, INT_SIZE);
+    memcpy((char*) valuePointer + INT_SIZE, tableName.c_str(), bytes);
+
 
     // destroy given table given
-    if ( _rbf_manager->destroyFile(tableName + ".tbl"))
+    if ( _rbf_manager->destroyFile(tableName))
         return RM_CREATE_FAILED;
 
     // edit the catalog
-    if (_rbf_manager->openFile("Tables.tbl", fileHandle)){
-        _rbf_manager->closeFile(fileHandle);
-        return RM_CREATE_FAILED;
+    _rbf_manager->openFile("Tables.tbl", fileHandle);
+    _rbf_manager->scan(fileHandle, s, "table-name", EQ_OP, valuePointer, n, rbfmsi);
+    while(rbfmsi.getNextRecord(new_rid, returnedDataScan) == SUCCESS){
     }
 
-    return -1;
+    cout << "hit before delete record *****************************************" << endl;
+
+    _rbf_manager->deleteRecord(fileHandle, s,new_rid);
+
+    _rbf_manager->closeFile(fileHandle);
+
+    cout << "hit after delete record *****************************************" << endl;
+
+    free(returnedDataScan);
+    free(valuePointer);
+    return SUCCESS;
 }
 
 
 RC RelationManager::parseDataScan(void * returnedDataScan, vector<Attribute> &newColDesc, vector<Attribute> &newColAttr){
-    int32_t null_t = 0;
     char * iter_ptr = (char * )returnedDataScan;
     Attribute newAtt;
-    int32_t varCharSize = 0;
+    int varCharSize = 0;
     int offset = 1;
 
     memcpy(&varCharSize, iter_ptr + offset, INT_SIZE );
     offset += INT_SIZE;
-    char * data_ptr = (char*) malloc(varCharSize);
+    char * data_ptr = (char*) malloc(newColDesc[0].length);
     memcpy(data_ptr, iter_ptr + offset, varCharSize );
     data_ptr[varCharSize] = '\0';
     string dataString(data_ptr);
     newAtt.name = dataString;
     cout << "newAtt.name: " << newAtt.name << endl;
     offset += varCharSize;
+
     memcpy(&newAtt.type, iter_ptr + offset, INT_SIZE );
     cout << "newAtt.type: " << newAtt.type << endl;
     offset += INT_SIZE;
+
     memcpy(&newAtt.length, iter_ptr + offset, INT_SIZE );
     cout << "newAtt.length: " << newAtt.length << endl;
     offset += INT_SIZE;
@@ -475,21 +501,19 @@ RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &at
     memcpy(valuePointer, &bytes, INT_SIZE);
     memcpy((char*) valuePointer + INT_SIZE, tableName.c_str(), bytes);
 
-
-
     _rbf_manager->scan(fileHandle, sysTblVec, "table-name", EQ_OP, valuePointer, attrNames, rbfmsi);
 
     // rbfmsi.value
     cout << "valuePointer: " << valuePointer << endl;
     cout << "returnedDataScan: " << returnedDataScan << endl;
     cout << "hit before 1st getNextRecord" << endl;
-    _rbf_manager->printRecord(sysTblVec, returnedDataScan);
+    // _rbf_manager->printRecord(sysTblVec, returnedDataScan);
     while( rbfmsi.getNextRecord(new_rid, returnedDataScan) == SUCCESS) {
-        _rbf_manager->printRecord(sysTblVec, returnedDataScan);
+        // _rbf_manager->printRecord(sysTblVec, returnedDataScan);
         cout << "hit in 1st getNextRecord" << endl;
     }
      cout << "hit after 1st getNextRecord" << endl;
-    _rbf_manager->printRecord(sysTblVec,returnedDataScan);
+    // _rbf_manager->printRecord(sysTblVec,returnedDataScan);
 
     _rbf_manager->closeFile(fileHandle);
     _rbf_manager->openFile("Columns.tbl", fileHandle);
@@ -509,11 +533,13 @@ RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &at
 
     _rbf_manager->scan(fileHandle, sysColVec, "table-id", EQ_OP, &tableid, colAttr, rbfmsi);
 
+    cout << "right before big while loop" << endl;
     while( rbfmsi.getNextRecord(new_rid, returnedDataScan) == SUCCESS) {
         //_rbf_manager->printRecord(sysColVec, returnedDataScan);
         parseDataScan(returnedDataScan, newColDesc, attrs);
         cout << "hit in 1st getNextRecord" << endl;
     }
+    cout << "right after big while loop" << endl;
 
 
     free(valuePointer);
@@ -526,27 +552,53 @@ RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &at
 RC RelationManager::insertTuple(const string &tableName, const void *data, RID &rid)
 {
     FileHandle fileHandle;
-    // _rbf_manager->insertRecord(fileHandle, recordDescriptor, data, rid);
-    return -1;
+
+    vector<Attribute> recordDescriptor;
+    getAttributes(tableName, recordDescriptor);
+    _rbf_manager->openFile(tableName, fileHandle);
+    _rbf_manager->insertRecord(fileHandle, recordDescriptor, data, rid);
+    _rbf_manager->closeFile(fileHandle);
+    return SUCCESS;
 }
 
 RC RelationManager::deleteTuple(const string &tableName, const RID &rid)
 {
     FileHandle fileHandle;
-    // _rbf_manager->deleteRecord(fileHandle, recordDescriptor, rid);
-    return -1;
+
+    vector<Attribute> recordDescriptor;
+    getAttributes(tableName, recordDescriptor);
+    _rbf_manager->openFile(tableName, fileHandle);
+    _rbf_manager->deleteRecord(fileHandle, recordDescriptor, rid);
+    _rbf_manager->closeFile(fileHandle);
+    return SUCCESS;
 }
 
 RC RelationManager::updateTuple(const string &tableName, const void *data, const RID &rid)
 {
     FileHandle fileHandle;
-    // _rbf_manager->updateRecord(fileHandle, recordDescriptor, data, rid);
-    return -1;
+
+    vector<Attribute> recordDescriptor;
+    getAttributes(tableName, recordDescriptor);
+    _rbf_manager->openFile(tableName, fileHandle);
+    _rbf_manager->updateRecord(fileHandle, recordDescriptor, data, rid);
+    _rbf_manager->closeFile(fileHandle);
+    return SUCCESS;
 }
 
 RC RelationManager::readTuple(const string &tableName, const RID &rid, void *data)
 {
-    return -1;
+    FileHandle fileHandle;
+
+    if(_rbf_manager->openFile(tableName, fileHandle))
+        return RBFM_OPEN_FAILED;
+
+
+    vector<Attribute> recordDescriptor;
+    getAttributes(tableName, recordDescriptor);
+    _rbf_manager->openFile(tableName, fileHandle);
+    RC rc = _rbf_manager->readRecord(fileHandle, recordDescriptor, rid, data);
+    _rbf_manager->closeFile(fileHandle);
+    return rc;
 }
 
 RC RelationManager::printTuple(const vector<Attribute> &attrs, const void *data)
@@ -558,8 +610,14 @@ RC RelationManager::printTuple(const vector<Attribute> &attrs, const void *data)
 
 RC RelationManager::readAttribute(const string &tableName, const RID &rid, const string &attributeName, void *data)
 {
+    FileHandle fileHandle;
 
-    return -1;
+    vector<Attribute> recordDescriptor;
+    getAttributes(tableName, recordDescriptor);
+    _rbf_manager->openFile(tableName, fileHandle);
+    RC rc = _rbf_manager->readAttribute(fileHandle, recordDescriptor, rid, attributeName, data);
+    _rbf_manager->closeFile(fileHandle);
+    return SUCCESS;
 }
 
 RC RelationManager::scan(const string &tableName,
