@@ -1,0 +1,85 @@
+1. Basic information
+Team Number : 11
+Student ID# of Submitter: 1492157
+Name of Submitter: Eric Ventor
+ID#s and Names for others on the Team: 
+Eric Ventor (1492157)
+Rebecca Bui (1477534)
+Ivan Espiritu (1460661)
+
+
+2. Metadata
+- Show your metadata design (Tables and Columns table) and information about each column.
+
+The tables and columns are treated identically to that of a record based file and in fact works off of the rbfm to do it’s operations. For the Tables table and the Columns table, we deal with each by creating two files representing the two tables, respectively. Each file is identified as a table by .tbl extension following their names. For the Tables table, we are given that Tables consist of the following attributes: (table-id:int, table-name:varchar(50), file-name:varchar(50)). We form a record descriptor using these attributes and use the rbfm to then handle insertions and manipulation of newly inserted Tables. The Columns table works in the same fashion with the only difference being that the entries in these tables must follow the attributes:
+(table-id:int, column-name:varchar(50), column-type:int, column-length:int, column-position:int).  
+
+
+3. Internal Record Format
+- Show your record format design and describe how your design satisfies O(1) field access. If not, just mention that your team hasn't implemented this feature.
+
+Given N attributes, records are stored in the following way:
+(Number of fields: int, NullIndicator, Array of Size n storing the starting offset of each field, the actual data entries for each field which may be omitted if the NullIndicator verifies that there is no data associated with the field)
+
+In storing records in this way, we can achieve O(1) field access. We can do this if we are given the record descriptor for the record. Using this record descriptor we can determine the spot in the array of size n that stores the starting offset of the desired field. From this, depending on the the field’s position, we can then use it’s offset and either the freespeace offset or the offset of its neighboring fields to determine the length of and the field to then be read, printed, etc.
+
+
+- Describe how you store a VarChar field.
+
+When passed in data involving a VarChar field, we take in the passed in length as well. After determining the number of fields to copy over, and the nullIndicator, we take into account the additional length of a VarChar field and factor that into the offset for the slot corresponding to the field in the array Describing the offsets of each field for a record. After establishing/ writing the data following the record format stated above, we would do a memcpy over to the corresponding space for the field within this record format like any other type.
+
+- Describe how you deal with an update and delete.
+
+When updating a record we first check if there is any necessary RID forwarding. Once we have read in the appropriate pages and grabbed the header/recordEntry we compare our to_load_record size with the record that is currently inserted. There are 3 cases for this comparison, one being that they are of identical size, if the inserted record is larger, and lastly if the to_load_record is larger than the currently inserted record. If it is the first case and they are of identical size then we simply memset the current inserted record at its offset and setRecordAtOffset() using the same offset. For the second case we delete the record original record, coalesce the records whose offset is less than the inserted record, and memmove it to the newly moved freeSpaceOffset. 
+
+For the last case of updateRecord it is a bit more complex. We start by checking if there is enough space for the to_load_record on the origin page. If this is true then we are able to simply delete the record, coalesce the records whose offset is less than the inserted record, insert the record, and update the header/slot entry accordingly. If there is not enough space on the origin page we search through every other page until we would need to append. Once we have a page with enough space we delete our original record, load in our to be inserted record at the freeSpaceOffset, and add/update our headers/slot entries in both the original page and the newly inserted to page. For the slot entry that was in the original page we set the offset to a negative that indicates page number and set the length to represent slotNumber to the forwarded slot. 
+
+When deleting a record within a page, all that needs to be done is we would either zero out the slot or overwrite the records with the data to come after it, essentially deleting the record. In the case that a record appears to be the last thing before a we encounter before the free space offset, we would zero out the record. In the case the record exists somewhere else, we would need to zero out the space for the record to be deleted and all the records to be moved to take care of any residual data. We would then copy over all the records existing after the record, and copy it to the freeSpaceOffset + theSizeoftheDeletedRecord.  We would also simultaneously be setting its slot in the slot directory to have an offset and length of zero, since it should never be the case a record has an offset of zero, since this space is set to belong to the slot header. We would additionally modify the offsets of all the records that were moved over by the size of the deleted record.
+
+
+4. Page Format
+- Show your page format design.
+- Describe how you deal with an update and delete.
+
+Pages are formatted in the following way. At offset 0 of a page is the slot header containing the freeSpaceOffset and the number of slots in the slot directory. After the header is an array of slotDirectoryRecordEntries that matches at most the length of the number of records to exist on the page. There may be more than what is currently on the page since we can delete or update records and mark their slots for reuse on future inserts. At PAGE_SIZE is where our starting offset for inserted records begin. We insert in a backwards fashion, allowing the records to grow internally such that free space is coalesced to the middle of the page.  For the update and deletes, please refer to the section above regarding how the structure of a page may change. After a delete, though a page may be empty of records, we do not free the page, as this would affect the pageNums of all RID’s and so it remains so it may be populated again.
+
+5. File Format
+- Show your file format design.
+
+Files are made up of pages and grow in size in increments of PAGE_SIZE. We set up two separate files representing a catalog which are essentially record based files. One is named “Tables.tbl” and another named “Columns.tbl”. The first of these files contains all of the tables associated with each record based file along with a unique identifiers. Each record based files consisting of these pages represents a table and, as such, should only contain the data of the table it was designated to, and only one. At the time a new table is created, a new file would be created to accommodate this table. 
+
+6. Implementation Detail
+- Other implementation details goes here.  For example:  
+- Describe your use of Forwarding Addresses, including what happens when a Forwarding Address needs to be forwarded to yet another page.
+
+For forwarding addresses, more specifically slot forwarding, we use a negative offset to indicate whether the RID should be forwarded or not. If it is negative then we set the negative to a positive and use that as our page number, while the slot length dictates slot Number. We created a function called findRID() which takes a fileHandler, pageData pointer, and an RID to find the non forwarded slot of the corresponding RID. 
+
+The findRID also has the functionality of getting rid of extra “jumps” between slots. If there is more than 1 jump then we set our slot that corresponded with our original RID to now forward directly to the non forwarded slot location. We then set the intermediate slot to just 0,0. This saves us from accumulating a huge amount of forwarded RIDs within pages. 
+
+
+
+- Describe how a scan is done, touching each record once even when there are Forwarding Addresses.
+
+For a scan, we initialize a scan iterator using the scan functions, passing in a fileHandle, record descriptor, a condition attribute, the comparison operator, the value to be compared, the attributes we want returned, and an instance of the RBFM scan iterator. In addition to this, we added a few private variables for an object of the RBFM scan iterator class for each item passed in, in addition to a field for if the attribute could be found, the index of the field, given the file descriptor, a field for the last returned rid and if an initial scan was performed. The last returned rid matching the desired comparison is initially set to (0,0) to begin the scan from the very beginning of the rbf. After this initial scan, either a record was found or not. If it was not found, we simply return EOF else, we would return the record and return and save the found RID to be used to get the next tuple. For all subsequent scans, we would use the saved RID to obtain the current page and increment the slot to get the next potential tuple to scan through. Scan will traverse the entire file in this fashion, checking page by page and slot by slot, jumping checking from each of the last found tuple. We avoid touching records more than once when encountering a forwarding address by checking if the given offset of the current slot is negative. If so, we simply skip it as we will encounter the record later on in our scan. If an attribute name was given that does not exist, we return EOF right away.
+
+- Describe how you determine that a previously slot on a page is empty (after record is deleted), so that the slot can be re-used for another record.  (Yes, a record's rid is supposed to be permanent, but only while the record exists.)
+
+We decided that a slot that is empty is set to have an offset and length of zero. The justification for why is explained in a previous section. Knowing this, during an insertion and possibly a delete, we can examine the slot directory for the existence of a free slot by examining their offsets. When one is found to be free, for inserts, instead of creating a new slot we would instead just assign the newly inserted record to belong to this emptied slot and update the header accordingly if a new slot was needed or one was reused.
+
+7. Other (optional)
+- Freely use this section to tell us about things that are related to the project 2, but not related to the other sections, such as design and implementation information for Advanced Features, if you've implemented them (optional).
+
+To take care of “dead chains”, RIDs which were originally forward and then deleted without using the forward address, we have written code that examines this case anywhere where the user would used RID’s to attempt to access an RID’s information or erase it. For this, we check if the given RID is a forward address by checking for a negative offset and we follow this to obtain the “new” RID of the record. We then do a check as described previously, where we check if lengths and offsets are zero, indicating a dead chain. Once confirmed, we obtain the pages of the original RID, zero out the RID, and then write these changes back to the header and directory accordingly.
+
+There were some issues we were getting when having too many cout statements all over our files. When doing simple calls to our functions, we would be getting no errors. But when the time came where we had to insert multiple tuples, we began segfaulting. This was solved by removing many of our cout statements, as they may have cluttered the stack somehow. 
+
+In tests 9-10, we successfully updated and deleted tuples of near 2000 into the employee tables. But right when the first readTuple iteration begins, it seg faults. We’re not sure why this is happening, when we were able to insert/read/update/read/delete/read tuples properly in the previous tests. We believe there are some possibilities could have to do with stack corruption, edge cases, or some small number of bytes that are being left unaccounted for that eventually add up to segfault effects in terms of the program. 
+
+We spent hours debugging this segfaulting error by using couts, gdb, and valgrind. We each drew out our logic for our functions to ensure that they were working as we expected, but with no progress. Couts were used just to identify variable values at certain iterations and to check that conditionals were being hit and left as we expected. Gdb helped with slowly walking through our program, but still we were unable to make much progress with it. Lastly valgrind helped insurmountably with identifying misreads, misallocs, and segfault causes.
+
+Our deleteTable function did not technically work. In test 5 it seemed to pass but then when it reached test 6, the segfault was recorded. The deleteTable() followed the same skeleton as getAttributes(), but instead deleted the table. Logically, we believe this should be working logically, but is currently segfaulting due to errors on our part, that we were ultimately unable to diagnose. 
+
+In our original file, we have do not have the above function implemented, but instead our first attempt in which we had forgotten to come back to but continued to go to the next tests. We can find this attempted function in DELETETABLECODE.cpp. 
+
+Overall the segfault taking place within readRecord left us baffled and frustrated. 
+
