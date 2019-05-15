@@ -11,6 +11,28 @@
 class IX_ScanIterator;
 class IXFileHandle;
 
+template <typename T> struct dataEntry{
+    T key;
+    RID rid;
+};
+
+struct nodeHeader{
+    unsigned numSlots;
+    unsigned parent;
+    bool isLeaf;
+    bool isRoot;
+};
+
+struct leafHeader{
+    unsigned nextPage;
+    unsigned prevPage;
+};
+
+template <typename T> struct indexEntry{
+    T key;
+    unsigned rightChild;
+};
+
 class IndexManager {
 
     public:
