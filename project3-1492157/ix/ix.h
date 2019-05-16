@@ -7,30 +7,33 @@
 #include "../rbf/rbfm.h"
 
 # define IX_EOF (-1)  // end of the index scan
+# define IX_READ_FAILED 1
+# define IX_INSERT_FAILED 2
 
 class IX_ScanIterator;
 class IXFileHandle;
 
-template <typename T> struct DataEntry{
-    T key;
+struct DataEntry{
+    void* key;
     RID rid;
 };
 
 struct NodeHeader{
-    unsigned numSlots;
-    unsigned parent;
+    uint32_t numSlots;
+    uint32_t parent;
     bool isLeaf;
     bool isRoot;
+    uint32_t freeSpaceOffset;
 };
 
 struct LeafHeader{
-    unsigned nextPage;
-    unsigned prevPage;
+    uint32_t nextPage;
+    uint32_t prevPage;
 };
 
 template <typename T> struct IndexEntry{
     T key;
-    unsigned rightChild;
+    uint32_t rightChild;
 };
 
 class IndexManager {
@@ -83,6 +86,9 @@ class IndexManager {
 
         NodeHeader getNodeHeader(void * page);
         LeafHeader getLeafHeader(void * page);
+
+        RC insertDataEntry(void * pageData, const Attribute &attribute, const void *key, const RID &rid);
+        unsigned getPageFreeSpaceSize(void * page);
 };
 
 
@@ -120,6 +126,13 @@ class IXFileHandle {
 
 	// Put the current counter values of associated PF FileHandles into variables
 	RC collectCounterValues(unsigned &readPageCount, unsigned &writePageCount, unsigned &appendPageCount);
+
+    void IXToFile(FileHandle &fileHandle);
+    void fileToIX(FileHandle &fileHandle);
+
+    friend class FileHandle;
+    friend class IndexManager;
+    friend class PagedFileManager;
 
     private:
     FILE *_fd;
