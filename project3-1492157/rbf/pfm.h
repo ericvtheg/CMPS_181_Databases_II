@@ -22,6 +22,7 @@ typedef char byte;
 #define PAGE_SIZE 4096
 #include <string>
 #include <climits>
+#include "../ix/ix.h"
 using namespace std;
 
 class FileHandle;
@@ -34,6 +35,7 @@ public:
     RC createFile    (const string &fileName);                          // Create a new file
     RC destroyFile   (const string &fileName);                          // Destroy a file
     RC openFile      (const string &fileName, FileHandle &fileHandle);  // Open a file
+    RC openFile      (const string &fileName, IXFileHandle &fileHandle);  // Open a IX file
     RC closeFile     (FileHandle &fileHandle);                          // Close a file
 
 protected:
@@ -55,7 +57,7 @@ public:
     unsigned readPageCounter;
     unsigned writePageCounter;
     unsigned appendPageCounter;
-    
+
     FileHandle();                                                       // Default constructor
     ~FileHandle();                                                      // Destructor
 
@@ -74,6 +76,6 @@ private:
     // Private helper methods
     void setfd(FILE *fd);
     FILE *getfd();
-}; 
+};
 
 #endif

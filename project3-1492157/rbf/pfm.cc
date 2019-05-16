@@ -76,6 +76,28 @@ RC PagedFileManager::openFile(const string &fileName, FileHandle &fileHandle)
     return SUCCESS;
 }
 
+RC PagedFileManager::openIXFile(const string &fileName, IXFileHandle &fileHandle)
+{
+    // If this handle already has an open file, error
+    if (fileHandle.getfd() != NULL)
+        return PFM_HANDLE_IN_USE;
+
+    // If the file doesn't exist, error
+    if (!fileExists(fileName.c_str()))
+        return PFM_FILE_DN_EXIST;
+
+    // Open the file for reading/writing in binary mode
+    FILE *pFile;
+    pFile = fopen(fileName.c_str(), "rb+");
+    // If we fail, error
+    if (pFile == NULL)
+        return PFM_OPEN_FAILED;
+
+    fileHandle.setfd(pFile);
+
+    return SUCCESS;
+}
+
 
 RC PagedFileManager::closeFile(FileHandle &fileHandle)
 {
@@ -154,7 +176,7 @@ RC FileHandle::writePage(PageNum pageNum, const void *data)
         writePageCounter++;
         return SUCCESS;
     }
-    
+
     return FH_WRITE_FAILED;
 }
 

@@ -11,24 +11,24 @@
 class IX_ScanIterator;
 class IXFileHandle;
 
-template <typename T> struct dataEntry{
+template <typename T> struct DataEntry{
     T key;
     RID rid;
 };
 
-struct nodeHeader{
+struct NodeHeader{
     unsigned numSlots;
     unsigned parent;
     bool isLeaf;
     bool isRoot;
 };
 
-struct leafHeader{
+struct LeafHeader{
     unsigned nextPage;
     unsigned prevPage;
 };
 
-template <typename T> struct indexEntry{
+template <typename T> struct IndexEntry{
     T key;
     unsigned rightChild;
 };
@@ -74,6 +74,15 @@ class IndexManager {
 
     private:
         static IndexManager *_index_manager;
+        static PagedFileManager *_pf_manager;
+
+        void newLeafPage(void * page);
+        void setNodeHeader(void* page, NodeHeader nodeHeader);
+        void newNonLeafPage(void * page);
+        void setLeafHeader(void* page, LeafHeader leafHeader);
+
+        NodeHeader getNodeHeader(void * page);
+        LeafHeader getLeafHeader(void * page);
 };
 
 
@@ -111,6 +120,13 @@ class IXFileHandle {
 
 	// Put the current counter values of associated PF FileHandles into variables
 	RC collectCounterValues(unsigned &readPageCount, unsigned &writePageCount, unsigned &appendPageCount);
+
+    private:
+    FILE *_fd;
+
+    // Private helper methods
+    void setfd(FILE *fd);
+    FILE *getfd();
 
 };
 
