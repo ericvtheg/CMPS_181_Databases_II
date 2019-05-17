@@ -31,8 +31,8 @@ struct LeafHeader{
     uint32_t prevPage;
 };
 
-template <typename T> struct IndexEntry{
-    T key;
+struct IndexEntry{
+    void* key;
     uint32_t rightChild;
 };
 
@@ -87,9 +87,14 @@ class IndexManager {
         NodeHeader getNodeHeader(void * page);
         LeafHeader getLeafHeader(void * page);
 
-        RC insertDataEntry(void * pageData, const Attribute &attribute, const void *key, const RID &rid);
+        RC insertDataEntry(void * pageData, const Attribute &attribute, const DataEntry &dataEntry);
         bool enoughFreeSpaceForDataEntry(void * pageData, const Attribute &attribute, const void *key);
         unsigned getPageFreeSpaceSize(void * page);
+
+        RC insertIndexEntry(void * pageData,const Attribute &attribute,const IndexEntry &indexEntry);
+        bool enoughFreeSpaceForIndexEntry(void * pageData, const Attribute &attribute, const void *key);
+
+        void recurBtree(unsigned pageNum);
 
 };
 
