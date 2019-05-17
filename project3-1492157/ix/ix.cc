@@ -145,25 +145,33 @@ RC IndexManager::closeFile(IXFileHandle &ixfileHandle)
     return rc;
 }
 
+bool IndexManager::enoughFreeSpaceForDataEntry(void * pageData, const Attribute &attribute, const void *key){
+	int indexSize = 0;
+	switch (attribute.type)
+	{
+	    case TypeInt:
+	        indexSize += INT_SIZE;
+	    case TypeReal:
+	        indexSize += REAL_SIZE;
+	    case TypeVarChar:
+	        uint32_t varcharSize;
+	        memcpy(&varcharSize, key, VARCHAR_LENGTH_SIZE);
+	        indexSize += VARCHAR_LENGTH_SIZE;
+	        indexSize += varcharSize;
+	    }
+	indexSize += sizeof(uint32_t);
+
+	if (getPageFreeSpaceSize(page) >= indexSize){
+	    return true;
+	}else{
+		return false;
+	}
+
+}
+
 RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute, const void *key, const RID &rid)
-{   int indexSize = 0;
-    switch (attribute.type)
-    {
-        case TypeInt:
-            indexSize += INT_SIZE;
-        case TypeReal:
-            indexSize += REAL_SIZE;
-        case TypeVarChar:
-            uint32_t varcharSize;
-            memcpy(&varcharSize, key, VARCHAR_LENGTH_SIZE);
-            indexSize += VARCHAR_LENGTH_SIZE;
-            indexSize += varcharSize;
-    }
-    indexSize += sizeof(uint32_t);
-    char * page = (char *)pageData;
-    if (!(getPageFreeSpaceSize(page) >= indexSize)){
-         return IX_INSERT_FAILED;
-    }
+{   
+	char * page = (char *)pageData;
 
     NodeHeader leafPageNodeHeader = getNodeHeader(page);
 
@@ -180,11 +188,18 @@ RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute, co
             memcpy(&varcharSize, key, VARCHAR_LENGTH_SIZE);
             memcpy(page + leafPageNodeHeader.freeSpaceOffset, &varcharSize, VARCHAR_LENGTH_SIZE);
             leafPageNodeHeader.freeSpaceOffset += VARCHAR_LENGTH_SIZE;
+
             memcpy(page + leafPageNodeHeader.freeSpaceOffset, ((char*) key + VARCHAR_LENGTH_SIZE), varcharSize);
             leafPageNodeHeader.freeSpaceOffset += varcharSize;
     }
     memcpy(page + leafPageNodeHeader.freeSpaceOffset, &rid, sizeof(RID));
     leafPageNodeHeader.freeSpaceOffset += sizeof(RID);
+
+    leafPageNodeHeader.numSlots += 1;
+
+    //Update the Header
+    setNodeHeader(page, leafPageNodeHeader);
+
     return SUCCESS;
 }
 
@@ -195,18 +210,25 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 
     FileHandle fileHandle;
     ixfileHandle.IXToFile(fileHandle);
+
+    //Grabbing the ROOT page
     if(fileHandle.readPage(0, page))
         return IX_READ_FAILED;
 
+    //Grab the ROOT Page's header
     NodeHeader nodeHeader = getNodeHeader(page);
+
+    //Check for base case if  ROOT is empty
     if(nodeHeader.numSlots == 0){
+    	// If ROOT is empty, then for first insertion, create an Index Entry containing the key and the PageID of the Data Entry
         // Index Page
+
+
         
 
         //Data Page
         newLeafPage(page);
         NodeHeader leafPageNodeHeader = getNodeHeader(page);
-        leafPageNodeHeader.numSlots += 1;
         DataEntry dataEntry;
 
 

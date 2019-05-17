@@ -88,7 +88,9 @@ class IndexManager {
         LeafHeader getLeafHeader(void * page);
 
         RC insertDataEntry(void * pageData, const Attribute &attribute, const void *key, const RID &rid);
+        bool enoughFreeSpaceForDataEntry(void * pageData, const Attribute &attribute, const void *key);
         unsigned getPageFreeSpaceSize(void * page);
+
 };
 
 
