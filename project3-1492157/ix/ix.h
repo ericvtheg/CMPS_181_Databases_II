@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include "../rbf/rbfm.h"
 
@@ -69,7 +70,7 @@ class IndexManager {
                 IX_ScanIterator &ix_ScanIterator);
 
         // Print the B+ tree in pre-order (in a JSON record format)
-        void printBtree(IXFileHandle &ixfileHandle, const Attribute &attribute) const;
+        void printBtree(IXFileHandle &ixfileHandle, const Attribute &attribute);
 
     protected:
         IndexManager();
@@ -94,7 +95,8 @@ class IndexManager {
         RC insertIndexEntry(void * pageData,const Attribute &attribute,const IndexEntry &indexEntry);
         bool enoughFreeSpaceForIndexEntry(void * pageData, const Attribute &attribute, const void *key);
 
-        void recurBtree(unsigned pageNum);
+        RC recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribute, unsigned pageNum);
+        void printLeafHelper(void * pageData, const Attribute &attribute);
 
 };
 

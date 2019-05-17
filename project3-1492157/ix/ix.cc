@@ -160,7 +160,7 @@ bool IndexManager::enoughFreeSpaceForDataEntry(void * pageData, const Attribute 
 	    case TypeReal:
 	        dataEntrySize += REAL_SIZE;
             cout << "INT_SIZE" << INT_SIZE << endl;
-            cout << "INT_SdIZE" << (unsigned) INT_SIZE << endl;
+            cout << "INT_SIZE" << (unsigned) INT_SIZE << endl;
         break;
 	    case TypeVarChar:
 	        uint32_t varcharSize;
@@ -168,7 +168,7 @@ bool IndexManager::enoughFreeSpaceForDataEntry(void * pageData, const Attribute 
 	        dataEntrySize += VARCHAR_LENGTH_SIZE;
 	        dataEntrySize += varcharSize;
             cout << "INT_SIZE" << INT_SIZE << endl;
-            cout << "INT_SIdZE" << (unsigned) INT_SIZE << endl;
+            cout << "INT_SIZE" << (unsigned) INT_SIZE << endl;
         break;
 	    }
     cout << "Data Entry size: " << dataEntrySize << endl;
@@ -243,7 +243,32 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 
         newLeafPage(page);
         DataEntry dataEntry;
-        dataEntry.key = &key;
+
+        unsigned size = 0;
+
+        switch (attribute.type)
+        {
+            case TypeInt:
+                size += INT_SIZE;
+                int keyd;
+                memcpy(&keyd, key, size);
+                dataEntry.key = &keyd;
+            break;
+            case TypeReal:
+                size += REAL_SIZE;
+                float keyf;
+                memcpy(&keyf, key, size);
+                dataEntry.key = &keyf;
+            break;
+            case TypeVarChar:
+                int varcharSize;
+                memcpy(&varcharSize, key, VARCHAR_LENGTH_SIZE);
+                size = varcharSize + VARCHAR_LENGTH_SIZE;
+                memcpy(dataEntry.key, key, size);
+                // dataEntry.key = &keyd;
+            break;
+        }
+
         dataEntry.rid = rid;
         // Check if there is enough room for the new Data Entry and insert into the Leaf
         if(enoughFreeSpaceForDataEntry(page, attribute, dataEntry.key)){
@@ -369,137 +394,206 @@ RC IndexManager::scan(IXFileHandle &ixfileHandle,
     return -1;
 }
 
-void recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribute, unsigned pageNum){
-
-    void * pageData = malloc(PAGE_SIZE);
-    char * page = (char *) pageData;
-
-    FileHandle fileHandle;
-    ixfileHandle.IXToFile(fileHandle);
-
-    if(fileHandle.readPage(pageNum, page))
-        return IX_READ_FAILED;
-
-    NodeHeader nodeHeader = getNodeHeader(page);
-    unsigned offset = ;
-    for(unsigned i = 0; i < nodeHeader.numSlots; i++){
-        //Get the left child
-        if(!nodeHeader.isLeaf){
-            //Some get indexEntryFunction
-            // Extract the left Child
-            // offset += size of the left key entry
-            // PRINT KEY
-            // PRINT 'children : ['
-            recurBtree(left child);
-        }else{
-            //PRINT ALL DATA ENTRIES ON LEAF PAGE
-        }
-
-    }
+RC IndexManager::recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribute, unsigned pageNum){
+    return -1;
+    // void * pageData = malloc(PAGE_SIZE);
+    // char * page = (char *) pageData;
+    //
+    // FileHandle fileHandle;
+    // ixfileHandle.IXToFile(fileHandle);
+    //
+    // if(fileHandle.readPage(pageNum, page))
+    //     return IX_READ_FAILED;
+    //
+    // NodeHeader nodeHeader = getNodeHeader(page);
+    // for(unsigned i = 0; i < nodeHeader.numSlots; i++){
+    //     //Get the left child
+    //     // if(!nodeHeader.isLeaf){
+    //     //     //Some get indexEntryFunction
+    //     //     // Extract the left Child
+    //     //     // offset += size of the left key entry
+    //     //     // PRINT KEY
+    //     //     // PRINT 'children : ['
+    //     //     // recurBtree(left child);
+    //     // }else{
+    //     //     //PRINT ALL DATA ENTRIES ON LEAF PAGE
+    //     // }
+    //
+    // }
 
     // Some get indexEntryFunction
     // Extract the right Child
     // offset += size of the right key entry
-    if(!nodeHeader.isLeaf){
-        // print leafPage helper function
-        recurBtree(right child);
-    }
+    // if(!nodeHeader.isLeaf){
+    //     // print leafPage helper function
+    //     recurBtree(right child);
+    // }
 
 }
 
-void IndexManager::printBtree(IXFileHandle &ixfileHandle, const Attribute &attribute) const {
+void IndexManager::printBtree(IXFileHandle &ixfileHandle, const Attribute &attribute) {
     // visit rootPage
     // traverse left sub Tree
     // traverse the right subtree
     void * pageData = malloc(PAGE_SIZE);
-    char * page = (char *) rootPageData;
+    char * page = (char *) pageData;
 
     FileHandle fileHandle;
     ixfileHandle.IXToFile(fileHandle);
 
-    if(fileHandle.readPage(0, rootPage))
-        return IX_READ_FAILED;
+    fileHandle.readPage(1, page);
+    //     return IX_READ_FAILED;
 
     NodeHeader nodeHeader = getNodeHeader(page);
 
-
-    for(unsigned i = 0; i < nodeHeader.numSlots; i++){
-        printBtree()
-
-    }
+    printLeafHelper(page, attribute);
 
 
-)
+
+    // for(unsigned i = 0; i < nodeHeader.numSlots; i++){
+    //     printBtree()
+    //
+    // }
 
 
 }
 
-void printLeafHelper(void * pageData, const Attribute &attribute){
-    NodeHeader nodeHeader = getNodeHeader(page);
+
+
+void IndexManager::printLeafHelper(void * pageData, const Attribute &attribute){
+
     char * page = (char *) pageData;
-
-
-
-    cout << "{\"keys\":  ["
-    switch(attribute.type)
-    {
-        case TypeInt:
-            map<int, vector<RID>> rtss;
-            for(){
-                int keyInt;
-                memcpy(&keyInt, page + offset, INT_SIZE);
-                offset += INT_SIZE;
-                cout << "\"" << keyInt << ":[" << endl;
-            }
-        // go throuhg map and print.
-        break;
-
-    }
-    //map<int , vecotr<rid>> or map<float, std::vector<rid>, or
+    NodeHeader nodeHeader = getNodeHeader(page);
 
     unsigned offset = sizeof(NodeHeader) + sizeof(LeafHeader);
-    for(unsigned i = 0; i < nodeHeader.numSlots; i++){
-
-        switch (attribute.type)
-        {
-            case TypeInt:
+    cout << "{\"keys\":  [";
+    switch(attribute.type)
+    {
+        case TypeInt: {
+            map<int, vector<RID>> intMapVecRid;
+            for(unsigned i = 0; i < nodeHeader.numSlots; i++){
                 int keyInt;
                 memcpy(&keyInt, page + offset, INT_SIZE);
                 offset += INT_SIZE;
-                cout << "\"" << keyInt << ":[" << endl;
+                // cout << "keyInt: " << keyInt << endl;
+
+                RID rid;
+                memcpy(&rid, page + offset, sizeof(RID));
+                offset += sizeof(RID);
+
+                std::vector<RID> ridVec;
+                ridVec.push_back(rid);
+                if(!intMapVecRid.insert({keyInt, ridVec}).second){
+                    // duplicate handling
+                    intMapVecRid[keyInt].push_back(rid);
+                }
+
+            }
+        // go throuhg map and print.
+            for(auto it = intMapVecRid.begin(); it != intMapVecRid.end(); ++it){
+                cout << "\""<< it->first << ":["  <<endl;
+                for(unsigned j = 0; j < it->second.size(); j++  ){
+                    cout << "(" << it->second[j].pageNum << "," << it->second[j].slotNum << ")";
+                    if(j + 1 != it->second.size()){
+                        cout << ",";
+                    }
+                }
+                cout << "]\"";
+                if(std::next(it, 1) != intMapVecRid.end()){
+                    cout << ",";
+                }
+            }
+            cout << "},";
             break;
-            case TypeReal:
-            float keyReal
-                memcpy(&keyReal, page + offset, REAL_SIZE);
+        }
+        case TypeReal:{
+            map<float, vector<RID>> floatMapVecRid;
+            for(unsigned i = 0; i < nodeHeader.numSlots; i++){
+                float keyFloat;
+                memcpy(&keyFloat, page + offset, REAL_SIZE);
                 offset += REAL_SIZE;
+
+                RID rid;
+                memcpy(&rid, page + offset, sizeof(RID));
+                offset += sizeof(RID);
+
+                std::vector<RID> ridVec;
+                ridVec.push_back(rid);
+                if(!floatMapVecRid.insert({keyFloat, ridVec}).second){
+                    // duplicate handling
+                    floatMapVecRid[keyFloat].push_back(rid);
+                }
+            }
+            for(auto it = floatMapVecRid.begin(); it != floatMapVecRid.end(); ++it){
+                cout << "\""<< it->first << ":["  <<endl;
+                for(unsigned j = 0; j < it->second.size(); j++  ){
+                    cout << "(" << it->second[j].pageNum << "," << it->second[j].slotNum << ")";
+                    if(j + 1 != it->second.size()){
+                        cout << ",";
+                    }
+                }
+                cout << "]\"";
+                if(std::next(it, 1) != floatMapVecRid.end()){
+                    cout << ",";
+                }
+            }
+            cout << "},";
+
             break;
-            case TypeVarChar:
-                uint32_t varcharSize;
+        }
+        case TypeVarChar:{
+
+            uint32_t varcharSize;
+            map<char*, vector<RID>> charMapVecRid;
+            for(unsigned i = 0; i < nodeHeader.numSlots; i++){
+
                 memcpy(&varcharSize, page + offset, VARCHAR_LENGTH_SIZE);
                 offset+= VARCHAR_LENGTH_SIZE;
 
-                char * keyVarChar = calloc(1, varcharSize + 1);
-
+                char * keyVarChar = (char *) calloc(1, varcharSize + 1);
                 memcpy(keyVarChar, page + offset, varcharSize);
 
                 offset += varcharSize;
-                varcharSize[varcharSize + 1] = '\0';
+                keyVarChar[varcharSize + 1] = '\0';
+
+                RID rid;
+                memcpy(&rid, page + offset, sizeof(RID));
+                offset += sizeof(RID);
+
+                std::vector<RID> ridVec;
+                ridVec.push_back(rid);
+                if(!charMapVecRid.insert({keyVarChar, ridVec}).second){
+                    // duplicate handling
+                    charMapVecRid[keyVarChar].push_back(rid);
+                }
+            }
+            for(auto it = charMapVecRid.begin(); it != charMapVecRid.end(); ++it){
+                cout << "\""<< it->first << ":["  <<endl;
+                for(unsigned j = 0; j < it->second.size(); j++  ){
+                    cout << "(" << it->second[j].pageNum << "," << it->second[j].slotNum << ")";
+                    if(j + 1 != it->second.size()){
+                        cout << ",";
+                    }
+                }
+                cout << "]\"";
+                if(std::next(it, 1) != charMapVecRid.end()){
+                    cout << ",";
+                }
+            }
+            cout << "},";
+
             break;
         }
-        RID rid;
-        memcpy(&rid, page + offset, sizeof(RID));
-        offset += sizeof(RID);
-        cout << "(" << rid.pageNum << "," << rid.slotNum << ")]" <<
-
-
-
 
     }
-}
 
-void printNonLeafHelper(void * page){
 
 }
+
+
+// void IndexManager::printNonLeafHelper(void * page){
+//
+// }
 
 IX_ScanIterator::IX_ScanIterator()
 {
