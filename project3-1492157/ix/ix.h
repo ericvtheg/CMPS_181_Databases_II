@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cstring>
 
 #include "../rbf/rbfm.h"
 
@@ -14,28 +15,33 @@
 class IX_ScanIterator;
 class IXFileHandle;
 
-struct DataEntry{
+typedef struct DataEntry{
     void* key;
     RID rid;
-};
+}DataEntry;
 
-struct NodeHeader{
+typedef struct NodeHeader{
     uint32_t numSlots;
     uint32_t parent;
     bool isLeaf;
     bool isRoot;
     uint32_t freeSpaceOffset;
-};
+}NodeHeader;
 
-struct LeafHeader{
+typedef struct LeafHeader{
     uint32_t nextPage;
     uint32_t prevPage;
-};
+}LeafHeader;
 
-struct IndexEntry{
+typedef struct IndexEntry{
     void* key;
     uint32_t rightChild;
-};
+} IndexEntry;
+
+typedef struct slotEntry{
+    uint32_t length; 
+    int32_t offset;
+} slotEntry;
 
 class IndexManager {
 
@@ -133,22 +139,19 @@ class IXFileHandle {
     // Destructor
     ~IXFileHandle();
 
+    RC readPage(PageNum pageNum, void *data);                           // Get a specific page
+    RC writePage(PageNum pageNum, const void *data);                    // Write a specific page
+    RC appendPage(const void *data);                                    // Append a specific page
+    unsigned getNumberOfPages(); 
 	// Put the current counter values of associated PF FileHandles into variables
 	RC collectCounterValues(unsigned &readPageCount, unsigned &writePageCount, unsigned &appendPageCount);
-
-    void IXToFile(FileHandle &fileHandle);
-    void fileToIX(FileHandle &fileHandle);
 
     friend class FileHandle;
     friend class IndexManager;
     friend class PagedFileManager;
 
     private:
-    FILE *_fd;
-
-    // Private helper methods
-    void setfd(FILE *fd);
-    FILE *getfd();
+    FileHandle fh;
 
 };
 

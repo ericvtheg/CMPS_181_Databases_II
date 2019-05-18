@@ -21,48 +21,23 @@ IndexManager::~IndexManager()
 {
 }
 
-void IXFileHandle::IXToFile(FileHandle &fileHandle){
-
-    fileHandle.readPageCounter = ixReadPageCounter;
-    fileHandle.writePageCounter = ixWritePageCounter;
-    fileHandle.appendPageCounter = ixAppendPageCounter;
-    fileHandle.setfd(getfd());
-}
-
-void IXFileHandle::fileToIX(FileHandle &fileHandle){
-    ixReadPageCounter = fileHandle.readPageCounter;
-    ixWritePageCounter = fileHandle.writePageCounter;
-    ixAppendPageCounter = fileHandle.appendPageCounter;
-    setfd(fileHandle.getfd());
-}
 
 void IndexManager::newLeafPage(void * page){
-    memset(page, 0, PAGE_SIZE);
+	memset(page, 0 ,PAGE_SIZE);
     // Writes the slot directory header.
-    NodeHeader nodeHeader;
-    nodeHeader.parent = 0;
-    nodeHeader.numSlots = 0;
-    nodeHeader.isLeaf = true;
-    nodeHeader.isRoot = false;
-    nodeHeader.freeSpaceOffset = sizeof(NodeHeader) + sizeof(LeafHeader);
+    uint32_t freeSpaceOffset = sizeof(NodeHeader) + sizeof(LeafHeader);
+    struct NodeHeader nodeHeader = {0, 1, true, false, freeSpaceOffset}; 
     setNodeHeader(page, nodeHeader);
 
-    LeafHeader leafHeader;
-    leafHeader.nextPage = 0;
-    leafHeader.prevPage = 0;
-
+    struct LeafHeader leafHeader = {0, 0};
     setLeafHeader(page, leafHeader);
 }
 
 void IndexManager::newNonLeafPage(void * page){
-    memset(page, 0, PAGE_SIZE);
+	memset(page, 0 ,PAGE_SIZE);
     // Writes the slot directory header.
-    NodeHeader nodeHeader;
-    nodeHeader.parent = 0;
-    nodeHeader.numSlots = 0;
-    nodeHeader.isLeaf = false;
-    nodeHeader.isRoot = false;
-    nodeHeader.freeSpaceOffset = sizeof(NodeHeader);
+    uint32_t freeSpaceOffset = sizeof(NodeHeader);
+    struct NodeHeader nodeHeader = {0, 1, false, false, freeSpaceOffset};
     setNodeHeader(page, nodeHeader);
 }
 
@@ -96,10 +71,13 @@ RC IndexManager::createFile(const string &fileName)
     if (_pf_manager->createFile(fileName))
         return RBFM_CREATE_FAILED;
 
+
     // Setting up the first page.
-    void * firstPageData = calloc(PAGE_SIZE, 1);
+    void * firstPageData = malloc(PAGE_SIZE);
+
     if (firstPageData == NULL)
         return RBFM_MALLOC_FAILED;
+
     newNonLeafPage(firstPageData);
     NodeHeader nodeHeader = getNodeHeader(firstPageData);
     nodeHeader.isRoot = true;
@@ -110,77 +88,57 @@ RC IndexManager::createFile(const string &fileName)
     FileHandle handle;
     if (_pf_manager->openFile(fileName.c_str(), handle))
         return RBFM_OPEN_FAILED;
+   
     if (handle.appendPage(firstPageData))
         return RBFM_APPEND_FAILED;
+    
     _pf_manager->closeFile(handle);
 
     free(firstPageData);
-
     return SUCCESS;
 }
 
 RC IndexManager::destroyFile(const string &fileName)
 {
-    RC rc = _pf_manager->destroyFile(fileName.c_str());
-    return rc;
+    return _pf_manager->destroyFile(fileName.c_str());
 }
 
 RC IndexManager::openFile(const string &fileName, IXFileHandle &ixfileHandle)
 {
-    FileHandle fileHandle;
-    ixfileHandle.IXToFile(fileHandle);
-
-    RC rc = _pf_manager->openFile(fileName.c_str(), fileHandle);
-    ixfileHandle.fileToIX(fileHandle);
-    return rc;
+    return _pf_manager->openFile(fileName.c_str(), ixfileHandle.fh);
 }
 
 RC IndexManager::closeFile(IXFileHandle &ixfileHandle)
 {
-    FileHandle fileHandle;
-    ixfileHandle.IXToFile(fileHandle);
-
-    RC rc = _pf_manager->closeFile(fileHandle);
-    ixfileHandle.fileToIX(fileHandle);
-    return rc;
+    return _pf_manager->closeFile(ixfileHandle.fh);
 }
 
 bool IndexManager::enoughFreeSpaceForDataEntry(void * pageData, const Attribute &attribute, const void *key){
 	unsigned dataEntrySize = 0;
 
-    cout << "att type " << attribute.type << endl;
 	switch (attribute.type)
 	{
 	    case TypeInt:
-            cout << "Data Entry size: " << dataEntrySize << endl;
 	        dataEntrySize = dataEntrySize + INT_SIZE;
-            cout << "INT_SIZE" << INT_SIZE << endl;
-            cout << "INT_SIZE" << (unsigned) INT_SIZE << endl;
         break;
 	    case TypeReal:
 	        dataEntrySize += REAL_SIZE;
-            cout << "INT_SIZE" << INT_SIZE << endl;
-            cout << "INT_SIZE" << (unsigned) INT_SIZE << endl;
         break;
 	    case TypeVarChar:
 	        uint32_t varcharSize;
 	        memcpy(&varcharSize, key, VARCHAR_LENGTH_SIZE);
 	        dataEntrySize += VARCHAR_LENGTH_SIZE;
 	        dataEntrySize += varcharSize;
-            cout << "INT_SIZE" << INT_SIZE << endl;
-            cout << "INT_SIZE" << (unsigned) INT_SIZE << endl;
         break;
 	    }
-    cout << "Data Entry size: " << dataEntrySize << endl;
     dataEntrySize += sizeof(RID);
-
-    cout << "Data Entry size: " << dataEntrySize << endl;
 
 	if (getPageFreeSpaceSize(pageData) >= dataEntrySize){
 	    return true;
 	}else{
 		return false;
 	}
+	return false;
 
 }
 
@@ -219,6 +177,7 @@ RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute,con
     setNodeHeader(page, leafPageNodeHeader);
 
     return SUCCESS;
+ //      return -1;
 }
 
 RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, const void *key, const RID &rid)
@@ -226,12 +185,8 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
     void * rootPageData = malloc(PAGE_SIZE);
     char * rootPage = (char *)rootPageData;
 
-    FileHandle fileHandle;
-    ixfileHandle.IXToFile(fileHandle);
-    if(fileHandle.readPage(0, rootPage))
+    if(ixfileHandle.readPage(0, rootPage))
         return IX_READ_FAILED;
-
-    cout << "hit 1" << endl;
 
     NodeHeader rootNodeHeader = getNodeHeader(rootPage);
     //Base Case: Root is Empty, first insertion
@@ -272,49 +227,43 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
         dataEntry.rid = rid;
         // Check if there is enough room for the new Data Entry and insert into the Leaf
         if(enoughFreeSpaceForDataEntry(page, attribute, dataEntry.key)){
-            cout << "hit 2" << endl;
             insertDataEntry(page, attribute, dataEntry);
         }
 
-        cout << "hit 3" << endl;
         // Update Header of this New Leaf Page so that the parent is ROOT
         NodeHeader dataNodeHeader = getNodeHeader(page);
-        cout << "hit 4" << endl;
         dataNodeHeader.parent = 0;
         setNodeHeader(page, dataNodeHeader);
-        cout << "hit 5" << endl;
 
         // Take this New Leaf Page and Finally add it to the actual file
-        if (fileHandle.appendPage(page))
+        if (ixfileHandle.appendPage(page))
             return RBFM_APPEND_FAILED;
 
         // Updating ROOT Index Page with correspong Index entry
         IndexEntry indexEntry;
         indexEntry.key = &key;
         indexEntry.rightChild = 1;
-        cout << "hit 6" << endl;
 
         if(enoughFreeSpaceForIndexEntry(rootPage, attribute, key)){
             insertIndexEntry(rootPage, attribute, indexEntry);
         }
 
-        cout << "hit 7" << endl;
-
-        if (fileHandle.writePage(0, page)){
+        if (ixfileHandle.writePage(0, page)){
             return RBFM_APPEND_FAILED;
         }
 
         free(pageData);
     }
 
-    ixfileHandle.fileToIX(fileHandle);
-
     free(rootPageData);
     return SUCCESS;
+
+    //return -1;
 }
 
 bool IndexManager::enoughFreeSpaceForIndexEntry(void * pageData, const Attribute &attribute, const void *key){
-	int indexEntrySize = 0;
+	
+	unsigned indexEntrySize = 0;
 	switch (attribute.type)
 	{
 	    case TypeInt:
@@ -337,6 +286,7 @@ bool IndexManager::enoughFreeSpaceForIndexEntry(void * pageData, const Attribute
 	}else{
 		return false;
 	}
+	//return false;
 }
 
 RC IndexManager::insertIndexEntry(void * pageData,const Attribute &attribute,const IndexEntry &indexEntry)
@@ -374,6 +324,7 @@ RC IndexManager::insertIndexEntry(void * pageData,const Attribute &attribute,con
     setNodeHeader(page, nonLeafPageNodeHeader);
 
     return SUCCESS;
+   // return -1;
 }
 
 
@@ -398,28 +349,25 @@ RC IndexManager::recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribu
     return -1;
     // void * pageData = malloc(PAGE_SIZE);
     // char * page = (char *) pageData;
-    //
-    // FileHandle fileHandle;
-    // ixfileHandle.IXToFile(fileHandle);
-    //
-    // if(fileHandle.readPage(pageNum, page))
+    
+    // if(ixfileHandle.readPage(pageNum, page))
     //     return IX_READ_FAILED;
-    //
+    
     // NodeHeader nodeHeader = getNodeHeader(page);
     // for(unsigned i = 0; i < nodeHeader.numSlots; i++){
-    //     //Get the left child
-    //     // if(!nodeHeader.isLeaf){
-    //     //     //Some get indexEntryFunction
-    //     //     // Extract the left Child
-    //     //     // offset += size of the left key entry
-    //     //     // PRINT KEY
-    //     //     // PRINT 'children : ['
-    //     //     // recurBtree(left child);
-    //     // }else{
-    //     //     //PRINT ALL DATA ENTRIES ON LEAF PAGE
-    //     // }
-    //
-    // }
+        //Get the left child
+        // if(!nodeHeader.isLeaf){
+        //     //Some get indexEntryFunction
+        //     // Extract the left Child
+        //     // offset += size of the left key entry
+        //     // PRINT KEY
+        //     // PRINT 'children : ['
+        //     // recurBtree(left child);
+        // }else{
+        //     //PRINT ALL DATA ENTRIES ON LEAF PAGE
+        // }
+    
+//    }
 
     // Some get indexEntryFunction
     // Extract the right Child
@@ -435,27 +383,23 @@ void IndexManager::printBtree(IXFileHandle &ixfileHandle, const Attribute &attri
     // visit rootPage
     // traverse left sub Tree
     // traverse the right subtree
-    void * pageData = malloc(PAGE_SIZE);
-    char * page = (char *) pageData;
+    // void * pageData = malloc(PAGE_SIZE);
+    // char * page = (char *) pageData;
 
-    FileHandle fileHandle;
-    ixfileHandle.IXToFile(fileHandle);
 
-    fileHandle.readPage(1, page);
-    //     return IX_READ_FAILED;
+    // ixfileHandle.readPage(1, page);
+    // //     return IX_READ_FAILED;
 
-    NodeHeader nodeHeader = getNodeHeader(page);
+    // NodeHeader nodeHeader = getNodeHeader(page);
 
-    printLeafHelper(page, attribute);
+    // printLeafHelper(page, attribute);
 
 
 
     // for(unsigned i = 0; i < nodeHeader.numSlots; i++){
     //     printBtree()
-    //
+    
     // }
-
-
 }
 
 
@@ -633,15 +577,22 @@ RC IXFileHandle::collectCounterValues(unsigned &readPageCount, unsigned &writePa
     return SUCCESS;
 }
 
-void IXFileHandle::setfd(FILE *fd)
-{
-    _fd = fd;
-}
+RC IXFileHandle::readPage(PageNum pageNum, void *data){
+	ixReadPageCounter++;
+	return fh.readPage(pageNum, data);
 
-FILE *IXFileHandle::getfd()
-{
-    return _fd;
-}
+}           
+
+RC IXFileHandle::writePage(PageNum pageNum, const void *data){
+	ixWritePageCounter++;
+	return fh.writePage(pageNum, data);
+}                 
+
+RC IXFileHandle::appendPage(const void *data){
+	ixAppendPageCounter++;
+	return fh.appendPage(data);
+
+} 
 
 unsigned IndexManager::getPageFreeSpaceSize(void * page)
 {
