@@ -22,7 +22,7 @@ int testCase_2(const string &indexFileName, const Attribute &attribute)
     cerr << endl << "***** In IX Test Case 2 *****" << endl;
 
     RID rid;
-    int key = 200;
+    float key = 200;
     rid.pageNum = 500;
     rid.slotNum = 20;
 
@@ -67,7 +67,7 @@ int testCase_2(const string &indexFileName, const Attribute &attribute)
         cerr << "Insertion should generate some page I/O. The implementation is not correct." << endl;
         rc = indexManager->closeFile(ixfileHandle);
         return fail;
-    } 
+    }
 
     // print BTree, by this time the BTree should have only one node
     cerr << endl;
@@ -89,7 +89,7 @@ int main()
     Attribute attrAge;
     attrAge.length = 4;
     attrAge.name = "age";
-    attrAge.type = TypeInt;
+    attrAge.type = TypeReal;
 
     RC result = testCase_2(indexFileName, attrAge);
     if (result == success) {
@@ -101,4 +101,3 @@ int main()
     }
 
 }
-

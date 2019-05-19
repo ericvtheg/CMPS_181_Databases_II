@@ -51,7 +51,7 @@ void IndexManager::newNonLeafPage(void * page){
 
 //Check ONLY WRITE TO PAGE ZERO
 void IndexManager::setIndexFileHeader(void * page, IndexFileHeader indexFileHeader){
-    
+
     memcpy (page, &indexFileHeader, sizeof(IndexFileHeader));
 }
 
@@ -251,16 +251,13 @@ void IndexManager::getKeyd(const Attribute &attribute, void * retKey, const void
     switch (attribute.type)
     {
         case TypeInt:
-            int keyd;
-            memcpy(&keyd, key, INT_SIZE);
-            cout << "keyd:" << keyd << endl;
+            // int keyd;
+            // memcpy(&keyd, key, INT_SIZE);
+            // cout << "keyd:" << keyd << endl;
             memcpy(retKey, key, INT_SIZE);
         break;
         case TypeReal:
-            size += REAL_SIZE;
-            float keyf;
-            memcpy(&keyf, key, REAL_SIZE);
-            retKey = &keyf;
+            memcpy(retKey, key, REAL_SIZE);
         break;
         case TypeVarChar:
             int varcharSize;
@@ -276,7 +273,7 @@ void IndexManager::getKeyd(const Attribute &attribute, void * retKey, const void
 RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, const void *key, const RID &rid)
 {
     void * indexFileHeaderPage = malloc(PAGE_SIZE);
-   
+
     void * rootPageData = malloc(PAGE_SIZE);
     char * rootPage = (char *)rootPageData;
 
@@ -285,12 +282,12 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
         return IX_READ_FAILED;
 
     IndexFileHeader indexFileHeader = getIndexFileHeader(indexFileHeaderPage);
-    
+
     cout << "rootPageId: " << indexFileHeader.rootPageId << endl;
     //Using the Header Page information, grab the appropriate ROOT Page
     if(ixfileHandle.readPage(indexFileHeader.rootPageId, rootPage))
         return IX_READ_FAILED;
-   
+
     NodeHeader rootNodeHeader = getNodeHeader(rootPage);
 
      cout << "numSlots: " << rootNodeHeader.numSlots << endl;
@@ -312,9 +309,6 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 
         getKeyd(attribute, dataEntry.key, key);
         // dataEntry.key = tempkey;
-
-        cout << "tempkey" << tempkey << endl;
-        cout << "hit 1" << endl;
 
         // dataEntry.rid = rid;
         // Check if there is enough room for the new Data Entry and insert into the Leaf
@@ -535,7 +529,7 @@ void IndexManager::printLeafHelper(void * pageData, const Attribute &attribute){
     NodeHeader nodeHeader = getNodeHeader(page);
 
     unsigned offset = sizeof(NodeHeader) + sizeof(LeafHeader);
-    cout << "{\"keys\":  [";
+    cout << "\t{\"keys\":  [";
     switch(attribute.type)
     {
         case TypeInt: {
@@ -654,12 +648,8 @@ void IndexManager::printLeafHelper(void * pageData, const Attribute &attribute){
 
             break;
         }
-
     }
-
-
 }
-
 
 void IndexManager::printNonLeafHelper(void * pageData, const Attribute &attribute){
 
@@ -667,11 +657,11 @@ void IndexManager::printNonLeafHelper(void * pageData, const Attribute &attribut
     NodeHeader nodeHeader = getNodeHeader(page);
 
     unsigned offset = sizeof(NodeHeader);
+    cout << "attribute.type: " << attribute.type << endl;
     cout << "{\"keys\":  [";
     switch(attribute.type)
     {
         case TypeInt: {
-            // map<int, uint32_t> intMapVecRid;
 
             for(unsigned i = 0; i < nodeHeader.numSlots; i++){
                 int keyInt;
@@ -683,111 +673,52 @@ void IndexManager::printNonLeafHelper(void * pageData, const Attribute &attribut
                 memcpy(&pageNum, page + offset, sizeof(uint32_t));
                 offset += sizeof(uint32_t);
 
-                cout << "\"" << keyInt << "\"" << pageNum << ",";
-
-                // IndexEntry indexEntry;
-                // memcpy(&indexEntry, page + offset, sizeof(IndexEntry));
-                // offset += sizeof(IndexEntry);
-                // cout << "\"" << indexEntry.key << "\"" << ",";
+                cout << "\"" << keyInt << "\""<< ",";
             }
 
             cout << "]," << endl;
-        // go throuhg map and print.
-            // for(auto it = intMapVecRid.begin(); it != intMapVecRid.end(); ++it){
-            //     cout << "\""<< it->first << ":[" ;
-            //     for(unsigned j = 0; j < it->second.size(); j++  ){
-            //         cout << "(" << it->second[j].pageNum << "," << it->second[j].slotNum << ")";
-            //         if(j + 1 != it->second.size()){
-            //             cout << ",";
-            //         }
-            //     }
-            //     cout << "]\"";
-            //     if(std::next(it, 1) != intMapVecRid.end()){
-            //         cout << ",";
-            //     }
-            // }
-            // cout << "},";
             break;
         }
-        // case TypeReal:{
-        //     map<float, vector<RID>> floatMapVecRid;
-        //     for(unsigned i = 0; i < nodeHeader.numSlots; i++){
-        //         float keyFloat;
-        //         memcpy(&keyFloat, page + offset, REAL_SIZE);
-        //         offset += REAL_SIZE;
-        //
-        //         RID rid;
-        //         memcpy(&rid, page + offset, sizeof(RID));
-        //         offset += sizeof(RID);
-        //
-        //         std::vector<RID> ridVec;
-        //         ridVec.push_back(rid);
-        //         if(!floatMapVecRid.insert({keyFloat, ridVec}).second){
-        //             // duplicate handling
-        //             floatMapVecRid[keyFloat].push_back(rid);
-        //         }
-        //     }
-        //     for(auto it = floatMapVecRid.begin(); it != floatMapVecRid.end(); ++it){
-        //         cout << "\""<< it->first << ":["  <<endl;
-        //         for(unsigned j = 0; j < it->second.size(); j++  ){
-        //             cout << "(" << it->second[j].pageNum << "," << it->second[j].slotNum << ")";
-        //             if(j + 1 != it->second.size()){
-        //                 cout << ",";
-        //             }
-        //         }
-        //         cout << "]\"";
-        //         if(std::next(it, 1) != floatMapVecRid.end()){
-        //             cout << ",";
-        //         }
-        //     }
-        //     cout << "}," << endl;
-        //
-        //     break;
-        // }
-        // case TypeVarChar:{
-        //
-        //     uint32_t varcharSize;
-        //     map<char*, vector<RID>> charMapVecRid;
-        //     for(unsigned i = 0; i < nodeHeader.numSlots; i++){
-        //
-        //         memcpy(&varcharSize, page + offset, VARCHAR_LENGTH_SIZE);
-        //         offset+= VARCHAR_LENGTH_SIZE;
-        //
-        //         char * keyVarChar = (char *) calloc(1, varcharSize + 1);
-        //         memcpy(keyVarChar, page + offset, varcharSize);
-        //
-        //         offset += varcharSize;
-        //         keyVarChar[varcharSize + 1] = '\0';
-        //
-        //         RID rid;
-        //         memcpy(&rid, page + offset, sizeof(RID));
-        //         offset += sizeof(RID);
-        //
-        //         std::vector<RID> ridVec;
-        //         ridVec.push_back(rid);
-        //         if(!charMapVecRid.insert({keyVarChar, ridVec}).second){
-        //             // duplicate handling
-        //             charMapVecRid[keyVarChar].push_back(rid);
-        //         }
-        //     }
-        //     for(auto it = charMapVecRid.begin(); it != charMapVecRid.end(); ++it){
-        //         cout << "\""<< it->first << ":["  <<endl;
-        //         for(unsigned j = 0; j < it->second.size(); j++  ){
-        //             cout << "(" << it->second[j].pageNum << "," << it->second[j].slotNum << ")";
-        //             if(j + 1 != it->second.size()){
-        //                 cout << ",";
-        //             }
-        //         }
-        //         cout << "]\"";
-        //         if(std::next(it, 1) != charMapVecRid.end()){
-        //             cout << ",";
-        //         }
-        //     }
-        //     cout << "},";
-        //
-        //     break;
-        // }
+        case TypeReal:{
+            for(unsigned i = 0; i < nodeHeader.numSlots; i++){
+                float keyFloat;
+                memcpy(&keyFloat, page + offset, REAL_SIZE);
+                offset += REAL_SIZE;
 
+                uint32_t pageNum;
+                memcpy(&pageNum, page + offset, sizeof(uint32_t));
+                offset += sizeof(uint32_t);
+
+                cout << "\"" << keyFloat << "\""<< ",";
+            }
+            cout << "]," << endl;
+            break;
+        }
+        case TypeVarChar:{
+            uint32_t varcharSize;
+
+            for(unsigned i = 0; i < nodeHeader.numSlots; i++){
+
+                memcpy(&varcharSize, page + offset, VARCHAR_LENGTH_SIZE);
+                offset += VARCHAR_LENGTH_SIZE;
+
+                char * keyVarChar = (char *) calloc(1, varcharSize + 1);
+                memcpy(keyVarChar, page + offset, varcharSize);
+
+                offset += varcharSize;
+                keyVarChar[varcharSize + 1] = '\0';
+
+                uint32_t pageNum;
+                memcpy(&pageNum, page + offset, sizeof(uint32_t));
+                offset += sizeof(uint32_t);
+
+                // need to print
+                cout << "hit in printNonLeafHelper varchar *********" << endl;
+
+            }
+            cout << "]," << endl;
+            break;
+        }
     }
 }
 
