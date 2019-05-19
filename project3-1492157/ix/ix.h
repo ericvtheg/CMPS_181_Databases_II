@@ -39,7 +39,7 @@ typedef struct IndexEntry{
 } IndexEntry;
 
 typedef struct SlotEntry{
-    uint32_t length; 
+    uint32_t length;
     uint32_t offset;
 } SlotEntry;
 
@@ -89,7 +89,7 @@ class IndexManager {
         void newLeafPage(void * page);
         void setNodeHeader(void* page, NodeHeader nodeHeader);
         NodeHeader getNodeHeader(void * page);
-        
+
         void newNonLeafPage(void * page);
         void setLeafHeader(void* page, LeafHeader leafHeader);
         LeafHeader getLeafHeader(void * page);
@@ -106,8 +106,11 @@ class IndexManager {
 
         RC recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribute, unsigned pageNum);
         void printLeafHelper(void * pageData, const Attribute &attribute);
+        void printNonLeafHelper(void * pageData, const Attribute &attribute);
 
         unsigned getPageFreeSpaceSize(void * page);
+
+        void getKeyd(const Attribute &attribute, void * retKey, const void * key);
 };
 
 
@@ -146,7 +149,7 @@ class IXFileHandle {
     RC readPage(PageNum pageNum, void *data);                           // Get a specific page
     RC writePage(PageNum pageNum, const void *data);                    // Write a specific page
     RC appendPage(const void *data);                                    // Append a specific page
-    unsigned getNumberOfPages(); 
+    unsigned getNumberOfPages();
 	// Put the current counter values of associated PF FileHandles into variables
 	RC collectCounterValues(unsigned &readPageCount, unsigned &writePageCount, unsigned &appendPageCount);
 
