@@ -220,11 +220,10 @@ void IndexManager::getKeyd(const Attribute &attribute, void * retKey, const void
     switch (attribute.type)
     {
         case TypeInt:
-            int keyd;
-            memcpy(&keyd, key, INT_SIZE);
-            cout << "keyd:" << keyd << endl;
-            // memcpy(retKey, &keyd, INT_SIZE);
-            retKey = &keyd;
+            // int keyd;
+            // memcpy(&keyd, key, INT_SIZE);
+            // cout << "keyd:" << keyd << endl;
+            memcpy(retKey, key, INT_SIZE);
         break;
         case TypeReal:
             size += REAL_SIZE;
@@ -265,14 +264,16 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 
         unsigned size = 0;
 
-        getKeyd(attribute, tempkey, key);
+        dataEntry = {tempkey, rid};
+        dataEntry.key = malloc(PAGE_SIZE);
+
+        getKeyd(attribute, dataEntry.key, key);
         // dataEntry.key = tempkey;
 
         cout << "tempkey" << tempkey << endl;
         cout << "hit 1" << endl;
 
         // dataEntry.rid = rid;
-        dataEntry = {tempkey, rid};
         // Check if there is enough room for the new Data Entry and insert into the Leaf
         cout << "dataEntry.key " << dataEntry.key << endl;
         if(enoughFreeSpaceForDataEntry(page, attribute, dataEntry.key)){
@@ -295,13 +296,11 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
         IndexEntry indexEntry;
         tempkey = nullptr;
         //indexEntry.rightChild = 1;
-
-        getKeyd(attribute, tempkey, key);
-        //indexEntry.key = tempkey;
         indexEntry = {tempkey, 1};
-        int asdf;
-        memcpy(&asdf, indexEntry.key, INT_SIZE);
-        cout << "asdf" << asdf << endl;
+        indexEntry.key = malloc(PAGE_SIZE);
+
+        getKeyd(attribute, indexEntry.key, key);
+        //indexEntry.key = tempkey;
 
         if(enoughFreeSpaceForIndexEntry(rootPage, attribute, key)){
             insertIndexEntry(rootPage, attribute, indexEntry);
