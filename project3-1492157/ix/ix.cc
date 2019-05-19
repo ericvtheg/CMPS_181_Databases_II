@@ -65,6 +65,27 @@ LeafHeader IndexManager::getLeafHeader(void * page)
     return leafHeader;
 }
 
+
+void IndexManager::setSlotEntry(uint32_t slotNum, SlotEntry slotEntry, void * page){
+
+    char * pageP = (char *) page;
+    unsigned slotOffset = PAGE_SIZE - (slotNum * sizeof(slotEntry));
+
+    memcpy(pageP + slotOffset, &slotEntry, sizeof(SlotEntry));
+}
+
+SlotEntry IndexManager::getSlotEntry(uint32_t slotNum, void * page){
+    
+    char * pageP = (char *) page;
+    unsigned slotOffset = PAGE_SIZE - ((slotNum + 1)* sizeof(SlotEntry));
+   
+    SlotEntry slotEntry;
+    memcpy(&slotEntry, pageP + slotOffset, sizeof(SlotEntry));
+
+    return slotEntry;
+}
+
+
 RC IndexManager::createFile(const string &fileName)
 {
     // Creating a new paged file.
@@ -119,7 +140,7 @@ bool IndexManager::enoughFreeSpaceForDataEntry(void * pageData, const Attribute 
 	switch (attribute.type)
 	{
 	    case TypeInt:
-	        dataEntrySize = dataEntrySize + INT_SIZE;
+	        dataEntrySize += INT_SIZE;
         break;
 	    case TypeReal:
 	        dataEntrySize += REAL_SIZE;
@@ -130,7 +151,9 @@ bool IndexManager::enoughFreeSpaceForDataEntry(void * pageData, const Attribute 
 	        dataEntrySize += VARCHAR_LENGTH_SIZE;
 	        dataEntrySize += varcharSize;
         break;
-	    }
+        }
+    
+    dataEntrySize += sizeof(SlotEntry);
     dataEntrySize += sizeof(RID);
 
 	if (getPageFreeSpaceSize(pageData) >= dataEntrySize){
@@ -138,8 +161,6 @@ bool IndexManager::enoughFreeSpaceForDataEntry(void * pageData, const Attribute 
 	}else{
 		return false;
 	}
-	return false;
-
 }
 
 RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute,const DataEntry &dataEntry)
@@ -147,34 +168,47 @@ RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute,con
 	char * page = (char *)pageData;
 
     NodeHeader leafPageNodeHeader = getNodeHeader(page);
+    //Offset page by size of headers
+    page += leafPageNodeHeader.freeSpaceOffset;
+    uint32_t length = 0; 
 
     switch (attribute.type)
     {
         case TypeInt:
-            memcpy(page + leafPageNodeHeader.freeSpaceOffset, dataEntry.key, INT_SIZE);
-            leafPageNodeHeader.freeSpaceOffset += INT_SIZE;
+            memcpy(page + length, dataEntry.key, INT_SIZE);
+            length += INT_SIZE;
         break;
         case TypeReal:
-            memcpy(page + leafPageNodeHeader.freeSpaceOffset, dataEntry.key, REAL_SIZE);
-            leafPageNodeHeader.freeSpaceOffset += REAL_SIZE;
+            memcpy(page + length, dataEntry.key, REAL_SIZE);
+            length += REAL_SIZE;
         break;
         case TypeVarChar:
             uint32_t varcharSize;
             memcpy(&varcharSize, dataEntry.key, VARCHAR_LENGTH_SIZE);
-            memcpy(page + leafPageNodeHeader.freeSpaceOffset, &varcharSize, VARCHAR_LENGTH_SIZE);
-            leafPageNodeHeader.freeSpaceOffset += VARCHAR_LENGTH_SIZE;
+            memcpy(page + length, &varcharSize, VARCHAR_LENGTH_SIZE);
+            length += VARCHAR_LENGTH_SIZE;
 
-            memcpy(page + leafPageNodeHeader.freeSpaceOffset, ((char*) dataEntry.key + VARCHAR_LENGTH_SIZE), varcharSize);
-            leafPageNodeHeader.freeSpaceOffset += varcharSize;
+            memcpy(page + length, ((char*) dataEntry.key + VARCHAR_LENGTH_SIZE), varcharSize);
+            length += varcharSize;
         break;
     }
-    memcpy(page + leafPageNodeHeader.freeSpaceOffset, &dataEntry.rid, sizeof(RID));
-    leafPageNodeHeader.freeSpaceOffset += sizeof(RID);
+    //Writing the RID to the page
+    memcpy(page + length, &dataEntry.rid, sizeof(RID));
+    length += sizeof(RID);
+    
+    //Inserting a slot for the new entry
+   
+    uint32_t offset = leafPageNodeHeader.freeSpaceOffset;
+    struct SlotEntry slotEntry = {length, offset};
 
     leafPageNodeHeader.numSlots += 1;
+    setSlotEntry(leafPageNodeHeader.numSlots, slotEntry, pageData);
+
+    //Updating header variables
+    leafPageNodeHeader.freeSpaceOffset += length;
 
     //Update the Header
-    setNodeHeader(page, leafPageNodeHeader);
+    setNodeHeader(pageData, leafPageNodeHeader);
 
     return SUCCESS;
  //      return -1;
@@ -268,6 +302,7 @@ bool IndexManager::enoughFreeSpaceForIndexEntry(void * pageData, const Attribute
 	{
 	    case TypeInt:
 	        indexEntrySize += INT_SIZE;
+
         break;
 	    case TypeReal:
 	        indexEntrySize += REAL_SIZE;
@@ -279,6 +314,7 @@ bool IndexManager::enoughFreeSpaceForIndexEntry(void * pageData, const Attribute
 	        indexEntrySize += varcharSize;
         break;
 	    }
+    indexEntrySize += sizeof(SlotEntry);
 	indexEntrySize += sizeof(uint32_t);
 
 	if (getPageFreeSpaceSize(pageData) >= indexEntrySize){
@@ -289,41 +325,53 @@ bool IndexManager::enoughFreeSpaceForIndexEntry(void * pageData, const Attribute
 	//return false;
 }
 
-RC IndexManager::insertIndexEntry(void * pageData,const Attribute &attribute,const IndexEntry &indexEntry)
+RC IndexManager::insertIndexEntry(void * pageData, const Attribute &attribute,const IndexEntry &indexEntry)
 {
 	char * page = (char *)pageData;
 
     NodeHeader nonLeafPageNodeHeader = getNodeHeader(page);
+    page += nonLeafPageNodeHeader.freeSpaceOffset;
+
+    uint32_t length = 0;
 
     switch (attribute.type)
     {
         case TypeInt:
-            memcpy(page + nonLeafPageNodeHeader.freeSpaceOffset, indexEntry.key, INT_SIZE);
-            nonLeafPageNodeHeader.freeSpaceOffset += INT_SIZE;
+            memcpy(page + length , indexEntry.key, INT_SIZE);
+            length += INT_SIZE;
         break;
         case TypeReal:
-            memcpy(page + nonLeafPageNodeHeader.freeSpaceOffset, indexEntry.key, REAL_SIZE);
-            nonLeafPageNodeHeader.freeSpaceOffset += REAL_SIZE;
+            memcpy(page + length, indexEntry.key, REAL_SIZE);
+            length += REAL_SIZE;
         break;
         case TypeVarChar:
             uint32_t varcharSize;
             memcpy(&varcharSize, indexEntry.key, VARCHAR_LENGTH_SIZE);
-            memcpy(page + nonLeafPageNodeHeader.freeSpaceOffset, &varcharSize, VARCHAR_LENGTH_SIZE);
-            nonLeafPageNodeHeader.freeSpaceOffset += VARCHAR_LENGTH_SIZE;
+            memcpy(page + length, &varcharSize, VARCHAR_LENGTH_SIZE);
+            length += VARCHAR_LENGTH_SIZE;
 
             memcpy(page + nonLeafPageNodeHeader.freeSpaceOffset, ((char*) indexEntry.key + VARCHAR_LENGTH_SIZE), varcharSize);
-            nonLeafPageNodeHeader.freeSpaceOffset += varcharSize;
+            length += varcharSize;
         break;
     }
+
     memcpy(page + nonLeafPageNodeHeader.freeSpaceOffset, &indexEntry.rightChild, sizeof(uint32_t));
-    nonLeafPageNodeHeader.freeSpaceOffset += sizeof(uint32_t);
+    length += sizeof(uint32_t);
+    
+    uint32_t offset = nonLeafPageNodeHeader.freeSpaceOffset;
+    struct SlotEntry slotEntry = {length, offset};
 
     nonLeafPageNodeHeader.numSlots += 1;
+    setSlotEntry(nonLeafPageNodeHeader.numSlots, slotEntry, pageData);
+
+    //Updating header variables
+    nonLeafPageNodeHeader.freeSpaceOffset += length;
 
     //Update the Header
-    setNodeHeader(page, nonLeafPageNodeHeader);
+    setNodeHeader(pageData, nonLeafPageNodeHeader);
 
     return SUCCESS;
+
    // return -1;
 }
 
@@ -418,6 +466,7 @@ void IndexManager::printLeafHelper(void * pageData, const Attribute &attribute){
         case TypeInt: {
             map<int, vector<RID>> intMapVecRid;
             for(unsigned i = 0; i < nodeHeader.numSlots; i++){
+                SlotEntry SlotEntry = getSlotEntry(i, pageData);
                 int keyInt;
                 memcpy(&keyInt, page + offset, INT_SIZE);
                 offset += INT_SIZE;

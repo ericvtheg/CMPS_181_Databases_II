@@ -38,10 +38,10 @@ typedef struct IndexEntry{
     uint32_t rightChild;
 } IndexEntry;
 
-typedef struct slotEntry{
+typedef struct SlotEntry{
     uint32_t length; 
-    int32_t offset;
-} slotEntry;
+    uint32_t offset;
+} SlotEntry;
 
 class IndexManager {
 
@@ -88,15 +88,18 @@ class IndexManager {
 
         void newLeafPage(void * page);
         void setNodeHeader(void* page, NodeHeader nodeHeader);
+        NodeHeader getNodeHeader(void * page);
+        
         void newNonLeafPage(void * page);
         void setLeafHeader(void* page, LeafHeader leafHeader);
-
-        NodeHeader getNodeHeader(void * page);
         LeafHeader getLeafHeader(void * page);
+
+        void setSlotEntry(uint32_t slotNum, SlotEntry slotEntry, void * page);
+        SlotEntry getSlotEntry(uint32_t slotNum, void * page);
+
 
         RC insertDataEntry(void * pageData, const Attribute &attribute, const DataEntry &dataEntry);
         bool enoughFreeSpaceForDataEntry(void * pageData, const Attribute &attribute, const void *key);
-        unsigned getPageFreeSpaceSize(void * page);
 
         RC insertIndexEntry(void * pageData,const Attribute &attribute,const IndexEntry &indexEntry);
         bool enoughFreeSpaceForIndexEntry(void * pageData, const Attribute &attribute, const void *key);
@@ -104,6 +107,7 @@ class IndexManager {
         RC recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribute, unsigned pageNum);
         void printLeafHelper(void * pageData, const Attribute &attribute);
 
+        unsigned getPageFreeSpaceSize(void * page);
 };
 
 
