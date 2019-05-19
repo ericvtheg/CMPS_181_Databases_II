@@ -15,6 +15,10 @@
 class IX_ScanIterator;
 class IXFileHandle;
 
+typedef struct IndexFileHeader{
+    uint32_t rootPageId; 
+}IndexFileHeader;
+
 typedef struct DataEntry{
     void* key;
     RID rid;
@@ -86,11 +90,16 @@ class IndexManager {
         static IndexManager *_index_manager;
         static PagedFileManager *_pf_manager;
 
-        void newLeafPage(void * page);
+        void initializeIndexFileHeaderPage(void * page);
+        void setIndexFileHeader(void * page, IndexFileHeader indexFileHeader);
+        IndexFileHeader getIndexFileHeader(void * page);
+
         void setNodeHeader(void* page, NodeHeader nodeHeader);
         NodeHeader getNodeHeader(void * page);
-
+        
         void newNonLeafPage(void * page);
+
+        void newLeafPage(void * page);
         void setLeafHeader(void* page, LeafHeader leafHeader);
         LeafHeader getLeafHeader(void * page);
 

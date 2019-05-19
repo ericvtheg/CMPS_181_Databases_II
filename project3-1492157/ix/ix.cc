@@ -21,12 +21,20 @@ IndexManager::~IndexManager()
 {
 }
 
+void IndexManager::initializeIndexFileHeaderPage(void * page){
+    memset(page, 0 ,PAGE_SIZE);
+    // Page Zero Is this Header, page one is initiailly Root
+    struct IndexFileHeader indexFileHeader = {1};
+
+    memcpy(page , &indexFileHeader, sizeof(IndexFileHeader));
+}
+
 
 void IndexManager::newLeafPage(void * page){
 	memset(page, 0 ,PAGE_SIZE);
     // Writes the slot directory header.
     uint32_t freeSpaceOffset = sizeof(NodeHeader) + sizeof(LeafHeader);
-    struct NodeHeader nodeHeader = {0, 1, true, false, freeSpaceOffset};
+    struct NodeHeader nodeHeader = {0, 0, true, false, freeSpaceOffset};
     setNodeHeader(page, nodeHeader);
 
     struct LeafHeader leafHeader = {0, 0};
@@ -37,8 +45,14 @@ void IndexManager::newNonLeafPage(void * page){
 	memset(page, 0 ,PAGE_SIZE);
     // Writes the slot directory header.
     uint32_t freeSpaceOffset = sizeof(NodeHeader);
-    struct NodeHeader nodeHeader = {0, 1, false, false, freeSpaceOffset};
+    struct NodeHeader nodeHeader = {0, 0, false, false, freeSpaceOffset};
     setNodeHeader(page, nodeHeader);
+}
+
+//Check ONLY WRITE TO PAGE ZERO
+void IndexManager::setIndexFileHeader(void * page, IndexFileHeader indexFileHeader){
+    
+    memcpy (page, &indexFileHeader, sizeof(IndexFileHeader));
 }
 
 void IndexManager::setNodeHeader(void* page, NodeHeader nodeHeader){
@@ -51,7 +65,7 @@ void IndexManager::setLeafHeader(void* page, LeafHeader leafHeader){
 
 NodeHeader IndexManager::getNodeHeader(void * page)
 {
-    // Getting the slot directory header.
+
     NodeHeader nodeHeader;
     memcpy (&nodeHeader, page, sizeof(NodeHeader));
     return nodeHeader;
@@ -59,10 +73,16 @@ NodeHeader IndexManager::getNodeHeader(void * page)
 
 LeafHeader IndexManager::getLeafHeader(void * page)
 {
-    // Getting the slot directory header.
     LeafHeader leafHeader;
     memcpy (&leafHeader, (char*)page + sizeof(NodeHeader), sizeof(LeafHeader));
     return leafHeader;
+}
+
+IndexFileHeader IndexManager::getIndexFileHeader(void * page)
+{
+    IndexFileHeader indexFileHeader;
+    memcpy (&indexFileHeader, page, sizeof(IndexFileHeader));
+    return indexFileHeader;
 }
 
 
@@ -99,17 +119,25 @@ RC IndexManager::createFile(const string &fileName)
     if (firstPageData == NULL)
         return RBFM_MALLOC_FAILED;
 
+    FileHandle handle;
+    if (_pf_manager->openFile(fileName.c_str(), handle))
+        return RBFM_OPEN_FAILED;
+
+    initializeIndexFileHeaderPage(firstPageData);
+
+    // Page 0 is now the header page for the index file
+    if (handle.appendPage(firstPageData))
+        return RBFM_APPEND_FAILED;
+
+
+    //Creating the first nonleaf oage - ROOT
     newNonLeafPage(firstPageData);
     NodeHeader nodeHeader = getNodeHeader(firstPageData);
     nodeHeader.isRoot = true;
 
     setNodeHeader(firstPageData, nodeHeader);
 
-    // Adds the first record based page.
-    FileHandle handle;
-    if (_pf_manager->openFile(fileName.c_str(), handle))
-        return RBFM_OPEN_FAILED;
-
+    // Adds the first root nonleaf page.
     if (handle.appendPage(firstPageData))
         return RBFM_APPEND_FAILED;
 
@@ -176,6 +204,9 @@ RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute,con
     {
         case TypeInt:
             cout << "dataEntry.key: " << dataEntry.key << endl;
+            int qump;
+            memcpy(&qump, dataEntry.key, INT_SIZE);
+            cout << "quemp " << qump << endl;
             memcpy(page + length, dataEntry.key, INT_SIZE);
             length += INT_SIZE;
         break;
@@ -202,8 +233,8 @@ RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute,con
     uint32_t offset = leafPageNodeHeader.freeSpaceOffset;
     struct SlotEntry slotEntry = {length, offset};
 
-    leafPageNodeHeader.numSlots += 1;
     setSlotEntry(leafPageNodeHeader.numSlots, slotEntry, pageData);
+    leafPageNodeHeader.numSlots += 1;
 
     //Updating header variables
     leafPageNodeHeader.freeSpaceOffset += length;
@@ -220,9 +251,9 @@ void IndexManager::getKeyd(const Attribute &attribute, void * retKey, const void
     switch (attribute.type)
     {
         case TypeInt:
-            // int keyd;
-            // memcpy(&keyd, key, INT_SIZE);
-            // cout << "keyd:" << keyd << endl;
+            int keyd;
+            memcpy(&keyd, key, INT_SIZE);
+            cout << "keyd:" << keyd << endl;
             memcpy(retKey, key, INT_SIZE);
         break;
         case TypeReal:
@@ -244,13 +275,25 @@ void IndexManager::getKeyd(const Attribute &attribute, void * retKey, const void
 
 RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, const void *key, const RID &rid)
 {
+    void * indexFileHeaderPage = malloc(PAGE_SIZE);
+   
     void * rootPageData = malloc(PAGE_SIZE);
     char * rootPage = (char *)rootPageData;
 
-    if(ixfileHandle.readPage(0, rootPage))
+    //Grab the Header Page
+    if(ixfileHandle.readPage(0, indexFileHeaderPage))
         return IX_READ_FAILED;
 
+    IndexFileHeader indexFileHeader = getIndexFileHeader(indexFileHeaderPage);
+    
+    cout << "rootPageId: " << indexFileHeader.rootPageId << endl;
+    //Using the Header Page information, grab the appropriate ROOT Page
+    if(ixfileHandle.readPage(indexFileHeader.rootPageId, rootPage))
+        return IX_READ_FAILED;
+   
     NodeHeader rootNodeHeader = getNodeHeader(rootPage);
+
+     cout << "numSlots: " << rootNodeHeader.numSlots << endl;
     //Base Case: Root is Empty, first insertion
     if(rootNodeHeader.numSlots == 0){
         //Data Page
@@ -284,8 +327,11 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 
         // Update Header of this New Leaf Page so that the parent is ROOT
         NodeHeader dataNodeHeader = getNodeHeader(page);
-        dataNodeHeader.parent = 0;
+        dataNodeHeader.parent = indexFileHeader.rootPageId;
         setNodeHeader(page, dataNodeHeader);
+
+        cout << "DataNodeParent: " << dataNodeHeader.parent << endl;
+        cout << "DataNodeNumSlots: " << dataNodeHeader.numSlots << endl;
 
         // Take this New Leaf Page and Finally add it to the actual file
         if (ixfileHandle.appendPage(page))
@@ -296,7 +342,7 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
         IndexEntry indexEntry;
         tempkey = nullptr;
         //indexEntry.rightChild = 1;
-        indexEntry = {tempkey, 1};
+        indexEntry = {tempkey, 2};
         indexEntry.key = malloc(PAGE_SIZE);
 
         getKeyd(attribute, indexEntry.key, key);
@@ -306,7 +352,7 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
             insertIndexEntry(rootPage, attribute, indexEntry);
         }
 
-        if (ixfileHandle.writePage(0, rootPage)){
+        if (ixfileHandle.writePage(indexFileHeader.rootPageId, rootPage)){
             return RBFM_APPEND_FAILED;
         }
 
@@ -461,10 +507,10 @@ void IndexManager::printBtree(IXFileHandle &ixfileHandle, const Attribute &attri
     void * pageData = malloc(PAGE_SIZE);
     char * page = (char *) pageData;
 
-    ixfileHandle.readPage(0, page);
+    ixfileHandle.readPage(1, page);
     printNonLeafHelper(page, attribute);
 
-    ixfileHandle.readPage(1, page);
+    ixfileHandle.readPage(2, page);
     //     return IX_READ_FAILED;
 
     NodeHeader nodeHeader = getNodeHeader(page);
