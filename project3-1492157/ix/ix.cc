@@ -383,21 +383,23 @@ void IndexManager::printBtree(IXFileHandle &ixfileHandle, const Attribute &attri
     // visit rootPage
     // traverse left sub Tree
     // traverse the right subtree
-    // void * pageData = malloc(PAGE_SIZE);
-    // char * page = (char *) pageData;
+    void * pageData = malloc(PAGE_SIZE);
+    char * page = (char *) pageData;
 
 
-    // ixfileHandle.readPage(1, page);
-    // //     return IX_READ_FAILED;
+    ixfileHandle.readPage(1, page);
+    //     return IX_READ_FAILED;
 
-    // NodeHeader nodeHeader = getNodeHeader(page);
+    NodeHeader nodeHeader = getNodeHeader(page);
 
-    // printLeafHelper(page, attribute);
+    printLeafHelper(page, attribute);
+
+    free(pageData);
 
 
 
     // for(unsigned i = 0; i < nodeHeader.numSlots; i++){
-    //     printBtree()
+    //     printBtree();
     
     // }
 }
@@ -435,7 +437,7 @@ void IndexManager::printLeafHelper(void * pageData, const Attribute &attribute){
             }
         // go throuhg map and print.
             for(auto it = intMapVecRid.begin(); it != intMapVecRid.end(); ++it){
-                cout << "\""<< it->first << ":["  <<endl;
+                cout << "\""<< it->first << ":[" ;
                 for(unsigned j = 0; j < it->second.size(); j++  ){
                     cout << "(" << it->second[j].pageNum << "," << it->second[j].slotNum << ")";
                     if(j + 1 != it->second.size()){
@@ -481,7 +483,7 @@ void IndexManager::printLeafHelper(void * pageData, const Attribute &attribute){
                     cout << ",";
                 }
             }
-            cout << "},";
+            cout << "}," << endl;
 
             break;
         }
