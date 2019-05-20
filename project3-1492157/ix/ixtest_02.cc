@@ -22,7 +22,7 @@ int testCase_2(const string &indexFileName, const Attribute &attribute)
     cerr << endl << "***** In IX Test Case 2 *****" << endl;
 
     RID rid;
-    float key = 200;
+    int key = 200;
     rid.pageNum = 500;
     rid.slotNum = 20;
 
@@ -49,6 +49,13 @@ int testCase_2(const string &indexFileName, const Attribute &attribute)
 
     // insert entry
     rc = indexManager->insertEntry(ixfileHandle, attribute, &key, rid);
+    assert(rc == success && "indexManager::insertEntry() should not fail.");
+
+    int keyd = 250;
+    rid.pageNum = 500;
+    rid.slotNum = 21;
+
+    rc = indexManager->insertEntry(ixfileHandle, attribute, &keyd, rid);
     assert(rc == success && "indexManager::insertEntry() should not fail.");
 
     // collect counters
@@ -89,7 +96,7 @@ int main()
     Attribute attrAge;
     attrAge.length = 4;
     attrAge.name = "age";
-    attrAge.type = TypeReal;
+    attrAge.type = TypeInt;
 
     RC result = testCase_2(indexFileName, attrAge);
     if (result == success) {

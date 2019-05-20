@@ -350,8 +350,11 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
             return RBFM_APPEND_FAILED;
         }
 
+        // free malloc'd indexEntry?
+        // free malloc'd dataEntry?
         free(pageData);
     }
+
 
     free(rootPageData);
     return SUCCESS;
@@ -386,7 +389,6 @@ bool IndexManager::enoughFreeSpaceForIndexEntry(void * pageData, const Attribute
 	}else{
 		return false;
 	}
-	//return false;
 }
 
 RC IndexManager::insertIndexEntry(void * pageData, const Attribute &attribute,const IndexEntry &indexEntry)
@@ -439,7 +441,6 @@ RC IndexManager::insertIndexEntry(void * pageData, const Attribute &attribute,co
 
     return SUCCESS;
 
-   // return -1;
 }
 
 
@@ -460,18 +461,70 @@ RC IndexManager::scan(IXFileHandle &ixfileHandle,
     return -1;
 }
 
+void IndexManager::getIndexEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, IndexEntry &indexEntry, char * pageData, SlotEntry dirtySlot){
+    char * page = pageData;
+    // NodeHeader nonLeafPageNodeHeader = getNodeHeader(page);
+
+    page += dirtySlot.offset;
+    int offset = 0;
+
+    switch (attribute.type)
+    {
+        case TypeInt:
+            // memcpy(&indexEntry.key, page, INT_SIZE);
+            offset = INT_SIZE;
+            memcpy(&indexEntry.rightChild, page + offset, INT_SIZE);
+        break;
+        case TypeReal:
+            offset = REAL_SIZE;
+            memcpy(&indexEntry.rightChild, page + offset, REAL_SIZE);
+        break;
+        // case TypeVarChar:
+        //     uint32_t varcharSize;
+        //     memcpy(&varcharSize, indexEntry.key, VARCHAR_LENGTH_SIZE);
+        //     memcpy(page + length, &varcharSize, VARCHAR_LENGTH_SIZE);
+        //     length += VARCHAR_LENGTH_SIZE;
+        //
+        //     memcpy(page + nonLeafPageNodeHeader.freeSpaceOffset, ((char*) indexEntry.key + VARCHAR_LENGTH_SIZE), varcharSize);
+        //     length += varcharSize;
+        // break;
+    }
+
+
+}
+
 RC IndexManager::recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribute, unsigned pageNum){
-    return -1;
-    // void * pageData = malloc(PAGE_SIZE);
-    // char * page = (char *) pageData;
+    void * pageData = malloc(PAGE_SIZE);
+    char * page = (char *) pageData;
 
-    // if(ixfileHandle.readPage(pageNum, page))
-    //     return IX_READ_FAILED;
+    if(ixfileHandle.fh.readPage(pageNum, page))
+        return IX_READ_FAILED;
 
-    // NodeHeader nodeHeader = getNodeHeader(page);
-    // for(unsigned i = 0; i < nodeHeader.numSlots; i++){
-        //Get the left child
-        // if(!nodeHeader.isLeaf){
+    NodeHeader nodeHeader = getNodeHeader(page);
+
+    IndexEntry indexEntry;
+
+    if(nodeHeader.isLeaf){
+        printLeafHelper(page, attribute);
+        return 0;
+    }else{
+        printNonLeafHelper(page, attribute);
+    }
+
+    for(unsigned i = 0; i < nodeHeader.numSlots; i++){
+        // cout << "array[i]: " << array[i] << endl;
+        // SlotEntry dirtySlot = getSlotEntry(i, page);
+
+        SlotEntry dirtySlot = getSlotEntry(i, page);
+
+        indexEntry = {nullptr, 0};
+        // may need to malloc for indexEntry.key
+        getIndexEntry(ixfileHandle, attribute, indexEntry, page, dirtySlot);
+
+        recurBtree(ixfileHandle, attribute, indexEntry.rightChild);
+        // array2.push_back(indexEntry.rightChild);
+        // cout << "rightChild" << indexEntry.rightChild << endl;
+    }
         //     //Some get indexEntryFunction
         //     // Extract the left Child
         //     // offset += size of the left key entry
@@ -481,8 +534,6 @@ RC IndexManager::recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribu
         // }else{
         //     //PRINT ALL DATA ENTRIES ON LEAF PAGE
         // }
-
-//    }
 
     // Some get indexEntryFunction
     // Extract the right Child
@@ -499,29 +550,48 @@ void IndexManager::printBtree(IXFileHandle &ixfileHandle, const Attribute &attri
     // traverse left sub Tree
     // traverse the right subtree
     void * pageData = malloc(PAGE_SIZE);
-    char * page = (char *) pageData;
+    char * page = (char *) pageData; //point to base
 
-    ixfileHandle.readPage(1, page);
-    printNonLeafHelper(page, attribute);
+    if (ixfileHandle.fh.readPage(0, page))
+            return ;
 
-    ixfileHandle.readPage(2, page);
-    //     return IX_READ_FAILED;
+    IndexFileHeader header = getIndexFileHeader(page);
+
+    uint32_t rootPageId = header.rootPageId;
+
+    memset(page, 0, PAGE_SIZE);
+
+    if(ixfileHandle.fh.readPage(rootPageId, page))
+         return ;
 
     NodeHeader nodeHeader = getNodeHeader(page);
 
-    printLeafHelper(page, attribute);
+    printNonLeafHelper(page, attribute);
+
+    IndexEntry indexEntry = {nullptr, 0};
+    // indexEntry.key = malloc(PAGE_SIZE);
+
+    std::vector< uint32_t > array;
+
+    for(unsigned i = 0; i < nodeHeader.numSlots; i++){
+
+        //Get the left child
+        SlotEntry dirtySlot = getSlotEntry(i, page);
+        // may need to malloc for indexEntry.key
+        getIndexEntry(ixfileHandle, attribute, indexEntry, page, dirtySlot);
+
+        // call recurBtree
+        recurBtree(ixfileHandle, attribute,indexEntry.rightChild);
+        // array.push_back(indexEntry.rightChild);
+        // cout << "IndexEntry: " << indexEntry.rightChild << endl;
+    }
+
+    memset(page, 0, PAGE_SIZE);
+
+    std::vector< uint32_t > array2;
 
     free(pageData);
-
-
-
-    // for(unsigned i = 0; i < nodeHeader.numSlots; i++){
-    //     printBtree();
-
-    // }
 }
-
-
 
 void IndexManager::printLeafHelper(void * pageData, const Attribute &attribute){
 
@@ -535,7 +605,7 @@ void IndexManager::printLeafHelper(void * pageData, const Attribute &attribute){
         case TypeInt: {
             map<int, vector<RID>> intMapVecRid;
             for(unsigned i = 0; i < nodeHeader.numSlots; i++){
-                SlotEntry SlotEntry = getSlotEntry(i, pageData);
+                // SlotEntry SlotEntry = getSlotEntry(i, pageData);
                 int keyInt;
                 memcpy(&keyInt, page + offset, INT_SIZE);
                 offset += INT_SIZE;
@@ -651,6 +721,7 @@ void IndexManager::printLeafHelper(void * pageData, const Attribute &attribute){
     }
 }
 
+
 void IndexManager::printNonLeafHelper(void * pageData, const Attribute &attribute){
 
     char * page = (char *) pageData;
@@ -739,7 +810,6 @@ RC IX_ScanIterator::close()
 {
     return -1;
 }
-
 
 IXFileHandle::IXFileHandle()
 {

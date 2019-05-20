@@ -16,7 +16,7 @@ class IX_ScanIterator;
 class IXFileHandle;
 
 typedef struct IndexFileHeader{
-    uint32_t rootPageId; 
+    uint32_t rootPageId;
 }IndexFileHeader;
 
 typedef struct DataEntry{
@@ -96,7 +96,7 @@ class IndexManager {
 
         void setNodeHeader(void* page, NodeHeader nodeHeader);
         NodeHeader getNodeHeader(void * page);
-        
+
         void newNonLeafPage(void * page);
 
         void newLeafPage(void * page);
@@ -120,6 +120,8 @@ class IndexManager {
         unsigned getPageFreeSpaceSize(void * page);
 
         void getKeyd(const Attribute &attribute, void * retKey, const void * key);
+
+        void getIndexEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, IndexEntry &indexEntry, char * pageData, SlotEntry dirtySlot);
 };
 
 
