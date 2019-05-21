@@ -89,7 +89,7 @@ IndexFileHeader IndexManager::getIndexFileHeader(void * page)
 void IndexManager::setSlotEntry(uint32_t slotNum, SlotEntry slotEntry, void * page){
 
     char * pageP = (char *) page;
-    unsigned slotOffset = PAGE_SIZE - (slotNum * sizeof(slotEntry));
+    unsigned slotOffset = PAGE_SIZE - ((slotNum + 1) * sizeof(slotEntry));
 
     memcpy(pageP + slotOffset, &slotEntry, sizeof(SlotEntry));
 }
@@ -244,6 +244,20 @@ RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute,con
 
     return SUCCESS;
  //      return -1;
+}
+
+void IndexManager::getDataEntry(uint32_t slotNum, void * page, DataEntry &dataEntry){
+	SlotEntry slotEntry = getSlotEntry(slotNum, page);
+	char * pageP = (char *)page + slotEntry.offset;
+
+	unsigned keyLength = slotEntry.length - sizeof(RID);
+	int wow;
+
+	memcpy(&wow, pageP , keyLength);
+
+	cout << "Wow: " << wow << endl;
+	memcpy(dataEntry.key, pageP , keyLength);
+	memcpy(&dataEntry.rid, pageP + keyLength, sizeof(RID));
 }
 
 void IndexManager::getKeyd(const Attribute &attribute, void * retKey, const void * key){
@@ -430,8 +444,8 @@ RC IndexManager::insertIndexEntry(void * pageData, const Attribute &attribute,co
     uint32_t offset = nonLeafPageNodeHeader.freeSpaceOffset;
     struct SlotEntry slotEntry = {length, offset};
 
-    nonLeafPageNodeHeader.numSlots += 1;
     setSlotEntry(nonLeafPageNodeHeader.numSlots, slotEntry, pageData);
+    nonLeafPageNodeHeader.numSlots += 1;
 
     //Updating header variables
     nonLeafPageNodeHeader.freeSpaceOffset += length;
@@ -441,24 +455,6 @@ RC IndexManager::insertIndexEntry(void * pageData, const Attribute &attribute,co
 
     return SUCCESS;
 
-}
-
-
-RC IndexManager::deleteEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, const void *key, const RID &rid)
-{
-    return -1;
-}
-
-
-RC IndexManager::scan(IXFileHandle &ixfileHandle,
-        const Attribute &attribute,
-        const void      *lowKey,
-        const void      *highKey,
-        bool			lowKeyInclusive,
-        bool        	highKeyInclusive,
-        IX_ScanIterator &ix_ScanIterator)
-{
-    return -1;
 }
 
 void IndexManager::getIndexEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, IndexEntry &indexEntry, char * pageData, SlotEntry dirtySlot){
@@ -478,20 +474,44 @@ void IndexManager::getIndexEntry(IXFileHandle &ixfileHandle, const Attribute &at
         case TypeReal:
             offset = REAL_SIZE;
             memcpy(&indexEntry.rightChild, page + offset, REAL_SIZE);
-        break;
-        // case TypeVarChar:
-        //     uint32_t varcharSize;
-        //     memcpy(&varcharSize, indexEntry.key, VARCHAR_LENGTH_SIZE);
-        //     memcpy(page + length, &varcharSize, VARCHAR_LENGTH_SIZE);
-        //     length += VARCHAR_LENGTH_SIZE;
-        //
-        //     memcpy(page + nonLeafPageNodeHeader.freeSpaceOffset, ((char*) indexEntry.key + VARCHAR_LENGTH_SIZE), varcharSize);
-        //     length += varcharSize;
-        // break;
-    }
 
+    }
+}
+
+void IndexManager::getFullIndexEntry(uint32_t slotNum, void * page, IndexEntry &indexEntry){
+    SlotEntry slotEntry = getSlotEntry(slotNum, page);
+
+	char * pageP = (char *)page + slotEntry.offset;
+
+    unsigned keyLength = slotEntry.length - sizeof(uint32_t);
+
+ 	int wow;
+	memcpy(&wow, pageP, keyLength);
+	cout << "Woe: " << wow <<endl; 
+	memcpy(indexEntry.key, pageP, keyLength);
+	memcpy(&indexEntry.rightChild, pageP + keyLength, sizeof(uint32_t));
 
 }
+
+
+RC IndexManager::deleteEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, const void *key, const RID &rid)
+{
+    return -1;
+}
+
+
+RC IndexManager::scan(IXFileHandle &ixfileHandle,
+        const Attribute &attribute,
+        const void      *lowKey,
+        const void      *highKey,
+        bool			lowKeyInclusive,
+        bool        	highKeyInclusive,
+        IX_ScanIterator &ix_ScanIterator)
+{
+    return ix_ScanIterator.scanInit(ixfileHandle, attribute, lowKey, highKey, lowKeyInclusive, highKeyInclusive);
+}
+
+
 
 RC IndexManager::recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribute, unsigned pageNum){
     void * pageData = malloc(PAGE_SIZE);
@@ -794,7 +814,9 @@ void IndexManager::printNonLeafHelper(void * pageData, const Attribute &attribut
 }
 
 IX_ScanIterator::IX_ScanIterator()
+: currPage(0), currSlot(0), totalPage(0), totalSlot(0)
 {
+   ixm = IndexManager::instance();
 }
 
 IX_ScanIterator::~IX_ScanIterator()
@@ -803,13 +825,370 @@ IX_ScanIterator::~IX_ScanIterator()
 
 RC IX_ScanIterator::getNextEntry(RID &rid, void *key)
 {
-    return -1;
+
+		//TEST FOR TREE TRAVERSAL
+/* 	int value = 100;
+ 	uint32_t pageID;
+
+ 	cout << "Case: Value Smallest" << endl;
+	ixm->traverseTree(ixfileHandle, attribute, &value, pageData, pageID);
+ 	cout << "PageID: " << pageID <<  endl;
+
+ 	value = 200;
+ 	cout << "Case Value ==" << endl;
+	ixm->traverseTree(ixfileHandle, attribute, &value, pageData, pageID);
+ 	cout << "PageID: " << pageID <<  endl;
+
+ 	value = 300;
+	cout << "Case Value larger" << endl;
+	ixm->traverseTree(ixfileHandle, attribute, &value, pageData, pageID);
+ 	cout << "PageID: " << pageID <<  endl;
+ 	return IX_EOF;
+*/
+		//END OF TEST
+
+	NodeHeader nodeHeader = ixm->getNodeHeader(pageData);
+	totalSlot = nodeHeader.numSlots;
+
+	cout << "Going into NextSlots" << endl;
+    cout << "currPage: " << currPage << endl;
+    cout << "currSlot: " << currSlot << endl;
+
+    cout << "totalPage: " << totalPage << endl;
+    cout << "totalSlot: " <<  totalSlot << endl;
+
+
+	RC rc = getNextSlot();
+
+	if (rc == IX_EOF)
+	    return rc;
+
+	DataEntry dataEntry = {NULL, 0};
+	dataEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
+	ixm->getDataEntry(currSlot, pageData, dataEntry);
+	rid = dataEntry.rid;
+	ixm -> getKeyd(attribute, key, dataEntry.key);
+	cout << "RID: " << dataEntry.rid.pageNum  << " , " << dataEntry.rid.slotNum << endl;
+	currSlot++;
+
+	return SUCCESS;
+
+
+
+
 }
 
 RC IX_ScanIterator::close()
 {
-    return -1;
+    free(pageData);
+    return SUCCESS;
 }
+
+// Initialize the scanIterator with all necessary state
+RC IX_ScanIterator::scanInit( 
+	IXFileHandle &ixfh,      
+	const Attribute &attr,
+    const void      *lKey,
+    const void      *hKey,
+    bool			lKeyInclusive,
+    bool        	hKeyInclusive)
+{
+    // Start at page 0 slot 0
+    
+    currPage = 0;
+    currSlot = 0;
+    totalPage = 0;
+    totalSlot = 0;
+    lowKey = NULL;
+    highKey = NULL;
+
+    // Keep a buffer to hold the current page
+    pageData = malloc(PAGE_SIZE);
+
+    // Store the variables passed in to
+    ixfileHandle = ixfh;
+    attribute = attr;
+    lowKeyInclusive = lKeyInclusive;
+    highKeyInclusive = hKeyInclusive;
+
+    if(lKey != NULL){
+    	cout << "lkey notNull" << endl;
+    	lowKey = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
+    	ixm->getKeyd(attribute, lowKey, lKey);
+    }
+    if(hKey != NULL){
+    	cout << "hkey notNull" << endl;
+    	highKey = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
+    	ixm->getKeyd(attribute, highKey, hKey);
+    	
+    }
+
+     uint32_t rootPageId = 0;
+
+    // Get total number of pages
+    totalPage = ixfileHandle.fh.getNumberOfPages();
+    cout << "totalPage: " << totalPage << endl;
+    // If the think consists of more that just a header page and a root page, i.e. we actually have data entries
+    if (totalPage > 2)
+    {	
+    	//If yes, grab the PageHeader page
+        if (ixfileHandle.readPage(0, pageData))
+            return RBFM_READ_FAILED;
+
+   		 IndexFileHeader indexFileHeader = ixm->getIndexFileHeader(pageData);
+
+   		 rootPageId = indexFileHeader.rootPageId;
+
+   		 memset(pageData, 0 , PAGE_SIZE);
+
+   		//If yes, grab the root page
+   		if (ixfileHandle.readPage(rootPageId, pageData))
+   		    return RBFM_READ_FAILED;
+    }
+    else{
+        return IX_EOF;
+    }
+
+    //Once we get the root page, shoudl traverse the nodes to find the start of actual data pages
+    //NEED THE HELPER FUNCTION
+
+    // Get number of slots on first page
+    NodeHeader header = ixm->getNodeHeader(pageData);
+    totalSlot = header.numSlots;
+    currPage = rootPageId;
+
+
+    // Might want to check the two range values and the compop to find if a comparison is needed
+    switch (attribute.type)
+    {
+        case TypeInt:
+        	cout << "Scan Init: IntType" << endl;
+            int intlowKey;
+            int inthighKey;
+
+            if(highKey != NULL){
+            	memcpy(&inthighKey, highKey, INT_SIZE);
+ 		       	cout << "highKey: " << inthighKey << endl;
+            }
+
+        	if(lowKey != NULL){
+            	memcpy(&intlowKey, lowKey, INT_SIZE);
+        		cout << "lowKey: " << intlowKey << endl;	
+        	}
+            
+            if( highKey != NULL && lowKey!= NULL && (inthighKey == intlowKey) && !(lowKeyInclusive && highKeyInclusive) ){
+            	return IX_EOF;
+            }
+
+        break;
+        case TypeReal:
+	        int reallowKey;
+	        int realhighKey;
+	        memcpy(&reallowKey, lowKey, INT_SIZE);
+	        memcpy(&realhighKey, highKey, INT_SIZE);
+	        if((realhighKey == reallowKey) && !(lowKeyInclusive && highKeyInclusive) ){
+	        	return IX_EOF;
+	        }
+           
+        break;
+        case TypeVarChar:
+            uint32_t varcharSize;
+            memcpy(&varcharSize, lowKey, VARCHAR_LENGTH_SIZE);
+            char * lowVarChar = (char *) calloc(1, varcharSize + 1);
+            memcpy(lowVarChar, (char *) lowKey + VARCHAR_LENGTH_SIZE, varcharSize);
+            lowVarChar[varcharSize + 1] = '\0';
+            
+            memcpy(&varcharSize, highKey, VARCHAR_LENGTH_SIZE);
+            char * highVarChar = (char *) calloc(1, varcharSize + 1);
+            memcpy(highVarChar, (char *) highKey + VARCHAR_LENGTH_SIZE, varcharSize);
+            highVarChar[varcharSize + 1] = '\0';
+
+            if(!(strcmp(lowVarChar, highVarChar)) && !(lowKeyInclusive && highKeyInclusive) ){
+            	return IX_EOF;
+            }
+
+        break;
+    }
+
+    if(!(ixm->traverseTree(ixfileHandle, attribute, lowKey, pageData, currPage))){
+     	return IX_EOF;
+    }
+
+    cout << "return on scanInit" << endl;
+
+    return SUCCESS;
+}
+
+
+
+RC IX_ScanIterator::getNextSlot()
+{
+    // If we're done with the current page, or we've read the last page
+    if (currSlot >= totalSlot)
+    {	
+    	cout << "Changing Pages" << endl;
+        // Reinitialize the current slot and increment page number
+        currSlot = 0;
+       
+        // Otherwise get next page ready
+        RC rc = getNextPage();
+        if (rc)
+            return rc;
+    }else{
+	    if (!checkScanCondition())
+	    {	
+	    	cout << "Changing Slots" << endl;
+	    	cout << "currSlot: " << currSlot << endl;
+	        ++currSlot;
+	        // If not, try next slot
+	        return getNextSlot();
+	    }
+
+    }
+
+}
+
+RC IX_ScanIterator::getNextPage()
+{
+    // Read in page
+    if (ixfileHandle.readPage(currPage, pageData))
+        return RBFM_READ_FAILED;
+
+    LeafHeader leafHeader = ixm->getLeafHeader(pageData);
+
+    //If next is equal to zero, we've reach the end of all possible pages to traverse
+    if(leafHeader.nextPage == 0)
+    	return IX_EOF;
+    
+    if (ixfileHandle.readPage(leafHeader.nextPage, pageData))
+        return RBFM_READ_FAILED;
+
+    // Update slot total
+    NodeHeader leafPageNodeHeader = ixm->getNodeHeader(pageData);
+    
+    currPage = leafHeader.nextPage;
+    totalSlot = leafPageNodeHeader.numSlots;
+    return SUCCESS;
+}
+
+bool IX_ScanIterator::checkScanCondition()
+{
+    bool result = false;
+
+    DataEntry dataEntry;
+    dataEntry = {NULL, 0};
+    dataEntry.key = malloc(VARCHAR_LENGTH_SIZE + attribute.length);
+
+
+    //Initialize the Data entry
+    ixm->getDataEntry(currSlot, pageData, dataEntry);
+     
+    void *data = malloc(VARCHAR_LENGTH_SIZE + attribute.length);
+
+    //Isolate the actual Key
+    ixm->getKeyd(attribute, data, dataEntry.key);
+    cout << "In Check Scan Condition " << endl;
+
+
+    // Might want to check the two range values and the compop to find if a comparison is needed
+    switch (attribute.type)
+    {
+        case TypeInt:
+    		cout << "Case TypeInt " << endl;
+            int32_t keyInt;
+            memcpy(&keyInt, data, INT_SIZE);  
+            result = checkScanCondition(keyInt);
+
+        break;
+        case TypeReal:        
+    		cout << "Case TypeReal " << endl;
+	        float keyReal;
+	        memcpy(&keyReal, data, REAL_SIZE);
+	        result = checkScanCondition(keyReal);
+           
+        break;
+        case TypeVarChar:
+    		cout << "Case TypeVarChar " << endl;
+            uint32_t varcharSize;
+            memcpy(&varcharSize, data, VARCHAR_LENGTH_SIZE);
+
+            char keyVarChar[varcharSize + 1];
+            memcpy(keyVarChar, (char *) data + VARCHAR_LENGTH_SIZE, varcharSize);
+            keyVarChar[varcharSize + 1] = '\0';
+            result = checkScanCondition(keyVarChar);
+        break;
+    }
+
+    free (data);
+    return result;
+    // Allocate enough memory to hold attribute and 1 byte null indicator
+
+}
+
+bool IX_ScanIterator::checkScanCondition(int keyInt)
+{
+    int32_t lowintValue;
+    int32_t highintValue;
+
+    cout << "Int Check Scan Condition" << endl;
+    //Both Null
+    if(lowKey == NULL && highKey == NULL){
+    	cout << "Here" << endl;
+    	return true;
+    }
+	 //One Null Low
+    else if(lowKey == NULL && highKey != NULL){
+    	memcpy (&highintValue, highKey, INT_SIZE);
+    	if(highKeyInclusive){
+    		return (keyInt <= highintValue);
+    	}else{
+    		return (keyInt < highintValue);
+    	}
+    }
+
+    //One Null High
+   	else if(lowKey != NULL && highKey == NULL){
+    	memcpy (&lowintValue, lowKey, INT_SIZE);
+   		if(lowKeyInclusive){
+   			return (lowintValue <= keyInt);
+   		}else{
+   			return (lowintValue < keyInt);
+   		}
+   	}
+   	// Both values fullfill a field
+   	else{
+   		bool ret = false;
+    	memcpy (&lowintValue, lowKey, INT_SIZE);
+    	memcpy (&highintValue, highKey, INT_SIZE);
+   		if(lowKeyInclusive){
+   			ret = (lowintValue <= keyInt);
+   		}else{
+   			ret = (lowintValue < keyInt);
+   		}
+
+   		if(highKeyInclusive){
+    		return (keyInt <= highintValue);
+    	}else{
+    		return (keyInt < highintValue);
+    	}
+
+    	return ret;
+
+   	}
+
+}
+
+bool IX_ScanIterator::checkScanCondition(float keyReal)
+{
+    return false;
+}
+
+bool IX_ScanIterator::checkScanCondition(char *keyVarChar)
+{
+    return false;
+}
+
+
 
 IXFileHandle::IXFileHandle()
 {
@@ -832,17 +1211,20 @@ RC IXFileHandle::collectCounterValues(unsigned &readPageCount, unsigned &writePa
 
 RC IXFileHandle::readPage(PageNum pageNum, void *data){
 	ixReadPageCounter++;
+	cout <<"Read count : " <<  ixReadPageCounter << endl;
 	return fh.readPage(pageNum, data);
 
 }
 
 RC IXFileHandle::writePage(PageNum pageNum, const void *data){
 	ixWritePageCounter++;
+	cout <<"Write count : " <<  ixWritePageCounter << endl;
 	return fh.writePage(pageNum, data);
 }
 
 RC IXFileHandle::appendPage(const void *data){
 	ixAppendPageCounter++;
+	cout <<"append count : " <<  ixAppendPageCounter << endl;
 	return fh.appendPage(data);
 
 }
@@ -851,4 +1233,198 @@ unsigned IndexManager::getPageFreeSpaceSize(void * page)
 {
     NodeHeader nodeHeader = getNodeHeader(page);
     return PAGE_SIZE - nodeHeader.freeSpaceOffset;
+}
+
+//Function that finds the correct data page to access the leaf, returns True Of it could find a Leaf Page, returns false otherwise
+bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, void * value, void * retPage, uint32_t & pageNum){
+	//Grab the Header Page
+	//Grab the root Page
+	//Check the number of Slots
+	//For each slot, check the passed in values agaisnt the key
+	//If match, follow down a layer
+	//Repeat Until LEAF PAGE is Found
+
+	char * indexFileHeaderPage = (char *)malloc(PAGE_SIZE);
+
+	if(ixfh.readPage(0, indexFileHeaderPage))
+	    return false;	
+
+	IndexFileHeader indexFileHeader = getIndexFileHeader(indexFileHeaderPage);
+
+	char * page = (char *)malloc(PAGE_SIZE);
+
+	pageNum = indexFileHeader.rootPageId;
+
+	if(ixfh.readPage(indexFileHeader.rootPageId, page))
+	    return false;
+
+	uint32_t currSlot = 0;
+	uint32_t totalSlot = 0;
+	bool keyValBool = false;
+
+	IndexEntry prevIndexEntry = {NULL, 0}; 
+	IndexEntry indexEntry = {NULL, 0}; 
+	prevIndexEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
+	indexEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
+
+	NodeHeader nodeHeader = getNodeHeader(page);
+	SlotEntry slotEntry;
+
+	totalSlot = nodeHeader.numSlots;
+
+	cout << "totalSlot: " <<  totalSlot << endl;
+
+	//At root
+	//First Entry in a page always points to the left child
+	//If there are more than 1 entry, grab the first two to become the 
+	// " Left and right" Child
+	//If there is only one, grab it as the lieft child and mark the right child as
+	//non existant with a zero
+	//If the are no entries in the page for some reason, there are no children to search.
+	if(totalSlot > 1){
+		getFullIndexEntry(0, page, prevIndexEntry);
+		getFullIndexEntry(1, page, indexEntry);
+		currSlot = 1;
+	}else if(totalSlot > 0){
+		getFullIndexEntry(0, page, prevIndexEntry);
+	}else{
+		return false;
+	}
+
+	//Traverse a non-leaf page for all it's entries until you can  find a correct path to get to the 
+	//Keep traverseing if the value is larger than the current slot being examined
+	switch (attribute.type)
+	{
+	    case TypeInt:
+
+	    	cout << "In traverseTree: TypeInt" << endl;
+	    	int keyInt;
+	    	int valueInt;
+
+			while(currSlot < totalSlot && !(nodeHeader.isLeaf)){
+				
+
+				if(indexEntry.rightChild != 0){
+	    			memcpy(&keyInt, indexEntry.key, INT_SIZE);
+					
+				}else{
+	    			memcpy(&keyInt, prevIndexEntry.key, INT_SIZE);
+
+				}
+	    		cout << "KeyInt: " << keyInt;
+				cout << "In while loop: " << currSlot << endl;
+				slotEntry = getSlotEntry(currSlot,page);
+				
+				if(value == NULL){
+					cout << " In here" << endl;
+					keyValBool = false;
+				}else{
+	    			memcpy(&valueInt, value, INT_SIZE);
+					keyValBool = (keyInt < valueInt);
+	 			   	cout << "valueInt: " << valueInt << endl;
+				}
+
+				if(keyValBool && (currSlot != totalSlot - 1)){
+
+					getFullIndexEntry( currSlot, page, prevIndexEntry);
+					currSlot++;
+					getFullIndexEntry( currSlot, page, indexEntry);	
+
+
+
+				}else if(keyValBool && (currSlot == totalSlot - 1)){
+
+					cout << "In k < v: " << endl;
+					//Have decided that page 0 is a header page of the file, if we are pointing to this for some reason, there is likely no valid nonleaf or leaf page associated with this part.
+					if(indexEntry.rightChild == 0){
+						cout << "Child is empty" << endl;
+						return false;
+					}else{
+						
+						cout << "Child Found" << endl;
+						pageNum = indexEntry.rightChild;
+						if(ixfh.readPage(indexEntry.rightChild, page))
+						    return false;
+
+						nodeHeader = getNodeHeader(page);
+						totalSlot = nodeHeader.numSlots;
+						cout << totalSlot << endl;
+						if(!nodeHeader.isLeaf){
+							cout << "Child is a nonleaf "<< endl;
+							if(totalSlot > 1){
+								cout << "Child entries is larger than 1" << endl;
+								getFullIndexEntry(0, page, prevIndexEntry);
+								getFullIndexEntry(1, page, indexEntry);
+								currSlot = 1;
+							}else if(totalSlot > 0){
+								cout << "Child entries is 1" << endl;
+								getFullIndexEntry(0, page, prevIndexEntry);
+								indexEntry.rightChild = 0;
+								currSlot = 0;
+							}
+						}
+					}
+				}else{
+
+					cout << "Found where Key Remains smaller than Value: " << endl;
+
+					if(prevIndexEntry.rightChild == 0){
+						return false;
+					}else{
+		
+						//We have found a correct traffic cop and are now going to go down a layer
+						if(ixfh.readPage(prevIndexEntry.rightChild, page))
+					    	return false;
+
+						pageNum = prevIndexEntry.rightChild;
+					    cout << prevIndexEntry.rightChild << endl;
+						nodeHeader = getNodeHeader(page);
+					    if(!nodeHeader.isLeaf){
+							if(totalSlot > 1){
+								getFullIndexEntry(0, page, prevIndexEntry);
+								getFullIndexEntry(1, page, indexEntry);
+								currSlot = 1;
+							}else if(totalSlot > 0){
+								getFullIndexEntry(0, page, prevIndexEntry);
+								indexEntry.rightChild = 0;
+								currSlot = 0;
+							}
+					    }
+			
+					}
+					cout << "Here" << endl;
+				}
+
+
+			}
+
+			//If we ran out of the Page Without finding a Leaf Page return false
+			if(!(nodeHeader.isLeaf)){
+				cout << "Did not find a leaf!";
+				cout << pageNum << endl;
+				return false;
+			}else{
+				cout << "Did find a leaf!";
+				cout << pageNum << endl;
+				currSlot = 0;
+				memcpy(retPage, page, PAGE_SIZE);
+				free(page);
+				return true;
+			}
+	        
+        break;
+	    case TypeReal:
+	    	cout << "in traverse tree TypeReal" << endl;
+	    	return false;
+	        
+        break;
+	    case TypeVarChar:
+	    	cout << "in traverse tree TypeVarChar" << endl;
+	    	return false;
+        break;
+     }
+
+
+
+
 }

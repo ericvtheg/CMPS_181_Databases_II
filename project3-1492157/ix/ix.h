@@ -47,6 +47,37 @@ typedef struct SlotEntry{
     uint32_t offset;
 } SlotEntry;
 
+class IXFileHandle {
+    public:
+
+    // variables to keep counter for each operation
+    unsigned ixReadPageCounter;
+    unsigned ixWritePageCounter;
+    unsigned ixAppendPageCounter;
+
+    // Constructor
+    IXFileHandle();
+
+    // Destructor
+    ~IXFileHandle();
+
+    RC readPage(PageNum pageNum, void *data);                           // Get a specific page
+    RC writePage(PageNum pageNum, const void *data);                    // Write a specific page
+    RC appendPage(const void *data);                                    // Append a specific page
+    unsigned getNumberOfPages();
+    // Put the current counter values of associated PF FileHandles into variables
+    RC collectCounterValues(unsigned &readPageCount, unsigned &writePageCount, unsigned &appendPageCount);
+
+    friend class FileHandle;
+    friend class IndexManager;
+    friend class PagedFileManager;
+    friend class IX_ScanIterator;
+
+    private:
+    FileHandle fh;
+
+};
+
 class IndexManager {
 
     public:
@@ -82,6 +113,9 @@ class IndexManager {
         // Print the B+ tree in pre-order (in a JSON record format)
         void printBtree(IXFileHandle &ixfileHandle, const Attribute &attribute);
 
+        friend class IX_ScanIterator;
+        friend class IXFileHandle;
+
     protected:
         IndexManager();
         ~IndexManager();
@@ -109,19 +143,23 @@ class IndexManager {
 
         RC insertDataEntry(void * pageData, const Attribute &attribute, const DataEntry &dataEntry);
         bool enoughFreeSpaceForDataEntry(void * pageData, const Attribute &attribute, const void *key);
+        void getDataEntry(uint32_t slotNum, void * page, DataEntry &dataEntry);
 
         RC insertIndexEntry(void * pageData,const Attribute &attribute,const IndexEntry &indexEntry);
         bool enoughFreeSpaceForIndexEntry(void * pageData, const Attribute &attribute, const void *key);
+        void getIndexEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, IndexEntry &indexEntry, char * pageData, SlotEntry dirtySlot);
+        void getFullIndexEntry(uint32_t slotNum, void * page, IndexEntry &indexEntry);
 
         RC recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribute, unsigned pageNum);
         void printLeafHelper(void * pageData, const Attribute &attribute);
         void printNonLeafHelper(void * pageData, const Attribute &attribute);
 
+        bool traverseTree(IXFileHandle &ixfh, const Attribute &attribute, void* value, void * retPage, uint32_t & pageNum);
+
         unsigned getPageFreeSpaceSize(void * page);
 
         void getKeyd(const Attribute &attribute, void * retKey, const void * key);
 
-        void getIndexEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, IndexEntry &indexEntry, char * pageData, SlotEntry dirtySlot);
 };
 
 
@@ -134,43 +172,49 @@ class IX_ScanIterator {
         // Destructor
         ~IX_ScanIterator();
 
+
         // Get next matching entry
         RC getNextEntry(RID &rid, void *key);
 
         // Terminate index scan
         RC close();
-};
 
-
-
-class IXFileHandle {
-    public:
-
-    // variables to keep counter for each operation
-    unsigned ixReadPageCounter;
-    unsigned ixWritePageCounter;
-    unsigned ixAppendPageCounter;
-
-    // Constructor
-    IXFileHandle();
-
-    // Destructor
-    ~IXFileHandle();
-
-    RC readPage(PageNum pageNum, void *data);                           // Get a specific page
-    RC writePage(PageNum pageNum, const void *data);                    // Write a specific page
-    RC appendPage(const void *data);                                    // Append a specific page
-    unsigned getNumberOfPages();
-	// Put the current counter values of associated PF FileHandles into variables
-	RC collectCounterValues(unsigned &readPageCount, unsigned &writePageCount, unsigned &appendPageCount);
-
-    friend class FileHandle;
-    friend class IndexManager;
-    friend class PagedFileManager;
+        friend class IndexManager;
+        friend class IXFileHandle;
 
     private:
-    FileHandle fh;
 
+    IndexManager *ixm;
+
+    uint32_t currPage;
+    uint32_t currSlot;
+
+    uint32_t totalPage;
+    uint16_t totalSlot;
+    
+    void *pageData;
+        
+    IXFileHandle ixfileHandle;
+    Attribute attribute;
+    void *lowKey;
+    void *highKey;
+    bool lowKeyInclusive;
+    bool highKeyInclusive;
+ 
+    // Initialize and IX_ScanIterator to support a range search
+    RC scanInit(IXFileHandle &ixfh,
+            const Attribute &attr,
+            const void *lKey,
+            const void *hKey,
+            bool lKeyInclusive,
+            bool hKeyInclusive);
+
+    RC getNextSlot();
+    RC getNextPage();
+    bool checkScanCondition();
+    bool checkScanCondition(int);
+    bool checkScanCondition(float);
+    bool checkScanCondition(char*);
 };
 
 #endif
