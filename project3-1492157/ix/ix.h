@@ -194,7 +194,7 @@ class IX_ScanIterator {
     
     void *pageData;
         
-    IXFileHandle ixfileHandle;
+    IXFileHandle * ixfileHandle;
     Attribute attribute;
     void *lowKey;
     void *highKey;

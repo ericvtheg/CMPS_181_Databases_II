@@ -366,11 +366,14 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 
         // free malloc'd indexEntry?
         // free malloc'd dataEntry?
+        free(dataEntry.key);
+        free(indexEntry.key);
         free(pageData);
     }
 
 
     free(rootPageData);
+    free(indexFileHeaderPage);
     return SUCCESS;
 
     //return -1;
@@ -562,6 +565,8 @@ RC IndexManager::recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribu
     //     // print leafPage helper function
     //     recurBtree(right child);
     // }
+
+    free(pageData);
 
 }
 
@@ -894,22 +899,21 @@ RC IX_ScanIterator::scanInit(
     bool        	hKeyInclusive)
 {
     // Start at page 0 slot 0
-    
+
     currPage = 0;
     currSlot = 0;
     totalPage = 0;
     totalSlot = 0;
     lowKey = NULL;
     highKey = NULL;
-
-    // Keep a buffer to hold the current page
-    pageData = malloc(PAGE_SIZE);
-
     // Store the variables passed in to
-    ixfileHandle = ixfh;
+    ixfileHandle = &ixfh;
     attribute = attr;
     lowKeyInclusive = lKeyInclusive;
     highKeyInclusive = hKeyInclusive;
+
+    // Keep a buffer to hold the current page
+    pageData = malloc(PAGE_SIZE);
 
     if(lKey != NULL){
     	cout << "lkey notNull" << endl;
@@ -926,13 +930,13 @@ RC IX_ScanIterator::scanInit(
      uint32_t rootPageId = 0;
 
     // Get total number of pages
-    totalPage = ixfileHandle.fh.getNumberOfPages();
+    totalPage = ixfileHandle->fh.getNumberOfPages();
     cout << "totalPage: " << totalPage << endl;
     // If the think consists of more that just a header page and a root page, i.e. we actually have data entries
     if (totalPage > 2)
     {	
     	//If yes, grab the PageHeader page
-        if (ixfileHandle.readPage(0, pageData))
+        if (ixfileHandle->readPage(0, pageData))
             return RBFM_READ_FAILED;
 
    		 IndexFileHeader indexFileHeader = ixm->getIndexFileHeader(pageData);
@@ -942,7 +946,7 @@ RC IX_ScanIterator::scanInit(
    		 memset(pageData, 0 , PAGE_SIZE);
 
    		//If yes, grab the root page
-   		if (ixfileHandle.readPage(rootPageId, pageData))
+   		if (ixfileHandle->readPage(rootPageId, pageData))
    		    return RBFM_READ_FAILED;
     }
     else{
@@ -1010,9 +1014,16 @@ RC IX_ScanIterator::scanInit(
         break;
     }
 
-    if(!(ixm->traverseTree(ixfileHandle, attribute, lowKey, pageData, currPage))){
+    if(!(ixm->traverseTree(ixfh, attribute, lowKey, pageData, currPage))){
      	return IX_EOF;
     }
+
+    unsigned readPageCountAfter = 0;
+    unsigned writePageCountAfter = 0;
+    unsigned appendPageCountAfter = 0;
+
+    ixfileHandle->collectCounterValues(readPageCountAfter, writePageCountAfter, appendPageCountAfter);
+    cout << "After scan - R W A: " << readPageCountAfter << " " << writePageCountAfter << " " << appendPageCountAfter << endl;
 
     cout << "return on scanInit" << endl;
 
@@ -1051,7 +1062,7 @@ RC IX_ScanIterator::getNextSlot()
 RC IX_ScanIterator::getNextPage()
 {
     // Read in page
-    if (ixfileHandle.readPage(currPage, pageData))
+    if (ixfileHandle->readPage(currPage, pageData))
         return RBFM_READ_FAILED;
 
     LeafHeader leafHeader = ixm->getLeafHeader(pageData);
@@ -1060,7 +1071,7 @@ RC IX_ScanIterator::getNextPage()
     if(leafHeader.nextPage == 0)
     	return IX_EOF;
     
-    if (ixfileHandle.readPage(leafHeader.nextPage, pageData))
+    if (ixfileHandle->readPage(leafHeader.nextPage, pageData))
         return RBFM_READ_FAILED;
 
     // Update slot total
