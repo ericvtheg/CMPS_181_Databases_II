@@ -243,7 +243,6 @@ RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute,con
     setNodeHeader(pageData, leafPageNodeHeader);
 
     return SUCCESS;
- //      return -1;
 }
 
 void IndexManager::getDataEntry(uint32_t slotNum, void * page, DataEntry &dataEntry){
@@ -305,33 +304,31 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
     NodeHeader rootNodeHeader = getNodeHeader(rootPage);
 
      cout << "numSlots: " << rootNodeHeader.numSlots << endl;
+     DataEntry dataEntry;
+     dataEntry = {nullptr, rid};
+     IndexEntry indexEntry;
+     indexEntry = {nullptr, 2};
+
     //Base Case: Root is Empty, first insertion
     if(rootNodeHeader.numSlots == 0){
         //Data Page
         // Create a new page for Data Entries (Leaf Page)
         void * pageData = malloc(PAGE_SIZE);
-        char * page = (char *)pageData;
+        char * page = (char *) pageData;
 
         newLeafPage(page);
-        DataEntry dataEntry;
-        void * tempkey = nullptr;
 
         unsigned size = 0;
 
-        dataEntry = {tempkey, rid};
         dataEntry.key = malloc(PAGE_SIZE);
 
         getKeyd(attribute, dataEntry.key, key);
-        // dataEntry.key = tempkey;
 
-        // dataEntry.rid = rid;
         // Check if there is enough room for the new Data Entry and insert into the Leaf
         cout << "dataEntry.key " << dataEntry.key << endl;
         if(enoughFreeSpaceForDataEntry(page, attribute, dataEntry.key)){
             insertDataEntry(page, attribute, dataEntry);
         }
-
-        cout << "hit 2" << endl;
 
         // Update Header of this New Leaf Page so that the parent is ROOT
         NodeHeader dataNodeHeader = getNodeHeader(page);
@@ -347,21 +344,21 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 
         // Updating ROOT Index Page with correspong Index entry
         cout << "Key: " << key << endl;;
-        IndexEntry indexEntry;
-        tempkey = nullptr;
         //indexEntry.rightChild = 1;
-        indexEntry = {tempkey, 2};
         indexEntry.key = malloc(PAGE_SIZE);
-
         getKeyd(attribute, indexEntry.key, key);
-        //indexEntry.key = tempkey;
 
         if(enoughFreeSpaceForIndexEntry(rootPage, attribute, key)){
             insertIndexEntry(rootPage, attribute, indexEntry);
         }
 
+        // indexEntry.rightChild = 3;
+        // if(enoughFreeSpaceForIndexEntry(rootPage, attribute, key)){
+        //     insertIndexEntry(rootPage, attribute, indexEntry);
+        // }
+
         if (ixfileHandle.writePage(indexFileHeader.rootPageId, rootPage)){
-            return RBFM_APPEND_FAILED;
+            return RBFM_WRITE_FAILED;
         }
 
         // free malloc'd indexEntry?
@@ -369,8 +366,65 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
         free(dataEntry.key);
         free(indexEntry.key);
         free(pageData);
-    }
+    }else{
+        void * pageData = malloc(PAGE_SIZE);
+        char * page = (char *)pageData;
+        bool foundLeafPage;
 
+        dataEntry.key = malloc(PAGE_SIZE);
+        getKeyd(attribute, dataEntry.key, key);
+
+        indexEntry.key = malloc(PAGE_SIZE);
+        if(rootNodeHeader.numSlots != 1){
+            getKeyd(attribute, indexEntry.key, key);
+        }else{
+            getFullIndexEntry(0, rootPage, indexEntry);
+        }
+
+        foundLeafPage = traverseTree(ixfileHandle, attribute, dataEntry.key, page, indexEntry.rightChild);
+        if(!foundLeafPage){
+            cout << "did not find an available leaf page" << endl;
+            newLeafPage(page);
+
+            IXFileHandle *ixfh = &ixfileHandle;
+            indexEntry.rightChild = (uint32_t) ixfh->fh.getNumberOfPages();
+        }else{
+            cout << "found leafPage from traverseTree " << indexEntry.rightChild << endl;
+            if(ixfileHandle.readPage(indexEntry.rightChild, page))
+                return IX_READ_FAILED;
+        }
+
+        if(enoughFreeSpaceForDataEntry(page, attribute, dataEntry.key)){
+            insertDataEntry(page, attribute, dataEntry);
+        }else{
+            cout << "hit in not enough space in DataEnry" << endl;
+        }
+
+        if(!foundLeafPage){
+            if(enoughFreeSpaceForIndexEntry(rootPage, attribute, key)){
+                insertIndexEntry(rootPage, attribute, indexEntry);
+            }
+
+            NodeHeader dataNodeHeader = getNodeHeader(page);
+            dataNodeHeader.parent = indexFileHeader.rootPageId;
+            setNodeHeader(page, dataNodeHeader);
+
+            if (ixfileHandle.appendPage(page))
+                return RBFM_APPEND_FAILED;
+
+            if (ixfileHandle.writePage(indexFileHeader.rootPageId, rootPage)){
+                return RBFM_WRITE_FAILED;
+            }
+
+        }else{ //if page was found
+            if (ixfileHandle.writePage(indexEntry.rightChild, page)){
+                return RBFM_APPEND_FAILED;
+            }
+        }
+        free(pageData);
+        free(dataEntry.key);
+        free(indexEntry.key);
+    }
 
     free(rootPageData);
     free(indexFileHeaderPage);
@@ -490,7 +544,7 @@ void IndexManager::getFullIndexEntry(uint32_t slotNum, void * page, IndexEntry &
 
  	int wow;
 	memcpy(&wow, pageP, keyLength);
-	cout << "Woe: " << wow <<endl; 
+	cout << "Woe: " << wow <<endl;
 	memcpy(indexEntry.key, pageP, keyLength);
 	memcpy(&indexEntry.rightChild, pageP + keyLength, sizeof(uint32_t));
 
@@ -668,7 +722,7 @@ void IndexManager::printLeafHelper(void * pageData, const Attribute &attribute){
                     cout << ",";
                 }
             }
-            cout << "},";
+            cout << "},\n";
             break;
         }
         case TypeReal:{
@@ -894,8 +948,8 @@ RC IX_ScanIterator::close()
 }
 
 // Initialize the scanIterator with all necessary state
-RC IX_ScanIterator::scanInit( 
-	IXFileHandle &ixfh,      
+RC IX_ScanIterator::scanInit(
+	IXFileHandle &ixfh,
 	const Attribute &attr,
     const void      *lKey,
     const void      *hKey,
@@ -928,7 +982,7 @@ RC IX_ScanIterator::scanInit(
     	cout << "hkey notNull" << endl;
     	highKey = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
     	ixm->getKeyd(attribute, highKey, hKey);
-    	
+
     }
 
      uint32_t rootPageId = 0;
@@ -938,7 +992,7 @@ RC IX_ScanIterator::scanInit(
     cout << "totalPage: " << totalPage << endl;
     // If the think consists of more that just a header page and a root page, i.e. we actually have data entries
     if (totalPage > 2)
-    {	
+    {
     	//If yes, grab the PageHeader page
         if (ixfileHandle->readPage(0, pageData))
             return RBFM_READ_FAILED;
@@ -981,9 +1035,9 @@ RC IX_ScanIterator::scanInit(
 
         	if(lowKey != NULL){
             	memcpy(&intlowKey, lowKey, INT_SIZE);
-        		cout << "lowKey: " << intlowKey << endl;	
+        		cout << "lowKey: " << intlowKey << endl;
         	}
-            
+
             if( highKey != NULL && lowKey!= NULL && (inthighKey == intlowKey) && !(lowKeyInclusive && highKeyInclusive) ){
             	return IX_EOF;
             }
@@ -997,7 +1051,7 @@ RC IX_ScanIterator::scanInit(
 	        if((realhighKey == reallowKey) && !(lowKeyInclusive && highKeyInclusive) ){
 	        	return IX_EOF;
 	        }
-           
+
         break;
         case TypeVarChar:
             uint32_t varcharSize;
@@ -1005,7 +1059,7 @@ RC IX_ScanIterator::scanInit(
             char * lowVarChar = (char *) calloc(1, varcharSize + 1);
             memcpy(lowVarChar, (char *) lowKey + VARCHAR_LENGTH_SIZE, varcharSize);
             lowVarChar[varcharSize + 1] = '\0';
-            
+
             memcpy(&varcharSize, highKey, VARCHAR_LENGTH_SIZE);
             char * highVarChar = (char *) calloc(1, varcharSize + 1);
             memcpy(highVarChar, (char *) highKey + VARCHAR_LENGTH_SIZE, varcharSize);
@@ -1040,18 +1094,18 @@ RC IX_ScanIterator::getNextSlot()
 {
     // If we're done with the current page, or we've read the last page
     if (currSlot >= totalSlot)
-    {	
+    {
     	cout << "Changing Pages" << endl;
         // Reinitialize the current slot and increment page number
         currSlot = 0;
-       
+
         // Otherwise get next page ready
         RC rc = getNextPage();
         if (rc)
             return rc;
     }else{
 	    if (!checkScanCondition())
-	    {	
+	    {
 	    	cout << "Changing Slots" << endl;
 	    	cout << "currSlot: " << currSlot << endl;
 	        ++currSlot;
@@ -1074,13 +1128,13 @@ RC IX_ScanIterator::getNextPage()
     //If next is equal to zero, we've reach the end of all possible pages to traverse
     if(leafHeader.nextPage == 0)
     	return IX_EOF;
-    
+
     if (ixfileHandle->readPage(leafHeader.nextPage, pageData))
         return RBFM_READ_FAILED;
 
     // Update slot total
     NodeHeader leafPageNodeHeader = ixm->getNodeHeader(pageData);
-    
+
     currPage = leafHeader.nextPage;
     totalSlot = leafPageNodeHeader.numSlots;
     return SUCCESS;
@@ -1097,7 +1151,7 @@ bool IX_ScanIterator::checkScanCondition()
 
     //Initialize the Data entry
     ixm->getDataEntry(currSlot, pageData, dataEntry);
-     
+
     void *data = malloc(VARCHAR_LENGTH_SIZE + attribute.length);
 
     //Isolate the actual Key
@@ -1111,16 +1165,16 @@ bool IX_ScanIterator::checkScanCondition()
         case TypeInt:
     		cout << "Case TypeInt " << endl;
             int32_t keyInt;
-            memcpy(&keyInt, data, INT_SIZE);  
+            memcpy(&keyInt, data, INT_SIZE);
             result = checkScanCondition(keyInt);
 
         break;
-        case TypeReal:        
+        case TypeReal:
     		cout << "Case TypeReal " << endl;
 	        float keyReal;
 	        memcpy(&keyReal, data, REAL_SIZE);
 	        result = checkScanCondition(keyReal);
-           
+
         break;
         case TypeVarChar:
     		cout << "Case TypeVarChar " << endl;
@@ -1227,20 +1281,20 @@ RC IXFileHandle::collectCounterValues(unsigned &readPageCount, unsigned &writePa
 
 RC IXFileHandle::readPage(PageNum pageNum, void *data){
 	ixReadPageCounter++;
-	cout <<"Read count : " <<  ixReadPageCounter << endl;
+	// cout <<"Read count : " <<  ixReadPageCounter << endl;
 	return fh.readPage(pageNum, data);
 
 }
 
 RC IXFileHandle::writePage(PageNum pageNum, const void *data){
 	ixWritePageCounter++;
-	cout <<"Write count : " <<  ixWritePageCounter << endl;
+	// cout <<"Write count : " <<  ixWritePageCounter << endl;
 	return fh.writePage(pageNum, data);
 }
 
 RC IXFileHandle::appendPage(const void *data){
 	ixAppendPageCounter++;
-	cout <<"append count : " <<  ixAppendPageCounter << endl;
+	// cout <<"append count : " <<  ixAppendPageCounter << endl;
 	return fh.appendPage(data);
 
 }
@@ -1263,7 +1317,7 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 	char * indexFileHeaderPage = (char *)malloc(PAGE_SIZE);
 
 	if(ixfh.readPage(0, indexFileHeaderPage))
-	    return false;	
+	    return false;
 
 	IndexFileHeader indexFileHeader = getIndexFileHeader(indexFileHeaderPage);
 
@@ -1278,8 +1332,8 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 	uint32_t totalSlot = 0;
 	bool keyValBool = false;
 
-	IndexEntry prevIndexEntry = {NULL, 0}; 
-	IndexEntry indexEntry = {NULL, 0}; 
+	IndexEntry prevIndexEntry = {NULL, 0};
+	IndexEntry indexEntry = {NULL, 0};
 	prevIndexEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
 	indexEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
 
@@ -1292,7 +1346,7 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 
 	//At root
 	//First Entry in a page always points to the left child
-	//If there are more than 1 entry, grab the first two to become the 
+	//If there are more than 1 entry, grab the first two to become the
 	// " Left and right" Child
 	//If there is only one, grab it as the lieft child and mark the right child as
 	//non existant with a zero
@@ -1311,7 +1365,7 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 		return false;
 	}
 
-	//Traverse a non-leaf page for all it's entries until you can  find a correct path to get to the 
+	//Traverse a non-leaf page for all it's entries until you can  find a correct path to get to the
 	//Keep traverseing if the value is larger than the current slot being examined
 	switch (attribute.type)
 	{
@@ -1322,11 +1376,11 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 	    	int valueInt;
 
 			while(currSlot < totalSlot && !(nodeHeader.isLeaf)){
-				
+
 
 				if(indexEntry.rightChild != 0){
 	    			memcpy(&keyInt, indexEntry.key, INT_SIZE);
-					
+
 				}else{
 	    			memcpy(&keyInt, prevIndexEntry.key, INT_SIZE);
 
@@ -1334,7 +1388,7 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 	    		cout << "KeyInt: " << keyInt;
 				cout << "In while loop: " << currSlot << endl;
 				slotEntry = getSlotEntry(currSlot,page);
-				
+
 				if(value == NULL){
 					cout << " In here" << endl;
 					keyValBool = false;
@@ -1348,7 +1402,7 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 
 					getFullIndexEntry( currSlot, page, prevIndexEntry);
 					currSlot++;
-					getFullIndexEntry( currSlot, page, indexEntry);	
+					getFullIndexEntry( currSlot, page, indexEntry);
 
 
 
@@ -1360,7 +1414,7 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 						cout << "Child is empty" << endl;
 						return false;
 					}else{
-						
+
 						cout << "Child Found" << endl;
 						pageNum = indexEntry.rightChild;
 						if(ixfh.readPage(indexEntry.rightChild, page))
@@ -1391,7 +1445,7 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 					if(prevIndexEntry.rightChild == 0){
 						return false;
 					}else{
-		
+
 						//We have found a correct traffic cop and are now going to go down a layer
 						if(ixfh.readPage(prevIndexEntry.rightChild, page))
 					    	return false;
@@ -1410,7 +1464,7 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 								currSlot = 0;
 							}
 					    }
-			
+
 					}
 					cout << "Here" << endl;
 				}
@@ -1438,12 +1492,12 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 				free(indexEntry.key);
 				return true;
 			}
-	        
+
         break;
 	    case TypeReal:
 	    	cout << "in traverse tree TypeReal" << endl;
 	    	return false;
-	        
+
         break;
 	    case TypeVarChar:
 	    	cout << "in traverse tree TypeVarChar" << endl;

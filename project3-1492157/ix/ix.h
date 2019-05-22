@@ -191,16 +191,16 @@ class IX_ScanIterator {
 
     uint32_t totalPage;
     uint16_t totalSlot;
-    
+
     void *pageData;
-        
+
     IXFileHandle * ixfileHandle;
     Attribute attribute;
     void *lowKey;
     void *highKey;
     bool lowKeyInclusive;
     bool highKeyInclusive;
- 
+
     // Initialize and IX_ScanIterator to support a range search
     RC scanInit(IXFileHandle &ixfh,
             const Attribute &attr,

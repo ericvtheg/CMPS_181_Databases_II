@@ -51,12 +51,59 @@ int testCase_2(const string &indexFileName, const Attribute &attribute)
     rc = indexManager->insertEntry(ixfileHandle, attribute, &key, rid);
     assert(rc == success && "indexManager::insertEntry() should not fail.");
 
-    int keyd = 250;
+    // indexManager->printBtree(ixfileHandle, attribute);
+    cout << endl;
+    //
+    // int keyd = 201;
+    // rid.pageNum = 500;
+    // rid.slotNum = 21;
+    //
+    // rc = indexManager->insertEntry(ixfileHandle, attribute, &keyd, rid);
+    // assert(rc == success && "indexManager::insertEntry() should not fail.");
+    //
+    // // indexManager->printBtree(ixfileHandle, attribute);
+    // cout << endl;
+    //
+    // int keyf = 203;
+    // rid.pageNum = 500;
+    // rid.slotNum = 21;
+    //
+    // rc = indexManager->insertEntry(ixfileHandle, attribute, &keyf, rid);
+    // assert(rc == success && "indexManager::insertEntry() should not fail.");
+    //
+    // // indexManager->printBtree(ixfileHandle, attribute);
+    // cout << endl;
+    //
+    // int keye = 202;
+    // rid.pageNum = 500;
+    // rid.slotNum = 21;
+    //
+    // rc = indexManager->insertEntry(ixfileHandle, attribute, &keye, rid);
+    // assert(rc == success && "indexManager::insertEntry() should not fail.");
+    //
+    // // indexManager->printBtree(ixfileHandle, attribute);
+    // cout << endl;
+    //
+    int keyg = 201;
     rid.pageNum = 500;
     rid.slotNum = 21;
 
-    rc = indexManager->insertEntry(ixfileHandle, attribute, &keyd, rid);
+    rc = indexManager->insertEntry(ixfileHandle, attribute, &keyg, rid);
     assert(rc == success && "indexManager::insertEntry() should not fail.");
+
+    // indexManager->printBtree(ixfileHandle, attribute);
+    cout << endl;
+
+    for(int i = 0; i < 100; i++){
+        keyg = rand() % 500;
+        rid.pageNum = 500;
+        rid.slotNum = 21+i;
+
+        rc = indexManager->insertEntry(ixfileHandle, attribute, &keyg, rid);
+        assert(rc == success && "indexManager::insertEntry() should not fail.");
+    }
+    // indexManager->printBtree(ixfileHandle, attribute);
+    cout << endl;
 
     // collect counters
     rc = ixfileHandle.collectCounterValues(readPageCountAfter, writePageCountAfter, appendPageCountAfter);
@@ -83,6 +130,8 @@ int testCase_2(const string &indexFileName, const Attribute &attribute)
     // close index file
     rc = indexManager->closeFile(ixfileHandle);
     assert(rc == success && "indexManager::closeFile() should not fail.");
+
+    cout << endl;
 
     return success;
 }
