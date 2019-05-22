@@ -109,14 +109,21 @@ RC IndexManager::deleteSlotEntry(uint32_t slotNum, uint32_t totalSlots, void * p
 
     char * pageP = (char *) page;
     unsigned slotOffset = PAGE_SIZE - ((slotNum + 1)* sizeof(SlotEntry));
-    unsigned lastSlotOffset = PAGE_SIZE - ((slotNum)* sizeof(SlotEntry));
+    cout << "slotOffset: " << slotOffset << endl;
+    unsigned lastSlotOffset = PAGE_SIZE - ((totalSlots )* sizeof(SlotEntry));
+    cout << "lastSlotOffset: " << lastSlotOffset << endl;
     unsigned updatedSlotOffset = lastSlotOffset + sizeof(SlotEntry);
+    cout << "updatedSlotOffset: " << updatedSlotOffset << endl;
 
+    
     unsigned slotDirectoryLength = slotOffset - lastSlotOffset;
+    cout << "slotDirectoryLength: " << slotDirectoryLength << endl;
 
     void * buffer = malloc(slotDirectoryLength);
     memcpy(buffer, pageP + lastSlotOffset, slotDirectoryLength);
 
+
+    cout << "Hahahha" << endl;
     memset(pageP + lastSlotOffset, 0, slotDirectoryLength + sizeof(SlotEntry));
     memcpy(pageP + updatedSlotOffset, buffer ,slotDirectoryLength);
 
@@ -608,15 +615,20 @@ RC IndexManager::deleteEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 	uint32_t slotNum;
 	DataEntry dataEntry = {NULL, 0};
 	dataEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
+	bool entryFound = false;
+	SlotEntry foundEntry;
+	uint32_t foundSlotNum = 0;
+	uint32_t totalOriginalSlots = 0;
 
 
     if(traverseTree(ixfileHandle, attribute, key, retPage, pageNum, slotNum)){
     	NodeHeader nodeHeader = getNodeHeader(retPage);
+    	totalOriginalSlots = nodeHeader.numSlots;
 	    switch (attribute.type)
 	    {
 	        case TypeInt:
 	        	cout << "In type int for delete " << endl;
-	        	for(unsigned i = 0; i < nodeHeader.numSlots; i ++){
+	        	for(uint32_t i = 0; i < nodeHeader.numSlots; i ++){
 	            	int32_t dataInt;
 	            	int32_t keyInt;
 	            	getDataEntry(i, retPage, dataEntry);
@@ -624,18 +636,38 @@ RC IndexManager::deleteEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 	            	getKeyd(attribute, &keyInt, key);
 	            	if(keyInt == dataInt && rid.pageNum == dataEntry.rid.pageNum && rid.slotNum == dataEntry.rid.slotNum){
 	            		deleteDataEntry(i, nodeHeader.numSlots, retPage);
-	            		ixfileHandle.writePage(pageNum, retPage);
+	            		//ixfileHandle.writePage(pageNum, retPage);
+	            		entryFound = true;
+	            		foundEntry = getSlotEntry(i, retPage);
+	            		foundSlotNum = i;
 
-	            		free(dataEntry.key);
-	            		free(retPage);
-	            		return SUCCESS;
+	            		// free(dataEntry.key);
+	            		// free(retPage);
+	            		// return SUCCESS;
 	            	}
+	            	if(entryFound){
+	            		SlotEntry slotEntry = getSlotEntry(i, retPage);
+	            		slotEntry.offset = slotEntry.offset - foundEntry.length;
+	            		setSlotEntry(i, slotEntry, retPage);
+	            		cout << "In here" << endl;
+	            	}
+
 	        		
 	        	}
-
         		free(dataEntry.key);
         		free(retPage);
-	        	return IX_DELETE_FAILED;
+
+        		if(entryFound){
+        			cout << "Entry Found updating slot Directory" << endl;
+        			deleteSlotEntry(foundSlotNum ,totalOriginalSlots, retPage);
+
+        			cout << "Where am  I " << endl;
+	            	ixfileHandle.writePage(pageNum, retPage);		
+	            	return SUCCESS;
+        		}else{
+	        		return IX_DELETE_FAILED;  			
+        		}
+
 
 	        break;
 	        case TypeReal:
