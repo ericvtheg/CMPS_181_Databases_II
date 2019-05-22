@@ -11,6 +11,8 @@
 # define IX_EOF (-1)  // end of the index scan
 # define IX_READ_FAILED 1
 # define IX_INSERT_FAILED 2
+# define IX_DELETE_FAILED 3
+# define IX_SCAN_FAILED 4
 
 class IX_ScanIterator;
 class IXFileHandle;
@@ -66,6 +68,9 @@ class IXFileHandle {
     RC appendPage(const void *data);                                    // Append a specific page
     unsigned getNumberOfPages();
     // Put the current counter values of associated PF FileHandles into variables
+    void setfd(FILE *fd);
+    FILE *getfd();
+
     RC collectCounterValues(unsigned &readPageCount, unsigned &writePageCount, unsigned &appendPageCount);
 
     friend class FileHandle;
@@ -75,6 +80,7 @@ class IXFileHandle {
 
     private:
     FileHandle fh;
+
 
 };
 
@@ -139,11 +145,13 @@ class IndexManager {
 
         void setSlotEntry(uint32_t slotNum, SlotEntry slotEntry, void * page);
         SlotEntry getSlotEntry(uint32_t slotNum, void * page);
+        RC deleteSlotEntry(uint32_t slotNum, uint32_t totalSlots, void * page);
 
 
         RC insertDataEntry(void * pageData, const Attribute &attribute, const DataEntry &dataEntry);
         bool enoughFreeSpaceForDataEntry(void * pageData, const Attribute &attribute, const void *key);
         void getDataEntry(uint32_t slotNum, void * page, DataEntry &dataEntry);
+        RC deleteDataEntry(uint32_t slotNum, uint32_t totalSlots, void * page);
 
         RC insertIndexEntry(void * pageData,const Attribute &attribute,const IndexEntry &indexEntry);
         bool enoughFreeSpaceForIndexEntry(void * pageData, const Attribute &attribute, const void *key);
@@ -154,7 +162,7 @@ class IndexManager {
         void printLeafHelper(void * pageData, const Attribute &attribute);
         void printNonLeafHelper(void * pageData, const Attribute &attribute);
 
-        bool traverseTree(IXFileHandle &ixfh, const Attribute &attribute, void* value, void * retPage, uint32_t & pageNum);
+        bool traverseTree(IXFileHandle &ixfh, const Attribute &attribute, const void* value, void * retPage, uint32_t & pageNum, uint32_t &slotNum);
 
         unsigned getPageFreeSpaceSize(void * page);
 
@@ -181,6 +189,7 @@ class IX_ScanIterator {
 
         friend class IndexManager;
         friend class IXFileHandle;
+        friend class FileHandle;
 
     private:
 

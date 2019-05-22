@@ -24,14 +24,19 @@ int testCase_5(const string &indexFileName, const Attribute &attribute)
     RC rc = indexManager->destroyFile(indexFileName);
     assert(rc == success && "indexManager::destroyFile() should not fail.");
 
+    cout << "After Destroy " << endl;
+
     // Try to open the destroyed index
     rc = indexManager->openFile(indexFileName, ixfileHandle);
     assert(rc != success && "indexManager::openFile() on a non-existing file should fail.");
 
+    cout << "After Open " << endl;
+    
     // Try to conduct a scan on the destroyed index
     rc = indexManager->scan(ixfileHandle, attribute, NULL, NULL, true, true, ix_ScanIterator);
     assert(rc != success && "indexManager::scan() on a non-existing file should fail.");
 
+    cout << "After Scan" << endl;
     return success;
 
 }
