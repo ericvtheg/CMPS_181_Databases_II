@@ -529,6 +529,7 @@ RC IndexManager::recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribu
 
     if(nodeHeader.isLeaf){
         printLeafHelper(page, attribute);
+        free(pageData);
         return 0;
     }else{
         printNonLeafHelper(page, attribute);
@@ -541,13 +542,19 @@ RC IndexManager::recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribu
         SlotEntry dirtySlot = getSlotEntry(i, page);
 
         indexEntry = {nullptr, 0};
+
+        indexEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
+
         // may need to malloc for indexEntry.key
         getIndexEntry(ixfileHandle, attribute, indexEntry, page, dirtySlot);
 
         recurBtree(ixfileHandle, attribute, indexEntry.rightChild);
+
+        free(indexEntry.key);
         // array2.push_back(indexEntry.rightChild);
         // cout << "rightChild" << indexEntry.rightChild << endl;
     }
+    free(pageData);
         //     //Some get indexEntryFunction
         //     // Extract the left Child
         //     // offset += size of the left key entry
@@ -566,7 +573,6 @@ RC IndexManager::recurBtree(IXFileHandle &ixfileHandle, const Attribute &attribu
     //     recurBtree(right child);
     // }
 
-    free(pageData);
 
 }
 
@@ -594,7 +600,7 @@ void IndexManager::printBtree(IXFileHandle &ixfileHandle, const Attribute &attri
     printNonLeafHelper(page, attribute);
 
     IndexEntry indexEntry = {nullptr, 0};
-    // indexEntry.key = malloc(PAGE_SIZE);
+    indexEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
 
     std::vector< uint32_t > array;
 
@@ -614,7 +620,7 @@ void IndexManager::printBtree(IXFileHandle &ixfileHandle, const Attribute &attri
     memset(page, 0, PAGE_SIZE);
 
     std::vector< uint32_t > array2;
-
+    free(indexEntry.key);
     free(pageData);
 }
 
@@ -876,11 +882,9 @@ RC IX_ScanIterator::getNextEntry(RID &rid, void *key)
 	cout << "RID: " << dataEntry.rid.pageNum  << " , " << dataEntry.rid.slotNum << endl;
 	currSlot++;
 
+	free(dataEntry.key);
+
 	return SUCCESS;
-
-
-
-
 }
 
 RC IX_ScanIterator::close()
@@ -1130,6 +1134,7 @@ bool IX_ScanIterator::checkScanCondition()
         break;
     }
 
+    free(dataEntry.key);
     free (data);
     return result;
     // Allocate enough memory to hold attribute and 1 byte null indicator
@@ -1299,6 +1304,10 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 	}else if(totalSlot > 0){
 		getFullIndexEntry(0, page, prevIndexEntry);
 	}else{
+	    free(indexFileHeaderPage);
+	    free(page);
+		free(prevIndexEntry.key);
+		free(indexEntry.key);
 		return false;
 	}
 
@@ -1413,13 +1422,20 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 			if(!(nodeHeader.isLeaf)){
 				cout << "Did not find a leaf!";
 				cout << pageNum << endl;
+			    free(indexFileHeaderPage);
+			    free(page);
+				free(prevIndexEntry.key);
+				free(indexEntry.key);
 				return false;
 			}else{
 				cout << "Did find a leaf!";
 				cout << pageNum << endl;
 				currSlot = 0;
 				memcpy(retPage, page, PAGE_SIZE);
-				free(page);
+			    free(indexFileHeaderPage);
+			    free(page);
+				free(prevIndexEntry.key);
+				free(indexEntry.key);
 				return true;
 			}
 	        
@@ -1435,6 +1451,10 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
         break;
      }
 
+    free(indexFileHeaderPage);
+    free(page);
+	free(prevIndexEntry.key);
+	free(indexEntry.key);
 
 
 
