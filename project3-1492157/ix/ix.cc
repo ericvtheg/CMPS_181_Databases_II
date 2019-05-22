@@ -231,7 +231,6 @@ RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute,con
     switch (attribute.type)
     {
         case TypeInt:
-            cout << "dataEntry.key: " << dataEntry.key << endl;
             int qump;
             memcpy(&qump, dataEntry.key, INT_SIZE);
             cout << "quemp " << qump << endl;
@@ -282,7 +281,7 @@ void IndexManager::getDataEntry(uint32_t slotNum, void * page, DataEntry &dataEn
 
 	memcpy(&wow, pageP , keyLength);
 
-	cout << "Wow: " << wow << endl;
+	//cout << "Wow: " << wow << endl;
 	memcpy(dataEntry.key, pageP , keyLength);
 	memcpy(&dataEntry.rid, pageP + keyLength, sizeof(RID));
 }
@@ -600,7 +599,7 @@ void IndexManager::getFullIndexEntry(uint32_t slotNum, void * page, IndexEntry &
 
  	int wow;
 	memcpy(&wow, pageP, keyLength);
-	cout << "Woe: " << wow <<endl;
+	//cout << "Woe: " << wow <<endl;
 	memcpy(indexEntry.key, pageP, keyLength);
 	memcpy(&indexEntry.rightChild, pageP + keyLength, sizeof(uint32_t));
 
@@ -649,22 +648,20 @@ RC IndexManager::deleteEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 	            		SlotEntry slotEntry = getSlotEntry(i, retPage);
 	            		slotEntry.offset = slotEntry.offset - foundEntry.length;
 	            		setSlotEntry(i, slotEntry, retPage);
-	            		cout << "In here" << endl;
 	            	}
 
 	        		
 	        	}
         		free(dataEntry.key);
-        		free(retPage);
 
         		if(entryFound){
         			cout << "Entry Found updating slot Directory" << endl;
         			deleteSlotEntry(foundSlotNum ,totalOriginalSlots, retPage);
-
-        			cout << "Where am  I " << endl;
 	            	ixfileHandle.writePage(pageNum, retPage);		
+        			free(retPage);
 	            	return SUCCESS;
         		}else{
+        			free(retPage);
 	        		return IX_DELETE_FAILED;  			
         		}
 
@@ -1056,8 +1053,10 @@ RC IX_ScanIterator::getNextEntry(RID &rid, void *key)
 
 	RC rc = getNextSlot();
 
-	if (rc == IX_EOF)
+	if (rc == IX_EOF){
+		cout << "Returning an EOF" << endl;
 	    return rc;
+	}
 
 	DataEntry dataEntry = {NULL, 0};
 	dataEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
@@ -1213,12 +1212,7 @@ RC IX_ScanIterator::scanInit(
      	return IX_EOF;
     }
 
-    unsigned readPageCountAfter = 0;
-    unsigned writePageCountAfter = 0;
-    unsigned appendPageCountAfter = 0;
-
-    ixfileHandle->collectCounterValues(readPageCountAfter, writePageCountAfter, appendPageCountAfter);
-    cout << "After scan - R W A: " << readPageCountAfter << " " << writePageCountAfter << " " << appendPageCountAfter << endl;
+    currSlot = 0;
 
     cout << "return on scanInit" << endl;
 
@@ -1263,17 +1257,19 @@ RC IX_ScanIterator::getNextPage()
     LeafHeader leafHeader = ixm->getLeafHeader(pageData);
 
     //If next is equal to zero, we've reach the end of all possible pages to traverse
-    if(leafHeader.nextPage == 0)
+    if(leafHeader.nextPage == 0){
+    	cout << "The next page is 0" << endl;
     	return IX_EOF;
+    }
 
     if (ixfileHandle->readPage(leafHeader.nextPage, pageData))
         return RBFM_READ_FAILED;
 
     // Update slot total
     NodeHeader leafPageNodeHeader = ixm->getNodeHeader(pageData);
-
     currPage = leafHeader.nextPage;
     totalSlot = leafPageNodeHeader.numSlots;
+
     return SUCCESS;
 }
 
@@ -1340,7 +1336,6 @@ bool IX_ScanIterator::checkScanCondition(int keyInt)
     cout << "Int Check Scan Condition" << endl;
     //Both Null
     if(lowKey == NULL && highKey == NULL){
-    	cout << "Here" << endl;
     	return true;
     }
 	 //One Null Low
@@ -1532,11 +1527,9 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 
 				}
 	    		cout << "KeyInt: " << keyInt;
-				cout << "In while loop: " << currSlot << endl;
 				slotEntry = getSlotEntry(currSlot,page);
 
 				if(value == NULL){
-					cout << " In here" << endl;
 					keyValBool = false;
 				}else{
 	    			memcpy(&valueInt, value, INT_SIZE);
@@ -1613,7 +1606,6 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 					    }
 
 					}
-					cout << "Here" << endl;
 				}
 
 

@@ -50,6 +50,10 @@ int testCase_6(const string &indexFileName, const Attribute &attribute)
         inRidSlotNumSum += rid.slotNum;
     }
 
+
+    //ADDED A PRINT
+    indexManager->printBtree(ixfileHandle, attribute);
+
     // Scan
     rc = indexManager->scan(ixfileHandle, attribute, NULL, NULL, true, true, ix_ScanIterator);
     assert(rc == success && "indexManager::scan() should not fail.");
@@ -60,6 +64,7 @@ int testCase_6(const string &indexFileName, const Attribute &attribute)
     {
         count++;
 
+        cerr << count << " - Returned rid: " << rid.pageNum << " " << rid.slotNum << endl;
         if (rid.pageNum % 200 == 0) {
             cerr << count << " - Returned rid: " << rid.pageNum << " " << rid.slotNum << endl;
         }
