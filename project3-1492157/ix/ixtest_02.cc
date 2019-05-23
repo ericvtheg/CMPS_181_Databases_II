@@ -51,39 +51,39 @@ int testCase_2(const string &indexFileName, const Attribute &attribute)
     rc = indexManager->insertEntry(ixfileHandle, attribute, &key, rid);
     assert(rc == success && "indexManager::insertEntry() should not fail.");
 
+    indexManager->printBtree(ixfileHandle, attribute);
+    cout << endl;
+
+    int keyd = 201;
+    rid.pageNum = 500;
+    rid.slotNum = 21;
+
+    rc = indexManager->insertEntry(ixfileHandle, attribute, &keyd, rid);
+    assert(rc == success && "indexManager::insertEntry() should not fail.");
+
     // indexManager->printBtree(ixfileHandle, attribute);
     cout << endl;
-    //
-    // int keyd = 201;
-    // rid.pageNum = 500;
-    // rid.slotNum = 21;
-    //
-    // rc = indexManager->insertEntry(ixfileHandle, attribute, &keyd, rid);
-    // assert(rc == success && "indexManager::insertEntry() should not fail.");
-    //
-    // // indexManager->printBtree(ixfileHandle, attribute);
-    // cout << endl;
-    //
-    // int keyf = 203;
-    // rid.pageNum = 500;
-    // rid.slotNum = 21;
-    //
-    // rc = indexManager->insertEntry(ixfileHandle, attribute, &keyf, rid);
-    // assert(rc == success && "indexManager::insertEntry() should not fail.");
-    //
-    // // indexManager->printBtree(ixfileHandle, attribute);
-    // cout << endl;
-    //
-    // int keye = 202;
-    // rid.pageNum = 500;
-    // rid.slotNum = 21;
-    //
-    // rc = indexManager->insertEntry(ixfileHandle, attribute, &keye, rid);
-    // assert(rc == success && "indexManager::insertEntry() should not fail.");
-    //
-    // // indexManager->printBtree(ixfileHandle, attribute);
-    // cout << endl;
-    //
+
+    int keyf = 203;
+    rid.pageNum = 500;
+    rid.slotNum = 21;
+
+    rc = indexManager->insertEntry(ixfileHandle, attribute, &keyf, rid);
+    assert(rc == success && "indexManager::insertEntry() should not fail.");
+
+    // indexManager->printBtree(ixfileHandle, attribute);
+    cout << endl;
+
+    int keye = 202;
+    rid.pageNum = 500;
+    rid.slotNum = 21;
+
+    rc = indexManager->insertEntry(ixfileHandle, attribute, &keye, rid);
+    assert(rc == success && "indexManager::insertEntry() should not fail.");
+
+    // indexManager->printBtree(ixfileHandle, attribute);
+    cout << endl;
+
     int keyg = 201;
     rid.pageNum = 500;
     rid.slotNum = 21;
@@ -102,7 +102,7 @@ int testCase_2(const string &indexFileName, const Attribute &attribute)
         rc = indexManager->insertEntry(ixfileHandle, attribute, &keyg, rid);
         assert(rc == success && "indexManager::insertEntry() should not fail.");
     }
-    // indexManager->printBtree(ixfileHandle, attribute);
+    indexManager->printBtree(ixfileHandle, attribute);
     cout << endl;
 
     // collect counters

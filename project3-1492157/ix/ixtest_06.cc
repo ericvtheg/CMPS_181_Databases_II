@@ -27,7 +27,7 @@ int testCase_6(const string &indexFileName, const Attribute &attribute)
     unsigned key;
     int inRidSlotNumSum = 0;
     int outRidSlotNumSum = 0;
-    unsigned numOfTuples = 1000;
+    unsigned numOfTuples = 500;
 
     // create index file
     RC rc = indexManager->createFile(indexFileName);
@@ -40,7 +40,7 @@ int testCase_6(const string &indexFileName, const Attribute &attribute)
     // insert entries
     for(unsigned i = 0; i <= numOfTuples; i++)
     {
-        key = i; 
+        key = i;
         rid.pageNum = key;
         rid.slotNum = key * 3;
 
@@ -116,4 +116,3 @@ int main()
     }
 
 }
-

@@ -115,7 +115,7 @@ RC IndexManager::deleteSlotEntry(uint32_t slotNum, uint32_t totalSlots, void * p
     unsigned updatedSlotOffset = lastSlotOffset + sizeof(SlotEntry);
     cout << "updatedSlotOffset: " << updatedSlotOffset << endl;
 
-    
+
     unsigned slotDirectoryLength = slotOffset - lastSlotOffset;
     cout << "slotDirectoryLength: " << slotDirectoryLength << endl;
 
@@ -436,9 +436,11 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
             getFullIndexEntry(0, rootPage, indexEntry);
         }
 
+        
         foundLeafPage = traverseTree(ixfileHandle, attribute, dataEntry.key, page, indexEntry.rightChild, slotHolder);
         if(!foundLeafPage){
             cout << "did not find an available leaf page" << endl;
+            memset(page, 0, PAGE_SIZE);
             newLeafPage(page);
 
             IXFileHandle *ixfh = &ixfileHandle;
@@ -453,10 +455,29 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
             insertDataEntry(page, attribute, dataEntry);
         }else{
             cout << "hit in not enough space in DataEnry" << endl;
+            LeafHeader leafHeader = getLeafHeader(page);
+            IXFileHandle *ixfh = &ixfileHandle;
+            leafHeader.nextPage = (uint32_t) ixfh->fh.getNumberOfPages();
+            setLeafHeader(page, leafHeader);
+
+            // multiple potential cases here
+            // is root full?
+            // are neighbors full?
+            //create newPage
+            memset(page, 0, PAGE_SIZE);
+            newLeafPage(page);
+            LeafHeader newleafHeader = getLeafHeader(page);
+            leafHeader.prevPage = indexEntry.rightChild;
+            setLeafHeader(page, leafHeader);
+
+            foundLeafPage = false;
+
+            // make new page have prevPage of current Page
         }
 
         if(!foundLeafPage){
             if(enoughFreeSpaceForIndexEntry(rootPage, attribute, key)){
+                cout << "hit in not enough spacee for indexEntry" << endl;
                 insertIndexEntry(rootPage, attribute, indexEntry);
             }
 
@@ -473,7 +494,7 @@ RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 
         }else{ //if page was found
             if (ixfileHandle.writePage(indexEntry.rightChild, page)){
-                return RBFM_APPEND_FAILED;
+                return RBFM_WRITE_FAILED;
             }
         }
         free(pageData);
@@ -581,11 +602,11 @@ void IndexManager::getIndexEntry(IXFileHandle &ixfileHandle, const Attribute &at
         case TypeInt:
             // memcpy(&indexEntry.key, page, INT_SIZE);
             offset = INT_SIZE;
-            memcpy(&indexEntry.rightChild, page + offset, INT_SIZE);
+            memcpy(&indexEntry.rightChild, page + offset, sizeof(uint32_t));
         break;
         case TypeReal:
             offset = REAL_SIZE;
-            memcpy(&indexEntry.rightChild, page + offset, REAL_SIZE);
+            memcpy(&indexEntry.rightChild, page + offset, sizeof(uint32_t));
 
     }
 }
@@ -650,19 +671,19 @@ RC IndexManager::deleteEntry(IXFileHandle &ixfileHandle, const Attribute &attrib
 	            		setSlotEntry(i, slotEntry, retPage);
 	            	}
 
-	        		
+
 	        	}
         		free(dataEntry.key);
 
         		if(entryFound){
         			cout << "Entry Found updating slot Directory" << endl;
         			deleteSlotEntry(foundSlotNum ,totalOriginalSlots, retPage);
-	            	ixfileHandle.writePage(pageNum, retPage);		
+	            	ixfileHandle.writePage(pageNum, retPage);
         			free(retPage);
 	            	return SUCCESS;
         		}else{
         			free(retPage);
-	        		return IX_DELETE_FAILED;  			
+	        		return IX_DELETE_FAILED;
         		}
 
 
@@ -1446,7 +1467,7 @@ unsigned IndexManager::getPageFreeSpaceSize(void * page)
 }
 
 //Function that finds the correct data page to access the leaf, returns True Of it could find a Leaf Page, returns false otherwise
-bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, const void * value, void * retPage, uint32_t & pageNum, uint32_t &slotNum){
+bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, const void * value, void * retPage, uint32_t &pageNum, uint32_t &slotNum){
 	//Grab the Header Page
 	//Grab the root Page
 	//Check the number of Slots
@@ -1538,14 +1559,12 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 				}
 
 				if(keyValBool && (currSlot != totalSlot - 1)){
-
+                    // cout << "hit 1 in scan" << endl;
 					getFullIndexEntry( currSlot, page, prevIndexEntry);
 					currSlot++;
 					slotNum++;
+                    // cout << "hit 2 in scan" << endl;
 					getFullIndexEntry( currSlot, page, indexEntry);
-
-
-
 				}else if(keyValBool && (currSlot == totalSlot - 1)){
 
 					cout << "In k < v: " << endl;
@@ -1567,7 +1586,9 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 							cout << "Child is a nonleaf "<< endl;
 							if(totalSlot > 1){
 								cout << "Child entries is larger than 1" << endl;
+                                // cout << "hit 3 in scan" << endl;
 								getFullIndexEntry(0, page, prevIndexEntry);
+                                cout << "hit 4 in scan" << endl;
 								getFullIndexEntry(1, page, indexEntry);
 								slotNum = currSlot = 1;
 							}else if(totalSlot > 0){
@@ -1595,10 +1616,13 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 						nodeHeader = getNodeHeader(page);
 					    if(!nodeHeader.isLeaf){
 							if(totalSlot > 1){
+                                cout << "hit 5 in scan" << endl;
 								getFullIndexEntry(0, page, prevIndexEntry);
+                                cout << "hit 6 in scan" << endl;
 								getFullIndexEntry(1, page, indexEntry);
 								slotNum = currSlot = 1;
 							}else if(totalSlot > 0){
+                                cout << "hit 7 in scan" << endl;
 								getFullIndexEntry(0, page, prevIndexEntry);
 								indexEntry.rightChild = 0;
 								slotNum = currSlot = 0;
@@ -1649,7 +1673,4 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
     free(page);
 	free(prevIndexEntry.key);
 	free(indexEntry.key);
-
-
-
 }
