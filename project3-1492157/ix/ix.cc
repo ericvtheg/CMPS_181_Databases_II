@@ -30,22 +30,22 @@ void IndexManager::initializeIndexFileHeaderPage(void * page){
 }
 
 
-void IndexManager::newLeafPage(void * page){
+void IndexManager::newLeafPage(void * page,const uint32_t &pageID){
 	memset(page, 0 ,PAGE_SIZE);
     // Writes the slot directory header.
     uint32_t freeSpaceOffset = sizeof(NodeHeader) + sizeof(LeafHeader);
-    struct NodeHeader nodeHeader = {0, 0, true, false, freeSpaceOffset};
+    struct NodeHeader nodeHeader = {pageID, 0, 0, true, false, freeSpaceOffset};
     setNodeHeader(page, nodeHeader);
 
     struct LeafHeader leafHeader = {0, 0};
     setLeafHeader(page, leafHeader);
 }
 
-void IndexManager::newNonLeafPage(void * page){
+void IndexManager::newNonLeafPage(void * page, const uint32_t &pageID){
 	memset(page, 0 ,PAGE_SIZE);
     // Writes the slot directory header.
     uint32_t freeSpaceOffset = sizeof(NodeHeader);
-    struct NodeHeader nodeHeader = {0, 0, false, false, freeSpaceOffset};
+    struct NodeHeader nodeHeader = {pageID, 0, 0, false, false, freeSpaceOffset};
     setNodeHeader(page, nodeHeader);
 }
 
@@ -159,7 +159,7 @@ RC IndexManager::createFile(const string &fileName)
 
 
     //Creating the first nonleaf oage - ROOT
-    newNonLeafPage(firstPageData);
+    newNonLeafPage(firstPageData, 1);
     NodeHeader nodeHeader = getNodeHeader(firstPageData);
     nodeHeader.isRoot = true;
 
@@ -272,6 +272,85 @@ RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute,con
     return SUCCESS;
 }
 
+// RC IndexManager::insertDataEntry(void * pageData, const Attribute &attribute,const DataEntry &dataEntry, const uint32_t &slotNum)
+// {
+// 	char * page = (char *)pageData;
+// 	SlotEntry slotEntryToInsert = {0, 0};
+// 	SlotEntry slotEntryToMove = {0, 0};
+// 	SlotEntry lastSlot = {0, 0};
+// 	SlotEntry slotEntry = {0, 0};
+
+// 	NodeHeader nodeHeader = getNodeHeader(page);
+// 	uint32_t totalSlots = nodeHeader.numSlots;
+
+// 	//Find the length of the Entire Entry
+// 	uint32_t newEntryLength = sizeof(RID);
+// 	uint32_t newEntryKeyLength = 0;
+
+// 	switch (attribute.type)
+// 	{
+// 	    case TypeInt:
+// 	    	newEntryKeyLength += INT_SIZE;
+// 	        newEntryLength += INT_SIZE;
+// 	    break;
+// 	    case TypeReal:
+// 	    	newEntryKeyLength += REAL_SIZE;
+// 	        newEntryLength += REAL_SIZE;
+// 	    break;
+// 	    case TypeVarChar:
+// 	        uint32_t varcharSize;
+// 	        memcpy(&varcharSize, dataEntry.key, VARCHAR_LENGTH_SIZE);
+// 	    	newEntryKeyLength += VARCHAR_LENGTH_SIZE;
+// 	    	newEntryKeyLength += varcharSize;
+// 	        newEntryLength += VARCHAR_LENGTH_SIZE;
+// 	        newEntryLength += varcharSize;
+// 	    break;
+// 	}
+
+// 	slotEntryToInsert.length = newEntryLength;
+
+// 	//You are appending at the END
+// 	if(slotNum == totalSlots ){
+// 		slotEntryToInsert.offset = nodeHeader.freeSpaceOffset;
+// 		setSlotEntry(totalSlots, slotEntryToInsert, page);
+// 		memcpy(page + slotEntryToInsert.offset, dataEntry.key, newEntryLength - sizeof(RID)); 
+// 		memcpy(page + slotEntryToInsert.offset + newEntryKeyLength , &dataEntry.rid, sizeof(RID)); 
+// 	}else{
+// 		slotEntryToMove = getSlotEntry(slotNum, page);
+// 		lastSlot = getSlotEntry(totalSlots - 1, page);
+// 		uint32_t dataToMoveLength = (lastSlot.offset + lastSlot.length) - (slotEntryToMove.offset);
+// 		slotEntryToInsert.offset = slotEntryToMove.offset;
+// 		//Copy over the index Entries
+// 		memcpy((page + slotEntryToMove.offset + newEntryLength), (page + slotEntryToMove.offset), dataToMoveLength);
+		
+// 		//Copy over the new Index Entry
+// 		memcpy(page + slotEntryToInsert.offset, dataEntry.key, newEntryKeyLength); 
+// 		memcpy(page + slotEntryToInsert.offset + newEntryKeyLength , &dataEntry.rid, sizeof(RID));
+		
+// 		for(uint32_t j = slotNum; j < nodeHeader.numSlots; j++){
+// 		    slotEntry = getSlotEntry(j, pageData);
+// 		    slotEntry.offset += newEntryLength;
+// 		    setSlotEntry(j + 1, slotEntry, pageData);
+// 		}
+
+// 		setSlotEntry(totalSlots, slotEntryToInsert, page);
+
+
+// 	}
+
+// 	//SETTING THE NODE HEADER
+// 	nodeHeader.numSlots += 1;
+
+// 	//Updating header variables
+// 	nodeHeader.freeSpaceOffset += newEntryLength;
+
+// 	//Update the Header
+// 	setNodeHeader(pageData, nodeHeader);
+
+// 	return SUCCESS;
+// }
+
+
 void IndexManager::getDataEntry(uint32_t slotNum, void * page, DataEntry &dataEntry){
 	SlotEntry slotEntry = getSlotEntry(slotNum, page);
 	char * pageP = (char *)page + slotEntry.offset;
@@ -293,7 +372,6 @@ RC IndexManager::deleteDataEntry(uint32_t slotNum, uint32_t totalSlots, void * p
 
 	SlotEntry slotEntry = getSlotEntry(slotNum, page);
 	SlotEntry lastSlotEntry = getSlotEntry(totalSlots - 1, page);
-	uint32_t deleteEntryLength = slotEntry.length;
 
 	uint32_t occupiedLength = (lastSlotEntry.offset + lastSlotEntry.length) - (slotEntry.offset + slotEntry.length);
 
@@ -312,7 +390,6 @@ RC IndexManager::deleteDataEntry(uint32_t slotNum, uint32_t totalSlots, void * p
 
 
 void IndexManager::getKeyd(const Attribute &attribute, void * retKey, const void * key){
-    int size = 0;
     switch (attribute.type)
     {
         case TypeInt:
@@ -335,178 +412,368 @@ void IndexManager::getKeyd(const Attribute &attribute, void * retKey, const void
     }
 }
 
+//Under the assumption we are given some preallocated page
+void IndexManager::splitPages(IXFileHandle &ixfileHandle, void * originalPage, void * newPage, uint32_t &retMiddleSlot, IndexEntry &overFlowIndexEntry){
+	NodeHeader originalPageNodeHeader = getNodeHeader(originalPage);
+	NodeHeader newPageNodeHeader = getNodeHeader(newPage);
+
+	uint32_t totalSlots =  originalPageNodeHeader.numSlots;
+	uint32_t halfSlot = totalSlots / 2;
+	if(totalSlots % 2 != 0 ){
+		halfSlot += 1;
+	}
+	SlotEntry lastSlot = getSlotEntry(totalSlots - 1, originalPage);
+	SlotEntry halfSlotEntry = getSlotEntry(halfSlot, originalPage);
+	uint32_t lengthOfNewPage = (lastSlot.offset + lastSlot.length) - halfSlotEntry.offset;
+
+	//Update the second half of the slots and write them to the split page
+	uint32_t newPageSlotCount = 0;
+	for(uint32_t i = halfSlot; i < totalSlots; i++){
+		SlotEntry slotEntry = getSlotEntry(i, originalPage);
+		slotEntry.offset = slotEntry.offset - lengthOfNewPage;
+
+		//Zero out original slot
+		memset((char *)originalPage + (PAGE_SIZE - (i + 1) * sizeof(SlotEntry)), 0 ,sizeof(SlotEntry));
+		setSlotEntry(newPageSlotCount, slotEntry, newPage);
+		newPageSlotCount++;
+
+	}
+	//Writes the actual entries to the new page
+	memcpy((char *)newPage + newPageNodeHeader.freeSpaceOffset, originalPage + halfSlotEntry.offset, lengthOfNewPage );
+
+	IndexEntry currMiddleEntry = {NULL, 0};
+	//currMiddleEntry = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
+
+	//getIndexEntry(ixfileHandle, attribute, currMiddleEntry, originalPage, halfSlot);
+
+	// switch (attribute.type)
+	// {
+	//     case TypeInt:
+	//     break;
+	//     case TypeReal:
+	//     break;
+	//     case TypeVarChar:
+	//     break;
+	// }
+	
+
+	newPageNodeHeader.freeSpaceOffset += lengthOfNewPage;
+	newPageNodeHeader.parent = originalPageNodeHeader.parent;
+	newPageNodeHeader.numSlots = totalSlots - halfSlot;
+	setNodeHeader(newPage, newPageNodeHeader);
+
+
+	originalPageNodeHeader.freeSpaceOffset -= lengthOfNewPage;
+	originalPageNodeHeader.numSlots = halfSlot;
+	setNodeHeader(originalPage, newPageNodeHeader);
+//	memcpy();
+}
+
+
+//ONLY USE ON INDEX PAGES
+RC IndexManager::recurPush(IXFileHandle &ixfileHandle, void * originalPage, const uint32_t &originalPageNum ,IndexEntry &overFlowIndexEntry){
+	//Grab the original page and attempt to check if a split if needed
+	// NodeHeader originalPageNodeHeader = getNodeHeader(originalPage);
+	// void * newSplitPage = malloc(PAGE_SIZE);
+
+	// uint32_t totalSlots = originalPageNodeHeader.numSlots;
+	// uint32_t halfSlot = totalSlots / 2;
+	// uint32_t retMiddleSlotNum = 0;
+
+	// if(enoughFreeSpaceForIndexEntry(originalPage, attribute, key)){
+	// 	uint32_t slotNumToInsertAt;
+	// 	prepInsertEntry(originalPage, attribute, overFlowIndexEntry.key, slotNumToInsertAt);
+	//     insertIndexEntry(originalPage, attribute, overFlowIndexEntry, slotNumToInsertAt);
+	// 	return SUCCESS;
+	// }else {
+	// 	cout << "THE INDEX ENTRY IS FULL NOT IMPLEMENTED YET"
+	// 	return -1;
+
+		//Initialize the new page for the split
+		// newNonLeafPage(newSplitPage, ixfileHandle.fh.getNumberOfPages());
+
+		// splitPages(originalPage, newSplitPage, retMiddleSlotNum);
+
+		// if (ixfileHandle.writePage(originalPageNum, newSplitPage))
+		//     return RBFM_APPEND_FAILED;
+
+		// if (ixfileHandle.appendPage(newSplitPage))
+		//     return RBFM_APPEND_FAILED;
+
+
+		// //FINISHED APPENDING AND SPLITING PAGE, NOW HAN
+
+		// //In case where we have basically hit Root and need to some special handling to split root and create a new root
+		// if(originalPageNodeHeader.isRoot){
+		// 	cout << "ROOT IS FULL " << endl;
+		// 	return -1;
+		// }else{
+		// 	return -1;
+		// }
+		// In case where we should recursive call the split/recurpush function
+	//}
+	return -1;
+}
+
 RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, const void *key, const RID &rid)
 {
-    void * indexFileHeaderPage = malloc(PAGE_SIZE);
+	void * indexFileHeaderPage = malloc(PAGE_SIZE);
+	void * rootPageData = malloc(PAGE_SIZE);
+	char * rootPage = (char *)rootPageData;
 
-    void * rootPageData = malloc(PAGE_SIZE);
-    char * rootPage = (char *)rootPageData;
+	DataEntry dataEntry;
+	dataEntry = {nullptr, rid};
+	dataEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
 
-    //ADDED TO USE FUNCTION
-    uint32_t slotHolder;
+	//Prepare the dataKey to insert
+	getKeyd(attribute, dataEntry.key, key);
 
-    //Grab the Header Page
-    if(ixfileHandle.readPage(0, indexFileHeaderPage))
-        return IX_READ_FAILED;
+	IndexEntry indexEntry;
+	indexEntry = {nullptr, 0};
+	indexEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
+	getKeyd(attribute, indexEntry.key, key);
 
-    IndexFileHeader indexFileHeader = getIndexFileHeader(indexFileHeaderPage);
+	//Grab the Header Page
+	if(ixfileHandle.readPage(0, indexFileHeaderPage))
+	    return IX_READ_FAILED;
 
-    cout << "rootPageId: " << indexFileHeader.rootPageId << endl;
-    //Using the Header Page information, grab the appropriate ROOT Page
-    if(ixfileHandle.readPage(indexFileHeader.rootPageId, rootPage))
-        return IX_READ_FAILED;
+	IndexFileHeader indexFileHeader = getIndexFileHeader(indexFileHeaderPage);
 
-    NodeHeader rootNodeHeader = getNodeHeader(rootPage);
+	//Using the Header Page information, grab the appropriate ROOT Page
+	if(ixfileHandle.readPage(indexFileHeader.rootPageId, rootPage))
+	    return IX_READ_FAILED;
 
-     cout << "numSlots: " << rootNodeHeader.numSlots << endl;
-     DataEntry dataEntry;
-     dataEntry = {nullptr, rid};
-     IndexEntry indexEntry;
-     indexEntry = {nullptr, 2};
+	NodeHeader rootNodeHeader = getNodeHeader(rootPage);
 
-    //Base Case: Root is Empty, first insertion
-    if(rootNodeHeader.numSlots == 0){
-        //Data Page
-        // Create a new page for Data Entries (Leaf Page)
-        void * pageData = malloc(PAGE_SIZE);
-        char * page = (char *) pageData;
+	if(rootNodeHeader.numSlots == 0){
+		//Data Page
 
-        newLeafPage(page);
+		// Create a new page for Data Entries (Leaf Page)
+		void * pageData = malloc(PAGE_SIZE);
+		char * page = (char *) pageData;
+		newLeafPage(page, 2);
 
-        unsigned size = 0;
+		// Check if there is enough room for the new Data Entry and insert into the Leaf
+		if(enoughFreeSpaceForDataEntry(page, attribute, dataEntry.key)){
+			uint32_t prepNum;
+			//prepInsertEntry(page, attribute, dataEntry.key, prepNum);
+			//insertDataEntry(page, attribute, dataEntry, prepNum);
+			insertDataEntry(page, attribute, dataEntry);
+		}
 
-        dataEntry.key = malloc(PAGE_SIZE);
+		// Update Header of this New Leaf Page so that the parent is ROOT
+		NodeHeader dataNodeHeader = getNodeHeader(page);
+		dataNodeHeader.parent = indexFileHeader.rootPageId;
+		setNodeHeader(page, dataNodeHeader);
 
-        getKeyd(attribute, dataEntry.key, key);
+		cout << "DataNodeParent: " << dataNodeHeader.parent << endl;
+		cout << "DataNodeNumSlots: " << dataNodeHeader.numSlots << endl;
 
-        // Check if there is enough room for the new Data Entry and insert into the Leaf
-        cout << "dataEntry.key " << dataEntry.key << endl;
-        if(enoughFreeSpaceForDataEntry(page, attribute, dataEntry.key)){
-            insertDataEntry(page, attribute, dataEntry);
-        }
+		// Take this New Leaf Page and Finally add it to the actual file
+		if (ixfileHandle.appendPage(page))
+		    return RBFM_APPEND_FAILED;
 
-        // Update Header of this New Leaf Page so that the parent is ROOT
-        NodeHeader dataNodeHeader = getNodeHeader(page);
-        dataNodeHeader.parent = indexFileHeader.rootPageId;
-        setNodeHeader(page, dataNodeHeader);
+		printLeafHelper(page, attribute);
 
-        cout << "DataNodeParent: " << dataNodeHeader.parent << endl;
-        cout << "DataNodeNumSlots: " << dataNodeHeader.numSlots << endl;
 
-        // Take this New Leaf Page and Finally add it to the actual file
-        if (ixfileHandle.appendPage(page))
-            return RBFM_APPEND_FAILED;
 
-        // Updating ROOT Index Page with correspong Index entry
-        cout << "Key: " << key << endl;;
-        //indexEntry.rightChild = 1;
-        indexEntry.key = malloc(PAGE_SIZE);
-        getKeyd(attribute, indexEntry.key, key);
+		//INSERT NONLEAF
+		indexEntry.rightChild = 2;
+		getKeyd(attribute, indexEntry.key, key);
 
-        if(enoughFreeSpaceForIndexEntry(rootPage, attribute, key)){
-            insertIndexEntry(rootPage, attribute, indexEntry);
-        }
+		if(enoughFreeSpaceForIndexEntry(rootPage, attribute, key)){
+			uint32_t slotNumToInsertAt;
+			prepInsertEntry(rootPage, attribute, key, slotNumToInsertAt);
+		    insertIndexEntry(rootPage, attribute, indexEntry, slotNumToInsertAt);
+		}
 
-        // indexEntry.rightChild = 3;
-        // if(enoughFreeSpaceForIndexEntry(rootPage, attribute, key)){
-        //     insertIndexEntry(rootPage, attribute, indexEntry);
-        // }
+		if (ixfileHandle.writePage(indexFileHeader.rootPageId, rootPage)){
+		    return RBFM_WRITE_FAILED;
+		}
 
-        if (ixfileHandle.writePage(indexFileHeader.rootPageId, rootPage)){
-            return RBFM_WRITE_FAILED;
-        }
+		printNonLeafHelper(rootPage, attribute);
 
-        // free malloc'd indexEntry?
-        // free malloc'd dataEntry?
-        free(dataEntry.key);
-        free(indexEntry.key);
-        free(pageData);
-    }else{
-        void * pageData = malloc(PAGE_SIZE);
-        char * page = (char *)pageData;
-        bool foundLeafPage;
+		free(rootPageData);
+		free(indexFileHeaderPage);
+		free(dataEntry.key);
+		free(indexEntry.key);
+		free(pageData);
+		return SUCCESS;
+	}else{
+		void * pageData = malloc(PAGE_SIZE);
+		char * page = (char *)pageData;
+		bool foundLeafPage;
+		uint32_t slotHolder;
 
-        dataEntry.key = malloc(PAGE_SIZE);
-        getKeyd(attribute, dataEntry.key, key);
+		getKeyd(attribute, dataEntry.key, key);
 
-        indexEntry.key = malloc(PAGE_SIZE);
-        if(rootNodeHeader.numSlots != 1){
-            getKeyd(attribute, indexEntry.key, key);
-        }else{
-            getFullIndexEntry(0, rootPage, indexEntry);
-        }
+		uint32_t retPageID;
 
-        
-        foundLeafPage = traverseTree(ixfileHandle, attribute, dataEntry.key, page, indexEntry.rightChild, slotHolder);
-        if(!foundLeafPage){
-            cout << "did not find an available leaf page" << endl;
-            memset(page, 0, PAGE_SIZE);
-            newLeafPage(page);
+		foundLeafPage = traverseTree(ixfileHandle, attribute, dataEntry.key, page, retPageID, slotHolder);
+		cout << "slotHolder : " << slotHolder << endl;
+		cout << "retPageID : " << retPageID << endl;
 
-            IXFileHandle *ixfh = &ixfileHandle;
-            indexEntry.rightChild = (uint32_t) ixfh->fh.getNumberOfPages();
-        }else{
-            cout << "found leafPage from traverseTree " << indexEntry.rightChild << endl;
-            if(ixfileHandle.readPage(indexEntry.rightChild, page))
-                return IX_READ_FAILED;
-        }
+		void * dataPageToInsertIn = malloc(PAGE_SIZE);
+		//THIS WILL EITHER GIVE YOU A PAGE THAT ALREADY EXISTS OR A NEW MALLOCED PAGE
+		if(!enoughFreeSpaceForDataEntry(page, attribute, dataEntry.key) && !foundLeafPage){
+		    cout << "Did not find an available leaf page" << endl;
+		    void  * newLeafPageData = malloc(PAGE_SIZE);
+	    	LeafHeader leafHeader = getLeafHeader(page);
+	    	NodeHeader leafNodeHeader = getNodeHeader(page);
 
-        if(enoughFreeSpaceForDataEntry(page, attribute, dataEntry.key)){
-            insertDataEntry(page, attribute, dataEntry);
-        }else{
-            cout << "hit in not enough space in DataEnry" << endl;
-            LeafHeader leafHeader = getLeafHeader(page);
-            IXFileHandle *ixfh = &ixfileHandle;
-            leafHeader.nextPage = (uint32_t) ixfh->fh.getNumberOfPages();
-            setLeafHeader(page, leafHeader);
+	    	//Initialize new Leaf Page and grab headers
+		    newLeafPage(newLeafPageData, (uint32_t) ixfileHandle.fh.getNumberOfPages());
+	    	NodeHeader newLeafNodeHeader = getNodeHeader(newLeafPageData);
+	    	LeafHeader newleafHeader = getLeafHeader(newLeafPageData);
 
-            // multiple potential cases here
-            // is root full?
-            // are neighbors full?
-            //create newPage
-            memset(page, 0, PAGE_SIZE);
-            newLeafPage(page);
-            LeafHeader newleafHeader = getLeafHeader(page);
-            leafHeader.prevPage = indexEntry.rightChild;
-            setLeafHeader(page, leafHeader);
+	    	//Updating the full page's header information
+	    	leafHeader.nextPage = (uint32_t) ixfileHandle.fh.getNumberOfPages();
+	    	setLeafHeader(page, leafHeader);
+	    	
+	    	//Updating the newLeafPage's LeafHeader
+		    newleafHeader.prevPage = leafNodeHeader.pageNum;
+		    newleafHeader.nextPage = 0;
+	    	setLeafHeader(newLeafPageData, newleafHeader);
 
-            foundLeafPage = false;
+	    	//Updating the newLeafPage's NodeHeader
+	    	newLeafNodeHeader.pageNum = (uint32_t) ixfileHandle.fh.getNumberOfPages();;
+	    	newLeafNodeHeader.parent = leafNodeHeader.parent;
+	    	setNodeHeader(newLeafPageData, newLeafNodeHeader );
 
-            // make new page have prevPage of current Page
-        }
+		    //IXFileHandle *ixfh = &ixfileHandle;
+		    cout << "indexEntry.rightChild" << indexEntry.rightChild << endl;
 
-        if(!foundLeafPage){
-            if(enoughFreeSpaceForIndexEntry(rootPage, attribute, key)){
-                cout << "hit in not enough spacee for indexEntry" << endl;
-                insertIndexEntry(rootPage, attribute, indexEntry);
-            }
+		    memcpy(dataPageToInsertIn, newLeafPageData, PAGE_SIZE);
 
-            NodeHeader dataNodeHeader = getNodeHeader(page);
-            dataNodeHeader.parent = indexFileHeader.rootPageId;
-            setNodeHeader(page, dataNodeHeader);
+		    if (ixfileHandle.appendPage(newLeafPageData))
+		        return RBFM_APPEND_FAILED;
 
-            if (ixfileHandle.appendPage(page))
-                return RBFM_APPEND_FAILED;
+		    if (ixfileHandle.writePage(leafNodeHeader.pageNum, page))
+		        return RBFM_APPEND_FAILED;
 
-            if (ixfileHandle.writePage(indexFileHeader.rootPageId, rootPage)){
-                return RBFM_WRITE_FAILED;
-            }
+		    free(newLeafPageData);
+		}else if(!foundLeafPage){
+			cout << "In here no page found" << endl;
+			//If we are here we could not find a data page and instead were given the parent page
+			// Should always push up an entry
 
-        }else{ //if page was found
-            if (ixfileHandle.writePage(indexEntry.rightChild, page)){
-                return RBFM_WRITE_FAILED;
-            }
-        }
-        free(pageData);
-        free(dataEntry.key);
-        free(indexEntry.key);
-    }
+			if (ixfileHandle.readPage(retPageID, page))
+			    return RBFM_WRITE_FAILED;
 
-    free(rootPageData);
-    free(indexFileHeaderPage);
-    return SUCCESS;
+        	NodeHeader IndexPageNodeHeader = getNodeHeader(page);
 
-    //return -1;
+        	//Initilize and grab the first headers of the new leaf pages
+    	    void  * newLeafPageData = malloc(PAGE_SIZE);
+    	    char  * newLeafPageP = (char *)newLeafPageData;
+    	    newLeafPage(newLeafPageData, (uint32_t) ixfileHandle.fh.getNumberOfPages());
+        	LeafHeader newleafHeader = getLeafHeader(newLeafPageData);
+        	NodeHeader newLeafNodeHeader = getNodeHeader(newLeafPageData);
+        	
+        	//Updating the newLeafPage's LeafHeader
+        	//Grab the Index page's Last Slot
+        	cout << "slotNumPrev: " << IndexPageNodeHeader.numSlots << endl;
+        	uint32_t slotNumPrev = IndexPageNodeHeader.numSlots - 1 ;
+        	cout << "slotNumPrev: " << slotNumPrev << endl;
+        	IndexEntry lastIndexEntry;
+        	lastIndexEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
+        	SlotEntry lastSlotEntry = getSlotEntry(slotNumPrev, page);
+        	getIndexEntry(ixfileHandle, attribute, lastIndexEntry, page, lastSlotEntry);
+
+        	void * prevDataPage = malloc(PAGE_SIZE);
+        	cout << "lastIndexEntry.rightChild: " << lastIndexEntry.rightChild;
+        	if (ixfileHandle.readPage(lastIndexEntry.rightChild, prevDataPage))
+        	    return RBFM_APPEND_FAILED;        	
+
+        	NodeHeader prevDataNodeHeader = getNodeHeader(prevDataPage);
+        	LeafHeader prevDataLeafHeader = getLeafHeader(prevDataPage);
+        	prevDataLeafHeader.nextPage =  (uint32_t) ixfileHandle.fh.getNumberOfPages();
+        	setLeafHeader(prevDataPage, prevDataLeafHeader);
+
+    	    newleafHeader.prevPage = lastIndexEntry.rightChild;
+    	    newleafHeader.nextPage = 0;
+        	setLeafHeader(newLeafPageData, newleafHeader);
+
+        	//Updating the newLeafPage's NodeHeader
+        	newLeafNodeHeader.pageNum = (uint32_t) ixfileHandle.fh.getNumberOfPages();
+        	newLeafNodeHeader.parent = IndexPageNodeHeader.pageNum;
+        	setNodeHeader(newLeafPageData, newLeafNodeHeader );
+
+        	//uint32_t prepNum2;
+        	//prepInsertEntry(newLeafPageP, attribute, dataEntry.key, prepNum2);
+        	//insertDataEntry(newLeafPageP, attribute, dataEntry, prepNum2);
+        	insertDataEntry(newLeafPageP, attribute, dataEntry);
+        	indexEntry.rightChild = newLeafNodeHeader.pageNum;
+        	cout <<"No page found: rightChild: " << newLeafNodeHeader.pageNum << endl;
+        	prepInsertEntry(page, attribute, key, slotNumPrev);
+        	cout << "slotNumPrev: " << slotNumPrev << endl;
+        	insertIndexEntry(page, attribute, indexEntry, slotNumPrev);
+
+        	if (ixfileHandle.appendPage(newLeafPageData))
+        	    return RBFM_APPEND_FAILED;
+
+        	if (ixfileHandle.writePage(lastIndexEntry.rightChild, prevDataPage))
+        	    return RBFM_APPEND_FAILED;
+
+        	if (ixfileHandle.writePage(retPageID, page))
+        	    return RBFM_APPEND_FAILED;
+
+		}else{
+			//We have found a place where we can insert without an issue.
+		    cout << "Found leafPage from traverseTree: " << retPageID << endl;
+        	
+        	//uint32_t prepNum3;
+        	//prepInsertEntry(page, attribute, dataEntry.key, prepNum3);
+        	//insertDataEntry(page, attribute, dataEntry,prepNum3);
+        	insertDataEntry(page, attribute, dataEntry);
+
+        	if (ixfileHandle.writePage(retPageID, page))
+        	    return RBFM_WRITE_FAILED;
+
+        	return SUCCESS;
+		    
+		}
+
+		//Else either we have to append some new page and must now perform the split.
+
+		if(enoughFreeSpaceForDataEntry(page, attribute, dataEntry.key)){
+			//uint32_t prepNum3;
+			//prepInsertEntry(page, attribute, dataEntry.key, prepNum3);
+		    //insertDataEntry(page, attribute, dataEntry, prepNum3);
+		    insertDataEntry(page, attribute, dataEntry);
+
+		    //RECUR INSERT INDEX ENTRY FUNTION
+		}else{
+		    cout << "HIT in not enough space in DataEnry" << endl;
+		    return -1;
+		    //Grab the current found leaf page and update it's next page to a newly appended page.
+		    // LeafHeader leafHeader = getLeafHeader(page);
+		    // leafHeader.nextPage = (uint32_t) ixfileHandle.fh.getNumberOfPages();
+		    // setLeafHeader(page, leafHeader);
+
+		    // // Create the new Leaf Page and set it's
+		    // memset(page, 0, PAGE_SIZE);
+		    // newLeafPage(page, leafHeader.nextPage);
+		    // LeafHeader newleafHeader = getLeafHeader(page);
+		    // newleafHeader.prevPage = leafHeader.nextPage;
+		    // setLeafHeader(page, leafHeader);
+
+		    // make new page have prevPage of current Page
+
+		    //PERFORM THE SPLIT ON THE THE DATA ENTRIES, then perform the recursive index split if nessesary
+		}
+
+
+
+		free(rootPageData);
+		free(indexFileHeaderPage);
+		free(dataEntry.key);
+		free(indexEntry.key);
+		free(pageData);
+		return SUCCESS;
+
+
+	}
+
 }
 
 bool IndexManager::enoughFreeSpaceForIndexEntry(void * pageData, const Attribute &attribute, const void *key){
@@ -538,56 +805,115 @@ bool IndexManager::enoughFreeSpaceForIndexEntry(void * pageData, const Attribute
 	}
 }
 
-RC IndexManager::insertIndexEntry(void * pageData, const Attribute &attribute,const IndexEntry &indexEntry)
+void IndexManager::prepInsertEntry(void* pageData, const Attribute &attribute, const void * value, uint32_t &slotNum){
+	char * page = (char *)pageData;
+	uint32_t offset = 0;
+	bool inserted = false;
+
+	NodeHeader nodeHeader = getNodeHeader(page);
+
+	SlotEntry slotEntry;
+
+	switch (attribute.type)
+	{
+	    case TypeInt:
+	        int toInsertKey, curKey;
+	        memcpy(&toInsertKey, value, INT_SIZE);
+
+	        for(uint32_t i = 0; i < nodeHeader.numSlots; i++){
+	            slotEntry = getSlotEntry(slotNum, page);
+	            offset = slotEntry.offset;
+	            memcpy(&curKey, page + offset, INT_SIZE);
+
+	            if(curKey > toInsertKey){
+	            	slotNum = i;
+	                return;
+	            }
+	        }
+	        slotNum = nodeHeader.numSlots;
+	        // slotNum -= 1;
+	        break;
+
+	}
+}
+
+
+RC IndexManager::insertIndexEntry(void * pageData, const Attribute &attribute, const IndexEntry &indexEntry, const uint32_t &slotNum)
 {
 	char * page = (char *)pageData;
+	SlotEntry slotEntryToInsert = {0, 0};
+	SlotEntry slotEntryToMove = {0, 0};
+	SlotEntry lastSlot = {0, 0};
+	SlotEntry slotEntry = {0, 0};
 
-    NodeHeader nonLeafPageNodeHeader = getNodeHeader(page);
-    page += nonLeafPageNodeHeader.freeSpaceOffset;
+	NodeHeader nodeHeader = getNodeHeader(page);
+	uint32_t totalSlots = nodeHeader.numSlots;
 
-    uint32_t length = 0;
+	//Find the length of the Entire Entry
+	uint32_t newEntryLength = sizeof(uint32_t);
+	uint32_t newEntryKeyLength = 0;
 
-    switch (attribute.type)
-    {
-        case TypeInt:
-            int keyd;
-            memcpy(&keyd, indexEntry.key, INT_SIZE);
-            // cout << "keyd: " << keyd << endl;;
-            memcpy(page + length, &keyd, INT_SIZE);
-            length += INT_SIZE;
-        break;
-        case TypeReal:
-            memcpy(page + length, indexEntry.key, REAL_SIZE);
-            length += REAL_SIZE;
-        break;
-        case TypeVarChar:
-            uint32_t varcharSize;
-            memcpy(&varcharSize, indexEntry.key, VARCHAR_LENGTH_SIZE);
-            memcpy(page + length, &varcharSize, VARCHAR_LENGTH_SIZE);
-            length += VARCHAR_LENGTH_SIZE;
+	switch (attribute.type)
+	{
+	    case TypeInt:
+	    	newEntryKeyLength += INT_SIZE;
+	        newEntryLength += INT_SIZE;
+	    break;
+	    case TypeReal:
+	    	newEntryKeyLength += REAL_SIZE;
+	        newEntryLength += REAL_SIZE;
+	    break;
+	    case TypeVarChar:
+	        uint32_t varcharSize;
+	        memcpy(&varcharSize, indexEntry.key, VARCHAR_LENGTH_SIZE);
+	    	newEntryKeyLength += VARCHAR_LENGTH_SIZE;
+	    	newEntryKeyLength += varcharSize;
+	        newEntryLength += VARCHAR_LENGTH_SIZE;
+	        newEntryLength += varcharSize;
+	    break;
+	}
 
-            memcpy(page + nonLeafPageNodeHeader.freeSpaceOffset, ((char*) indexEntry.key + VARCHAR_LENGTH_SIZE), varcharSize);
-            length += varcharSize;
-        break;
-    }
+	slotEntryToInsert.length = newEntryLength;
 
-    memcpy(page + length, &indexEntry.rightChild, sizeof(uint32_t));
-    length += sizeof(uint32_t);
+	//You are appending at the END
+	if(slotNum == totalSlots ){
+		slotEntryToInsert.offset = nodeHeader.freeSpaceOffset;
+		setSlotEntry(totalSlots, slotEntryToInsert, page);
+		memcpy(page + slotEntryToInsert.offset, indexEntry.key, newEntryLength - sizeof(uint32_t)); 
+		memcpy(page + slotEntryToInsert.offset + newEntryKeyLength , &indexEntry.rightChild, sizeof(uint32_t)); 
+	}else{
+		slotEntryToMove = getSlotEntry(slotNum, page);
+		lastSlot = getSlotEntry(totalSlots - 1, page);
+		uint32_t dataToMoveLength = (lastSlot.offset + lastSlot.length) - (slotEntryToMove.offset);
+		slotEntryToInsert.offset = slotEntryToMove.offset;
+		//Copy over the index Entries
+		memcpy((page + slotEntryToMove.offset + newEntryLength), (page + slotEntryToMove.offset), dataToMoveLength);
+		
+		//Copy over the new Index Entry
+		memcpy(page + slotEntryToInsert.offset, indexEntry.key, newEntryKeyLength); 
+		memcpy(page + slotEntryToInsert.offset + newEntryKeyLength , &indexEntry.rightChild, sizeof(uint32_t));
+		
+		for(uint32_t j = slotNum; j < nodeHeader.numSlots; j++){
+		    slotEntry = getSlotEntry(j, pageData);
+		    slotEntry.offset += newEntryLength;
+		    setSlotEntry(j + 1, slotEntry, pageData);
+		}
 
-    uint32_t offset = nonLeafPageNodeHeader.freeSpaceOffset;
-    struct SlotEntry slotEntry = {length, offset};
+		setSlotEntry(totalSlots, slotEntryToInsert, page);
 
-    setSlotEntry(nonLeafPageNodeHeader.numSlots, slotEntry, pageData);
-    nonLeafPageNodeHeader.numSlots += 1;
 
-    //Updating header variables
-    nonLeafPageNodeHeader.freeSpaceOffset += length;
+	}
 
-    //Update the Header
-    setNodeHeader(pageData, nonLeafPageNodeHeader);
+	//SETTING THE NODE HEADER
+	nodeHeader.numSlots += 1;
 
-    return SUCCESS;
+	//Updating header variables
+	nodeHeader.freeSpaceOffset += newEntryLength;
 
+	//Update the Header
+	setNodeHeader(pageData, nodeHeader);
+
+	return SUCCESS;
 }
 
 void IndexManager::getIndexEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, IndexEntry &indexEntry, char * pageData, SlotEntry dirtySlot){
@@ -1489,14 +1815,15 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 	if(ixfh.readPage(indexFileHeader.rootPageId, page))
 	    return false;
 
+	printNonLeafHelper(page, attribute);
 	uint32_t currSlot = 0;
 	uint32_t totalSlot = 0;
 	bool keyValBool = false;
+	bool keyValEq = false;
+	bool startedTraversing = false;
 	slotNum = currSlot;
 
-	IndexEntry prevIndexEntry = {NULL, 0};
 	IndexEntry indexEntry = {NULL, 0};
-	prevIndexEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
 	indexEntry.key = malloc(attribute.length + VARCHAR_LENGTH_SIZE);
 
 	NodeHeader nodeHeader = getNodeHeader(page);
@@ -1506,6 +1833,8 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 
 	cout << "totalSlot: " <<  totalSlot << endl;
 
+
+
 	//At root
 	//First Entry in a page always points to the left child
 	//If there are more than 1 entry, grab the first two to become the
@@ -1513,16 +1842,12 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 	//If there is only one, grab it as the lieft child and mark the right child as
 	//non existant with a zero
 	//If the are no entries in the page for some reason, there are no children to search.
-	if(totalSlot > 1){
-		getFullIndexEntry(0, page, prevIndexEntry);
-		getFullIndexEntry(1, page, indexEntry);
-		slotNum = currSlot = 1;
-	}else if(totalSlot > 0){
-		getFullIndexEntry(0, page, prevIndexEntry);
+	if(totalSlot > 0){
+		getFullIndexEntry(0, page, indexEntry);
+		cout << "IndexRightChild: " << indexEntry.rightChild << endl;
 	}else{
 	    free(indexFileHeaderPage);
 	    free(page);
-		free(prevIndexEntry.key);
 		free(indexEntry.key);
 		return false;
 	}
@@ -1537,37 +1862,49 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 	    	int keyInt;
 	    	int valueInt;
 
+			if(indexEntry.rightChild != 0){
+    			memcpy(&keyInt, indexEntry.key, INT_SIZE);
+	    		cout << "KeyInt: " << keyInt;
+    		}
+
 			while(currSlot < totalSlot && !(nodeHeader.isLeaf)){
+
+				cout << "Iteration: " << currSlot << endl;
+				cout << "IndexRightChild: " << indexEntry.rightChild << endl;
+
+				slotEntry = getSlotEntry(currSlot,page);
+
+				if(totalSlot > 0){
+					getFullIndexEntry(currSlot, page, indexEntry);
+				}
 
 
 				if(indexEntry.rightChild != 0){
+		    		cout << "KeyInt: " << keyInt;
 	    			memcpy(&keyInt, indexEntry.key, INT_SIZE);
+	    		}
 
-				}else{
-	    			memcpy(&keyInt, prevIndexEntry.key, INT_SIZE);
-
-				}
-	    		cout << "KeyInt: " << keyInt;
-				slotEntry = getSlotEntry(currSlot,page);
+				cout << "SlotEntry.lengt: "<< slotEntry.length << endl;
+				cout << "SlotEntry.offset: "<< slotEntry.offset << endl;
 
 				if(value == NULL){
 					keyValBool = false;
+					keyValEq = true;
 				}else{
 	    			memcpy(&valueInt, value, INT_SIZE);
 					keyValBool = (keyInt < valueInt);
 	 			   	cout << "valueInt: " << valueInt << endl;
 				}
 
-				if(keyValBool && (currSlot != totalSlot - 1)){
-                    // cout << "hit 1 in scan" << endl;
-					getFullIndexEntry( currSlot, page, prevIndexEntry);
-					currSlot++;
-					slotNum++;
-                    // cout << "hit 2 in scan" << endl;
-					getFullIndexEntry( currSlot, page, indexEntry);
-				}else if(keyValBool && (currSlot == totalSlot - 1)){
+				if(keyValBool){
+					// If the keyIny < Value increment all the things
+					currSlot+=1;
+					slotNum+=1;
 
-					cout << "In k < v: " << endl;
+					cout << "Incrementing: " << endl;
+				}else{
+
+					cout << "In k >= v: " << endl;
 					//Have decided that page 0 is a header page of the file, if we are pointing to this for some reason, there is likely no valid nonleaf or leaf page associated with this part.
 					if(indexEntry.rightChild == 0){
 						cout << "Child is empty" << endl;
@@ -1584,64 +1921,30 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 						cout << totalSlot << endl;
 						if(!nodeHeader.isLeaf){
 							cout << "Child is a nonleaf "<< endl;
-							if(totalSlot > 1){
-								cout << "Child entries is larger than 1" << endl;
-                                // cout << "hit 3 in scan" << endl;
-								getFullIndexEntry(0, page, prevIndexEntry);
-                                cout << "hit 4 in scan" << endl;
-								getFullIndexEntry(1, page, indexEntry);
-								slotNum = currSlot = 1;
-							}else if(totalSlot > 0){
+							if(totalSlot > 0){
 								cout << "Child entries is 1" << endl;
-								getFullIndexEntry(0, page, prevIndexEntry);
-								indexEntry.rightChild = 0;
+								getFullIndexEntry(0, page, indexEntry);
 								slotNum = currSlot = 0;
+							}else{
+								//Weird Case
+								return false;
 							}
 						}
 					}
-				}else{
 
-					cout << "Found where Key Remains smaller than Value: " << endl;
-
-					if(prevIndexEntry.rightChild == 0){
-						return false;
-					}else{
-
-						//We have found a correct traffic cop and are now going to go down a layer
-						if(ixfh.readPage(prevIndexEntry.rightChild, page))
-					    	return false;
-
-						pageNum = prevIndexEntry.rightChild;
-					    cout << prevIndexEntry.rightChild << endl;
-						nodeHeader = getNodeHeader(page);
-					    if(!nodeHeader.isLeaf){
-							if(totalSlot > 1){
-                                cout << "hit 5 in scan" << endl;
-								getFullIndexEntry(0, page, prevIndexEntry);
-                                cout << "hit 6 in scan" << endl;
-								getFullIndexEntry(1, page, indexEntry);
-								slotNum = currSlot = 1;
-							}else if(totalSlot > 0){
-                                cout << "hit 7 in scan" << endl;
-								getFullIndexEntry(0, page, prevIndexEntry);
-								indexEntry.rightChild = 0;
-								slotNum = currSlot = 0;
-							}
-					    }
-
-					}
 				}
-
-
 			}
+
+			cout << "RetPage: " << pageNum << endl;
+			cout << "slotNum: " << slotNum << endl;
 
 			//If we ran out of the Page Without finding a Leaf Page return false
 			if(!(nodeHeader.isLeaf)){
 				cout << "Did not find a leaf!";
 				cout << pageNum << endl;
+				memcpy(retPage, page, PAGE_SIZE);
 			    free(indexFileHeaderPage);
 			    free(page);
-				free(prevIndexEntry.key);
 				free(indexEntry.key);
 				return false;
 			}else{
@@ -1652,7 +1955,6 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 				memcpy(retPage, page, PAGE_SIZE);
 			    free(indexFileHeaderPage);
 			    free(page);
-				free(prevIndexEntry.key);
 				free(indexEntry.key);
 				return true;
 			}
@@ -1667,10 +1969,9 @@ bool IndexManager::traverseTree(IXFileHandle &ixfh, const Attribute &attribute, 
 	    	cout << "in traverse tree TypeVarChar" << endl;
 	    	return false;
         break;
-     }
-
+    }
+    
     free(indexFileHeaderPage);
     free(page);
-	free(prevIndexEntry.key);
 	free(indexEntry.key);
 }

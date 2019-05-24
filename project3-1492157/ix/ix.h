@@ -27,6 +27,7 @@ typedef struct DataEntry{
 }DataEntry;
 
 typedef struct NodeHeader{
+	uint32_t pageNum;
     uint32_t numSlots;
     uint32_t parent;
     bool isLeaf;
@@ -137,9 +138,9 @@ class IndexManager {
         void setNodeHeader(void* page, NodeHeader nodeHeader);
         NodeHeader getNodeHeader(void * page);
 
-        void newNonLeafPage(void * page);
+        void newNonLeafPage(void * page, const uint32_t &pageID);
 
-        void newLeafPage(void * page);
+        void newLeafPage(void * page, const uint32_t &pageID);
         void setLeafHeader(void* page, LeafHeader leafHeader);
         LeafHeader getLeafHeader(void * page);
 
@@ -148,12 +149,13 @@ class IndexManager {
         RC deleteSlotEntry(uint32_t slotNum, uint32_t totalSlots, void * page);
 
 
+        //RC insertDataEntry(void * pageData, const Attribute &attribute, const DataEntry &dataEntry, const uint32_t &slotNum);
         RC insertDataEntry(void * pageData, const Attribute &attribute, const DataEntry &dataEntry);
         bool enoughFreeSpaceForDataEntry(void * pageData, const Attribute &attribute, const void *key);
         void getDataEntry(uint32_t slotNum, void * page, DataEntry &dataEntry);
         RC deleteDataEntry(uint32_t slotNum, uint32_t totalSlots, void * page);
 
-        RC insertIndexEntry(void * pageData,const Attribute &attribute,const IndexEntry &indexEntry);
+        RC insertIndexEntry(void * pageData,const Attribute &attribute,const IndexEntry &indexEntry, const uint32_t &slotNum);
         bool enoughFreeSpaceForIndexEntry(void * pageData, const Attribute &attribute, const void *key);
         void getIndexEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, IndexEntry &indexEntry, char * pageData, SlotEntry dirtySlot);
         void getFullIndexEntry(uint32_t slotNum, void * page, IndexEntry &indexEntry);
@@ -167,7 +169,10 @@ class IndexManager {
         unsigned getPageFreeSpaceSize(void * page);
 
         void getKeyd(const Attribute &attribute, void * retKey, const void * key);
-
+        void prepInsertEntry(void* pageData, const Attribute &attribute, const void * value, uint32_t &slotNum);
+       	void splitPages(IXFileHandle &ixfileHandle, void * originalPage, void * newPage, uint32_t &retMiddleSlot, IndexEntry &overFlowIndexEntry );
+       	RC recurPush(IXFileHandle &ixfileHandle, void * originalPage, const uint32_t &originalPageNum ,IndexEntry &overFlowIndexEntry);
+        //ADD A GETVARCHAR FUNCTIOJN
 };
 
 

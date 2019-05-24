@@ -46,6 +46,8 @@ int testCase_4(const string &indexFileName, const Attribute &attribute)
     cerr << "Before DeleteEntry - R W A: " << readPageCount << " " << writePageCount << " " << appendPageCount << endl;
 
     // delete entry
+
+    indexManager->printBtree(ixfileHandle, attribute);
     rc = indexManager->deleteEntry(ixfileHandle, attribute, &key, rid);
     assert(rc == success && "indexManager::deleteEntry() should not fail.");
 
