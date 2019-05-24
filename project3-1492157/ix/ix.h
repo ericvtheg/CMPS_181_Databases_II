@@ -170,7 +170,7 @@ class IndexManager {
 
         void getKeyd(const Attribute &attribute, void * retKey, const void * key);
         void prepInsertEntry(void* pageData, const Attribute &attribute, const void * value, uint32_t &slotNum);
-       	void splitPages(IXFileHandle &ixfileHandle, void * originalPage, void * newPage, uint32_t &retMiddleSlot, IndexEntry &overFlowIndexEntry );
+       	void splitPages(IXFileHandle &ixfileHandle, const Attribute &attribute, void * originalPage, void * newPage, uint32_t &retMiddleSlot, IndexEntry &overFlowIndexEntry );
        	RC recurPush(IXFileHandle &ixfileHandle, void * originalPage, const uint32_t &originalPageNum ,IndexEntry &overFlowIndexEntry);
         //ADD A GETVARCHAR FUNCTIOJN
 };
