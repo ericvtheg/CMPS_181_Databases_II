@@ -7,6 +7,7 @@
 
 #include "../rbf/rbfm.h"
 #include "../ix/ix.h"
+#include <algorithm>
 
 using namespace std;
 
@@ -42,6 +43,20 @@ using namespace std;
 // 1 null byte, 4 integer fields and a varchar
 #define COLUMNS_RECORD_DATA_SIZE 1 + 5 * INT_SIZE + COLUMNS_COL_COLUMN_NAME_SIZE
 
+#define INDEX_TABLE_NAME             "Index"
+#define INDEX_TABLE_ID               3
+
+#define INDEX_COL_TABLE_ID           "table-id"
+#define INDEX_COL_INDEX_NAME         "index-name"
+#define INDEX_COL_ATTR_NAME          "attr-name"
+#define INDEX_COL_ATTR_TYPE          "attr-type"
+#define INDEX_COL_ATTR_LENGTH        "attr-length"
+//#define INDEX_COL_COLUMN_POSITION    "index-position"
+#define INDEX_COL_COLUMN_NAME_SIZE 100
+
+// 1 null byte, 4 integer fields and a varchar
+#define INDEX_RECORD_DATA_SIZE 3 * INT_SIZE + INDEX_COL_COLUMN_NAME_SIZE + COLUMNS_COL_COLUMN_NAME_SIZE
+
 # define RM_EOF (-1)  // end of a scan operator
 
 #define RM_CANNOT_MOD_SYS_TBL 1
@@ -71,13 +86,14 @@ private:
 
 class RM_IndexScanIterator {
 public:
-   RM_IndexScanIterator(); // Constructor
-  ~RM_IndexScanIterator(); // Destructor
+   RM_IndexScanIterator(){}; // Constructor
+  ~RM_IndexScanIterator(){}; // Destructor
 
   // "key" follows the same format as in IndexManager::insertEntry()
   RC getNextEntry(RID &rid, void *key); // Get next matching entry
   RC close(); // Terminate index scan
 
+  friend class RelationManager;
   friend class IndexManager;
   friend class IXFileHandle;
 private:
@@ -101,6 +117,8 @@ public:
   RC deleteTable(const string &tableName);
 
   RC getAttributes(const string &tableName, vector<Attribute> &attrs);
+
+  bool containsAttribute(const string& attributeName, const vector<Attribute> &attrs, unsigned &retVecIndex);
 
   RC insertTuple(const string &tableName, const void *data, RID &rid);
 
@@ -129,14 +147,15 @@ public:
       const vector<string> &attributeNames, // a list of projected attributes
       RM_ScanIterator &rm_ScanIterator);
 
-  RC indexScan(const string &tableName, 
+  RC indexScan(const string &tableName,
 	  const string &attributeName,
-	  const void *lowKey, 
+	  const void *lowKey,
 	  const void *highKey,
 	  bool lowKeyInclusive,
 	  bool highKeyInclusive,
 	  RM_IndexScanIterator &rm_IndexScanIterator);
 
+friend class RM_IndexScanIterator;
 
 protected:
   RelationManager();
@@ -146,6 +165,7 @@ private:
   static RelationManager *_rm;
   const vector<Attribute> tableDescriptor;
   const vector<Attribute> columnDescriptor;
+  const vector<Attribute> indexDescriptor;
 
   // Convert tableName to file name (append extension)
   static string getFileName(const char *tableName);
@@ -154,6 +174,7 @@ private:
   // Create recordDescriptor for Table/Column tables
   static vector<Attribute> createTableDescriptor();
   static vector<Attribute> createColumnDescriptor();
+  static vector<Attribute> createIndexDescriptor();
 
   // Prepare an entry for the Table/Column table
   void prepareTablesRecordData(int32_t id, bool system, const string &tableName, void *data);
@@ -170,6 +191,10 @@ private:
   RC getTableID(const string &tableName, int32_t &tableID);
 
   RC isSystemTable(bool &system, const string &tableName);
+
+  RC insertIndex(int32_t id, const string &indexName, const Attribute attribute);
+
+  void prepareIndexRecordData(int32_t id,string indexName, Attribute attr, void *data);
 
 
 

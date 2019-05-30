@@ -228,6 +228,9 @@ class IXFileHandle {
     RC appendPage(const void *data);
 
     friend class IndexManager;
+	friend class RelationManager;
+    friend class RM_IndexScanIterator;
+	
 	private:
         FileHandle fh;
 
