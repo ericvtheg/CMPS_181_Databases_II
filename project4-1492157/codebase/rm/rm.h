@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "../rbf/rbfm.h"
+#include "../ix/ix.h"
 
 using namespace std;
 
@@ -68,6 +69,22 @@ private:
   FileHandle fileHandle;
 };
 
+class RM_IndexScanIterator {
+public:
+   RM_IndexScanIterator(); // Constructor
+  ~RM_IndexScanIterator(); // Destructor
+
+  // "key" follows the same format as in IndexManager::insertEntry()
+  RC getNextEntry(RID &rid, void *key); // Get next matching entry
+  RC close(); // Terminate index scan
+
+  friend class IndexManager;
+  friend class IXFileHandle;
+private:
+  IX_ScanIterator ix_iter;
+  IXFileHandle *ixfileHandle;
+};
+
 
 // Relation Manager
 class RelationManager
@@ -93,6 +110,10 @@ public:
 
   RC readTuple(const string &tableName, const RID &rid, void *data);
 
+  RC createIndex(const string &tableName, const string &attributeName);
+
+  RC destroyIndex(const string &tableName, const string &attributeName);
+
   // Print a tuple that is passed to this utility method.
   // The format is the same as printRecord().
   RC printTuple(const vector<Attribute> &attrs, const void *data);
@@ -107,6 +128,14 @@ public:
       const void *value,                    // used in the comparison
       const vector<string> &attributeNames, // a list of projected attributes
       RM_ScanIterator &rm_ScanIterator);
+
+  RC indexScan(const string &tableName, 
+	  const string &attributeName,
+	  const void *lowKey, 
+	  const void *highKey,
+	  bool lowKeyInclusive,
+	  bool highKeyInclusive,
+	  RM_IndexScanIterator &rm_IndexScanIterator);
 
 
 protected:

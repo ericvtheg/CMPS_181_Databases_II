@@ -177,6 +177,7 @@ RC RelationManager::deleteTable(const string &tableName)
 RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &attrs)
 {
     RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
+
     // Clear out any old values
     attrs.clear();
     RC rc;
@@ -280,6 +281,7 @@ RC RelationManager::getAttributes(const string &tableName, vector<Attribute> &at
 RC RelationManager::insertTuple(const string &tableName, const void *data, RID &rid)
 {
     RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
+    IndexManager *ix = IndexManager::instance();
     RC rc;
 
     // If this is a system table, we cannot modify it
@@ -304,7 +306,10 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
 
     // Let rbfm do all the work
     rc = rbfm->insertRecord(fileHandle, recordDescriptor, data, rid);
+
     rbfm->closeFile(fileHandle);
+
+    // Let the ix do all the work
 
     return rc;
 }
@@ -855,3 +860,62 @@ RC RM_ScanIterator::close()
     rbfm->closeFile(fileHandle);
     return SUCCESS;
 }
+
+
+RC RelationManager::indexScan(const string &tableName, 
+	  const string &attributeName,
+	  const void *lowKey, 
+	  const void *highKey,
+	  bool lowKeyInclusive,
+	  bool highKeyInclusive,
+	  RM_IndexScanIterator &rm_IndexScanIterator)
+  {
+
+  	RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
+  	IndexManager *ix = IndexManager::instance();
+  	
+  	// Open the file for the given tableName
+  	RC rc = rbfm->openFile(getFileName(tableName), rm_IndexScanIterator.fileHandle);
+  	if (rc)
+  	    return rc;
+
+  	// grab the record descriptor for the given tableName
+  	vector<Attribute> recordDescriptor;
+  	rc = getAttributes(tableName, recordDescriptor);
+  	if (rc)
+  	    return rc;
+
+  	// Use the underlying ix_scaniterator to do all the work
+  	rc = ix->scan(rm_IndexScanIterator.ixfileHandle,
+                recordDescriptor,
+                lowKey,
+                highKey,
+                lowKeyInclusive,
+                highKeyInclusive,
+                rm_IndexScanIterator.ix_iter);
+
+  	if (rc)
+  	    return rc;
+
+  	return SUCCESS;
+  	//return ix_ScanIterator.initialize(ixfileHandle, attribute, lowKey, highKey, lowKeyInclusive, highKeyInclusive);
+
+
+  }
+
+  // Let ix do all the work
+  RC RM_IndexScanIterator::getNextEntry(RID &rid, void *data)
+  {
+  	 return -1;
+     // return rbfm_iter.getNextRecord(rid, data);
+  }
+
+  // Close our file handle, rbfm_scaniterator
+  RC RM_IndexScanIterator::close()
+  {
+  	  return -1;
+      // RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
+      // rbfm_iter.close();
+      // rbfm->closeFile(fileHandle);
+      // return SUCCESS;
+  }
