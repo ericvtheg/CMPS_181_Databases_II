@@ -4,14 +4,16 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
+#include <algorithm>
 
 #include "../rbf/rbfm.h"
 #include "../ix/ix.h"
-#include <algorithm>
 
 using namespace std;
 
 #define TABLE_FILE_EXTENSION ".t"
+#define INDEX_FILE_EXTENSION ".i"
 
 #define TABLES_TABLE_NAME           "Tables"
 #define TABLES_TABLE_ID             1
@@ -52,7 +54,7 @@ using namespace std;
 #define INDEX_COL_ATTR_TYPE          "attr-type"
 #define INDEX_COL_ATTR_LENGTH        "attr-length"
 //#define INDEX_COL_COLUMN_POSITION    "index-position"
-#define INDEX_COL_COLUMN_NAME_SIZE 100
+#define INDEX_COL_COLUMN_NAME_SIZE 150
 
 // 1 null byte, 4 integer fields and a varchar
 #define INDEX_RECORD_DATA_SIZE 3 * INT_SIZE + INDEX_COL_COLUMN_NAME_SIZE + COLUMNS_COL_COLUMN_NAME_SIZE
@@ -156,6 +158,7 @@ public:
 	  RM_IndexScanIterator &rm_IndexScanIterator);
 
 friend class RM_IndexScanIterator;
+friend class RecordBasedFileManager;
 
 protected:
   RelationManager();
@@ -170,6 +173,10 @@ private:
   // Convert tableName to file name (append extension)
   static string getFileName(const char *tableName);
   static string getFileName(const string &tableName);
+ 
+  static string getIndexFileName(const char *tableName, const string &attrName);
+  static string getIndexFileName(const char *tableName, const char* attrName);
+  static string getIndexFileName(const string &tableName, const string &attrName);
 
   // Create recordDescriptor for Table/Column tables
   static vector<Attribute> createTableDescriptor();
@@ -195,6 +202,8 @@ private:
   RC insertIndex(int32_t id, const string &indexName, const Attribute attribute);
 
   void prepareIndexRecordData(int32_t id,string indexName, Attribute attr, void *data);
+
+  void prepareKey(const vector<Attribute> &recordDescriptor, const string &attributeName, const void * data, void * key);
 
 
 
