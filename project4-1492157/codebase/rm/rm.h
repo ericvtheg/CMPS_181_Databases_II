@@ -51,13 +51,13 @@ using namespace std;
 #define INDEX_COL_TABLE_ID           "table-id"
 #define INDEX_COL_INDEX_NAME         "index-name"
 #define INDEX_COL_ATTR_NAME          "attr-name"
-#define INDEX_COL_ATTR_TYPE          "attr-type"
-#define INDEX_COL_ATTR_LENGTH        "attr-length"
+// #define INDEX_COL_ATTR_TYPE          "attr-type"
+// #define INDEX_COL_ATTR_LENGTH        "attr-length"
 //#define INDEX_COL_COLUMN_POSITION    "index-position"
 #define INDEX_COL_COLUMN_NAME_SIZE 150
 
 // 1 null byte, 4 integer fields and a varchar
-#define INDEX_RECORD_DATA_SIZE 3 * INT_SIZE + INDEX_COL_COLUMN_NAME_SIZE + COLUMNS_COL_COLUMN_NAME_SIZE
+#define INDEX_RECORD_DATA_SIZE 1 + 3 * INT_SIZE + INDEX_COL_COLUMN_NAME_SIZE + COLUMNS_COL_COLUMN_NAME_SIZE
 
 # define RM_EOF (-1)  // end of a scan operator
 
@@ -204,6 +204,8 @@ private:
   void prepareIndexRecordData(int32_t id,string indexName, Attribute attr, void *data);
 
   void prepareKey(const vector<Attribute> &recordDescriptor, const string &attributeName, const void * data, void * key);
+ 
+  void extractKeyFromRecord(const vector<Attribute> &recordDescriptor, const string &attributeName, const void * data, void * key);
 
 
 

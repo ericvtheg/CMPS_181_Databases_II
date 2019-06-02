@@ -117,7 +117,8 @@ RC IndexManager::closeFile(IXFileHandle &ixfileHandle)
 }
 
 RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, const void *key, const RID &rid)
-{
+{       
+    
     ChildEntry childEntry = {.key = NULL, .childPage = 0};
     int32_t rootPage;
     RC rc = getRootPageNum(ixfileHandle, rootPage);

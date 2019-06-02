@@ -343,6 +343,7 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
     vector<string> projection;
     void *value = &id;
 
+   // cout << "beginning of the scan" << endl;
 
     rc = rbfm->scan(fileHandle, indexDescriptor, INDEX_COL_TABLE_ID, EQ_OP, value, projection, rbfm_si);
 
@@ -356,6 +357,7 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
     //Find all Index Files which matcht the Table ID
     while((rc = rbfm_si.getNextRecord(retRid, NULL)) == SUCCESS)
     {
+    	//cout << "In the scan loop" << endl;
        // Prepare all of the pointer
        memset(nameBuffer, 0, PAGE_SIZE);
        memset(attributeName, 0, COLUMNS_COL_COLUMN_NAME_SIZE);
@@ -363,31 +365,41 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
        uint32_t varcharSize = 0;
 
        // Extract the Atrtibute information for the Indexed File
-       rbfm->readAttribute(fileHandle, recordDescriptor, retRid, INDEX_COL_ATTR_NAME , nameBuffer);
+       rbfm->readAttribute(fileHandle, indexDescriptor, retRid, INDEX_COL_ATTR_NAME , nameBuffer);
        //Returns back the null indicator, so ignore
        memcpy(&varcharSize, (char *)nameBuffer + 1, VARCHAR_LENGTH_SIZE);
-       memcpy(attributeName, (char *)nameBuffer + 1 + varcharSize, varcharSize);
+       cout << "VarCharSize: " << varcharSize << endl;
+       memcpy(attributeName, (char *)nameBuffer + 1 + VARCHAR_LENGTH_SIZE, varcharSize);
+       cout << "attributeName: " << string(attributeName) << endl;
 
        // Extract the index File name
-       rbfm->readAttribute(fileHandle, recordDescriptor, retRid, INDEX_COL_INDEX_NAME , nameBuffer);
        memset(nameBuffer, 0, PAGE_SIZE);
+       rbfm->readAttribute(fileHandle, indexDescriptor, retRid, INDEX_COL_INDEX_NAME , nameBuffer);
        memcpy(&varcharSize, (char *)nameBuffer + 1, VARCHAR_LENGTH_SIZE);
-       memcpy(indexFileName, (char *)nameBuffer + 1 + varcharSize, varcharSize);
+       cout << "VarCharSize: " << varcharSize << endl;
+       memcpy(indexFileName, (char *)nameBuffer + 1 + VARCHAR_LENGTH_SIZE, varcharSize);
+       cout << "indexFileName: " << string(indexFileName) << endl;
 
 
        //Open the IX file
        rc = ix->openFile(string(indexFileName), ixfh);
-       if (rc)
+       if (rc){
+       	   cout << "Couldn't open the file " << endl;
            return rc;
+       }
 
        // Prepare the Key for the entry for the given data record
        prepareKey(recordDescriptor, attributeName, data, key);
+       int wow; 
+       memcpy(&wow, key, INT_SIZE);
+       cout << "Wow: " << wow << endl; 
       
        unsigned retVecIndex = 0;
 
   	   if(containsAttribute(string(attributeName), recordDescriptor, retVecIndex)){
 		    rc = ix->insertEntry(ixfh, recordDescriptor[retVecIndex], key, rid);
 		    if (rc){
+		    	cout << "InsertEntry Failed!?!?!" << endl;
 		    	free(nameBuffer);
 		    	free(attributeName);
 		    	free(indexFileName);
@@ -395,6 +407,7 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
 		    }
   	   	
   	   }else{
+  	   		cout << "Not Contain attribute?!?!" << endl;
 	    	free(nameBuffer);
 	    	free(attributeName);
 	    	free(indexFileName);
@@ -417,7 +430,18 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
 RC RelationManager::deleteTuple(const string &tableName, const RID &rid)
 {
     RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
+    IndexManager *ix = IndexManager::instance();
     RC rc;
+    FileHandle tableFileHandle;
+    FileHandle indexTableFileHandle;
+    RID retRid;
+    void * nameBuffer = malloc(PAGE_SIZE);
+    char * attributeName = (char *)malloc(COLUMNS_COL_COLUMN_NAME_SIZE);
+    char * indexFileName = (char *)malloc(INDEX_COL_COLUMN_NAME_SIZE);
+    void * key = malloc(PAGE_SIZE);
+    void * retData = malloc(PAGE_SIZE);
+    IXFileHandle ixfh;
+ 
 
     // If this is a system table, we cannot modify it
     bool isSystem;
@@ -434,22 +458,112 @@ RC RelationManager::deleteTuple(const string &tableName, const RID &rid)
         return rc;
 
     // And get fileHandle
-    FileHandle fileHandle;
-    rc = rbfm->openFile(getFileName(tableName), fileHandle);
+    rc = rbfm->openFile(getFileName(tableName), tableFileHandle);
     if (rc)
         return rc;
 
-    // Let rbfm do all the work
-    rc = rbfm->deleteRecord(fileHandle, recordDescriptor, rid);
-    rbfm->closeFile(fileHandle);
 
-    return rc;
+    // Grab the table ID
+    int32_t id;
+    rc = getTableID(tableName, id);
+    if (rc)
+        return rc;
+
+    // Open the Index Table
+    rc = rbfm->openFile(getFileName(INDEX_TABLE_NAME), indexTableFileHandle);
+    if (rc)
+        return rc;
+
+    // Find entry with same table ID
+    // Use empty projection because we only care about RID
+    RBFM_ScanIterator rbfm_si;
+    vector<string> projection;
+    void *value = &id;
+
+
+    rc = rbfm->scan(indexTableFileHandle, indexDescriptor, INDEX_COL_TABLE_ID, EQ_OP, value, projection, rbfm_si);
+
+    //Find all Index Files which matcht the Table ID
+    while((rc = rbfm_si.getNextRecord(retRid, NULL)) == SUCCESS)
+    {
+       // Prepare all of the pointer
+       memset(nameBuffer, 0, PAGE_SIZE);
+       memset(retData, 0, PAGE_SIZE);
+       memset(key, 0, PAGE_SIZE);
+       memset(attributeName, 0, COLUMNS_COL_COLUMN_NAME_SIZE);
+       memset(indexFileName, 0, INDEX_COL_COLUMN_NAME_SIZE);
+       uint32_t varcharSize = 0;
+
+       // Extract the Atrtibute information for the Indexed File
+       rbfm->readAttribute(indexTableFileHandle, indexDescriptor, retRid, INDEX_COL_ATTR_NAME , nameBuffer);
+       //Returns back the null indicator, so ignore
+       memcpy(&varcharSize, (char *)nameBuffer + 1, VARCHAR_LENGTH_SIZE);
+       memcpy(attributeName, (char *)nameBuffer + 1 + VARCHAR_LENGTH_SIZE, varcharSize);
+
+       // Extract the index File name
+       memset(nameBuffer, 0, PAGE_SIZE);
+       rbfm->readAttribute(indexTableFileHandle, indexDescriptor, retRid, INDEX_COL_INDEX_NAME , nameBuffer);
+       memcpy(&varcharSize, (char *)nameBuffer + 1, VARCHAR_LENGTH_SIZE);
+       memcpy(indexFileName, (char *)nameBuffer + 1 + VARCHAR_LENGTH_SIZE, varcharSize);
+
+	   rbfm->readAttribute(tableFileHandle, recordDescriptor, retRid, string(attributeName) , retData);
+
+       //Open the IX file
+       rc = ix->openFile(string(indexFileName), ixfh);
+       if (rc)
+           return rc;
+
+       // Prepare the Key for the entry for the given data record
+       prepareKey(recordDescriptor, attributeName, retData, key);
+      
+       unsigned retVecIndex = 0;
+
+       if(containsAttribute(string(attributeName), recordDescriptor, retVecIndex)){
+            rc = ix->deleteEntry(ixfh, recordDescriptor[retVecIndex], key, rid);
+            if (rc){
+                free(nameBuffer);
+                free(attributeName);
+                free(indexFileName);
+                return rc;
+            }
+        
+       }else{
+       		cout << "No attribute?!?!" << endl;
+            free(nameBuffer);
+            free(attributeName);
+            free(indexFileName);
+            return -1;
+       }
+
+       ix->closeFile(ixfh);
+
+    }
+    
+    free(nameBuffer);
+    free(attributeName);
+    free(indexFileName);
+    rbfm->closeFile(indexTableFileHandle);
+    rbfm->closeFile(tableFileHandle);
+    rbfm_si.close();
+    return SUCCESS;
 }
 
 RC RelationManager::updateTuple(const string &tableName, const void *data, const RID &rid)
 {
     RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
+    IndexManager *ix = IndexManager::instance();
     RC rc;
+    FileHandle tableFileHandle;
+    FileHandle indexTableFileHandle;
+    RID retRid;
+    void * nameBuffer = malloc(PAGE_SIZE);
+    char * attributeName = (char *)malloc(COLUMNS_COL_COLUMN_NAME_SIZE);
+    char * indexFileName = (char *)malloc(INDEX_COL_COLUMN_NAME_SIZE);
+    void * newKey = malloc(PAGE_SIZE);
+    void * oldKey = malloc(PAGE_SIZE);
+    void * retData = malloc(PAGE_SIZE);
+    IXFileHandle ixfh;
+ 
 
     // If this is a system table, we cannot modify it
     bool isSystem;
@@ -466,16 +580,109 @@ RC RelationManager::updateTuple(const string &tableName, const void *data, const
         return rc;
 
     // And get fileHandle
-    FileHandle fileHandle;
-    rc = rbfm->openFile(getFileName(tableName), fileHandle);
+    rc = rbfm->openFile(getFileName(tableName), tableFileHandle);
     if (rc)
         return rc;
 
-    // Let rbfm do all the work
-    rc = rbfm->updateRecord(fileHandle, recordDescriptor, data, rid);
-    rbfm->closeFile(fileHandle);
 
-    return rc;
+    // Grab the table ID
+    int32_t id;
+    rc = getTableID(tableName, id);
+    if (rc)
+        return rc;
+
+    // Open the Index Table
+    rc = rbfm->openFile(getFileName(INDEX_TABLE_NAME), indexTableFileHandle);
+    if (rc)
+        return rc;
+
+    // Find entry with same table ID
+    // Use empty projection because we only care about RID
+    RBFM_ScanIterator rbfm_si;
+    vector<string> projection;
+    void *value = &id;
+
+
+    rc = rbfm->scan(indexTableFileHandle, indexDescriptor, INDEX_COL_TABLE_ID, EQ_OP, value, projection, rbfm_si);
+
+    //Find all Index Files which matcht the Table ID
+    while((rc = rbfm_si.getNextRecord(retRid, NULL)) == SUCCESS)
+    {
+       // Prepare all of the pointer
+       memset(nameBuffer, 0, PAGE_SIZE);
+       memset(retData, 0, PAGE_SIZE);
+       memset(newKey, 0, PAGE_SIZE);
+       memset(oldKey, 0, PAGE_SIZE);
+       memset(attributeName, 0, COLUMNS_COL_COLUMN_NAME_SIZE);
+       memset(indexFileName, 0, INDEX_COL_COLUMN_NAME_SIZE);
+       uint32_t varcharSize = 0;
+
+       // Extract the Atrtibute information for the Indexed File
+       rbfm->readAttribute(indexTableFileHandle, indexDescriptor, retRid, INDEX_COL_ATTR_NAME , nameBuffer);
+       //Returns back the null indicator, so ignore
+       memcpy(&varcharSize, (char *)nameBuffer + 1, VARCHAR_LENGTH_SIZE);
+       memcpy(attributeName, (char *)nameBuffer + 1 + VARCHAR_LENGTH_SIZE, varcharSize);
+
+       // Extract the index File name
+       memset(nameBuffer, 0, PAGE_SIZE);
+       rbfm->readAttribute(indexTableFileHandle, indexDescriptor, retRid, INDEX_COL_INDEX_NAME , nameBuffer);
+       memcpy(&varcharSize, (char *)nameBuffer + 1, VARCHAR_LENGTH_SIZE);
+       memcpy(indexFileName, (char *)nameBuffer + 1 + VARCHAR_LENGTH_SIZE, varcharSize);
+
+	   rbfm->readAttribute(tableFileHandle, recordDescriptor, retRid, string(attributeName) , retData);
+
+       //Open the IX file
+       rc = ix->openFile(string(indexFileName), ixfh);
+       if (rc)
+           return rc;
+
+       // Prepare the Key for the entry for the given data record
+       prepareKey(recordDescriptor, string(attributeName), retData, oldKey);
+      
+       prepareKey(recordDescriptor, string(attributeName), data, newKey);
+       unsigned retVecIndex = 0;
+
+       if(containsAttribute(string(attributeName), recordDescriptor, retVecIndex)){
+            rc = ix->deleteEntry(ixfh, recordDescriptor[retVecIndex], oldKey, rid);
+            rc = ix->insertEntry(ixfh, recordDescriptor[retVecIndex], newKey, rid);
+            if (rc){
+                free(nameBuffer);
+                free(attributeName);
+                free(indexFileName);
+                free(newKey);
+                free(oldKey);
+                free(retData);
+                return rc;
+            }
+        
+       }else{
+            free(nameBuffer);
+            free(attributeName);
+            free(indexFileName);
+            free(newKey);
+            free(oldKey);
+            free(retData);
+            return -1;
+       }
+
+       ix->closeFile(ixfh);
+
+    }
+
+
+    // Let rbfm do all the work
+    rc = rbfm->updateRecord(tableFileHandle, recordDescriptor, data, rid);
+
+    free(nameBuffer);
+    free(attributeName);
+    free(indexFileName);
+    free(newKey);
+    free(oldKey);
+    free(retData);
+    rbfm->closeFile(tableFileHandle);
+    rbfm->closeFile(indexTableFileHandle);
+    rbfm_si.close();
+    return SUCCESS;
 }
 
 RC RelationManager::readTuple(const string &tableName, const RID &rid, void *data)
@@ -549,7 +756,7 @@ string RelationManager::getIndexFileName(const char *tableName, const char *attr
 }
 
 string RelationManager::getIndexFileName(const string &tableName, const string &attrName){
-
+	// cout << "In two string getIndexFileName " << tableName + attrName + string(INDEX_FILE_EXTENSION) <<endl;
     return tableName + attrName + string(INDEX_FILE_EXTENSION);
 }
 
@@ -631,18 +838,18 @@ vector<Attribute> RelationManager::createIndexDescriptor()
 
     attr.name = INDEX_COL_ATTR_NAME;
     attr.type = TypeVarChar;
-    attr.length = (AttrLength)INDEX_COL_COLUMN_NAME_SIZE;
+    attr.length = (AttrLength)COLUMNS_COL_COLUMN_NAME_SIZE;
     cd.push_back(attr);
 
-    attr.name = INDEX_COL_ATTR_TYPE;
-    attr.type = TypeInt;
-    attr.length = (AttrLength)INT_SIZE;
-    cd.push_back(attr);
+    // attr.name = INDEX_COL_ATTR_TYPE;
+    // attr.type = TypeInt;
+    // attr.length = (AttrLength)INT_SIZE;
+    // cd.push_back(attr);
 
-    attr.name = INDEX_COL_ATTR_LENGTH;
-    attr.type = TypeVarChar;
-    attr.length = (AttrLength)INDEX_COL_COLUMN_NAME_SIZE;
-    cd.push_back(attr);
+    // attr.name = INDEX_COL_ATTR_LENGTH;
+    // attr.type = TypeVarChar;
+    // attr.length = (AttrLength)INDEX_COL_COLUMN_NAME_SIZE;
+    // cd.push_back(attr);
 
     return cd;
 
@@ -1077,7 +1284,7 @@ RC RelationManager::indexScan(const string &tableName,
       RC rc;
       RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
       IndexManager *ix = IndexManager::instance();
-      rc = rbfm->createFile(getIndexFileName(tableName, attributeName));
+      rc = ix->createFile(getIndexFileName(tableName, attributeName));
       if (rc)
           return rc;
 
@@ -1102,9 +1309,13 @@ RC RelationManager::indexScan(const string &tableName,
       //Use the helper function to isolate the desired attribute
       if(containsAttribute(attributeName, recordDescriptor, retVecIndex)){
 
+      	//cout << "Create Index: found attribute" << endl;
+    
         rc = insertIndex(id, getIndexFileName(tableName, attributeName), recordDescriptor[retVecIndex]);
         if (rc)
               return rc;
+
+       // cout << "After indexFileName" << endl;
 
         projection.push_back(attributeName);
         recordDescriptorSingle.push_back(recordDescriptor[retVecIndex]);
@@ -1119,7 +1330,7 @@ RC RelationManager::indexScan(const string &tableName,
       	if (rc)
           return rc;
 
-        rc = rbfm->scan(fh, recordDescriptorSingle, attributeName, NO_OP, NULL, projection, rbfm_si);
+        rc = rbfm->scan(fh, recordDescriptor, attributeName, NO_OP, NULL, projection, rbfm_si);
         if (rc)
           return rc;
 
@@ -1128,9 +1339,13 @@ RC RelationManager::indexScan(const string &tableName,
       	RID rid;
 
       	while((rc = rbfm_si.getNextRecord(rid, data)) == SUCCESS){
-      		prepareKey(recordDescriptorSingle, attributeName, data, key);
+
+      	//	cout << "In loop " << endl;
+      		prepareKey(recordDescriptor, attributeName, data, key);
       		ix->insertEntry(ixfh, recordDescriptor[retVecIndex], key, rid);
       	}
+
+      	//cout << "Create Index  after loops "<< endl;
 
       	if (rc != RBFM_EOF)
       	  return rc;
@@ -1138,6 +1353,7 @@ RC RelationManager::indexScan(const string &tableName,
       	rbfm->closeFile(fh);
       	rbfm_si.close();
 
+      	//cout << "Create Index successful "<< endl;
         return SUCCESS;
 
       }else{
@@ -1204,6 +1420,7 @@ RC RelationManager::indexScan(const string &tableName,
 
     RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
 
+    //cout << "In insertIndex " << endl;
     FileHandle fileHandle;
     rc = rbfm->openFile(getFileName(INDEX_TABLE_NAME), fileHandle);
     if (rc)
@@ -1212,50 +1429,70 @@ RC RelationManager::indexScan(const string &tableName,
     void *indexData = malloc(INDEX_RECORD_DATA_SIZE);
     RID rid;
 
+   // cout << "Before prepareIndexRecordData " << endl;
     prepareIndexRecordData(id, indexName, attribute, indexData);
+
+    //cout << "After prepareIndexRecordData " << endl;
+    cout << indexName << endl;
     rc = rbfm->insertRecord(fileHandle, indexDescriptor, indexData, rid);
+    //cout << "After insertRecord" << endl;
     if (rc)
         return rc;
 
-
     rbfm->closeFile(fileHandle);
     free(indexData);
+   // cout << "return insertIndex " << endl;
     return SUCCESS;
 
 
   }
 
-  void RelationManager::prepareIndexRecordData(int32_t id,string indexName, Attribute attr, void *data)
+  void RelationManager::prepareIndexRecordData(int32_t id, string indexName, Attribute attr, void *data)
   {
-      unsigned offset = 0;
-      int32_t name_len = attr.name.length();
-      int32_t index_name_len = indexName.length();
 
-      //Insert the table ID
-      memcpy((char*) data + offset, &id, INT_SIZE);
-      offset += INT_SIZE;
 
-      // Insert the indexFileName
-      memcpy((char*) data + offset, &index_name_len, VARCHAR_LENGTH_SIZE);
-      offset += VARCHAR_LENGTH_SIZE;
-      memcpy((char*) data + offset, indexName.c_str(), index_name_len);
-      offset += index_name_len;
+    unsigned offset = 0;
+    int32_t name_len = attr.name.length();
+    int32_t index_name_len = indexName.length();
 
-      //Insert the Attribute Name
-      memcpy((char*) data + offset, &name_len, VARCHAR_LENGTH_SIZE);
-      offset += VARCHAR_LENGTH_SIZE;
-      memcpy((char*) data + offset, attr.name.c_str(), name_len);
-      offset += name_len;
 
-      //Insert Attribute Type
-      int32_t type = attr.type;
-      memcpy((char*) data + offset, &type, INT_SIZE);
-      offset += INT_SIZE;
+  	// All fields non-null
+  	char null = 0;
+  	// Copy in null indicator
+  	memcpy((char*) data + offset, &null, 1);
+  	offset += 1;
+ 
+    //Insert the table ID
+    memcpy((char*) data + offset, &id, INT_SIZE);
+    offset += INT_SIZE;
 
-      //Insert Attribute Lengt
-      int32_t len = attr.length;
-      memcpy((char*) data + offset, &len, INT_SIZE);
-      offset += INT_SIZE;
+    // Insert the indexFileName
+    cout << "prepareIndexRecordData: indexName " << indexName << endl;
+    cout << "prepareIndexRecordData: indexNameLength " << index_name_len << endl;
+    memcpy((char*) data + offset, &index_name_len, VARCHAR_LENGTH_SIZE);
+    offset += VARCHAR_LENGTH_SIZE;
+    memcpy((char*) data + offset, indexName.c_str(), index_name_len);
+    offset += index_name_len;
+
+    //Insert the Attribute Name
+    cout << "prepareIndexRecordData: attrName " << attr.name << endl;
+    cout << "prepareIndexRecordData: indexNameLength " << name_len << endl;
+    memcpy((char*) data + offset, &name_len, VARCHAR_LENGTH_SIZE);
+    offset += VARCHAR_LENGTH_SIZE;
+    memcpy((char*) data + offset, attr.name.c_str(), name_len);
+    offset += name_len;
+
+  // //Insert Attribute Type
+  // int32_t type = attr.type;
+  // memcpy((char*) data + offset, &type, INT_SIZE);
+  // offset += INT_SIZE;
+
+  // //Insert Attribute Lengt
+  // int32_t len = attr.length;
+  // memcpy((char*) data + offset, &len, INT_SIZE);
+  // offset += INT_SIZE;
+
+
 
   }
 
@@ -1283,7 +1520,7 @@ RC RelationManager::indexScan(const string &tableName,
 	    unsigned i = 0;
 	    for (i = 0; i < recordDescriptor.size(); i++)
 	    {
-	        if (!rbfm->fieldIsNull(nullIndicator, i) && (attribute.name.compare(recordDescriptor[i].name) == 0))
+	        if (!rbfm->fieldIsNull(nullIndicator, i) )
 	        {
 	            // Points to current position in *data
 	            char *data_start = (char*) data + data_offset;
@@ -1292,18 +1529,33 @@ RC RelationManager::indexScan(const string &tableName,
 	            switch (attribute.type)
 	            {
 	                case TypeInt:
-	                    memcpy (key, data_start, INT_SIZE);
+	                   if (attribute.name.compare(recordDescriptor[i].name) == 0){
+		                    memcpy (key, data_start, INT_SIZE);                	
+	                   }
 	                    data_offset += INT_SIZE;
 	                break;
 	                case TypeReal:
-	                    memcpy (key, data_start, REAL_SIZE);
+                       if (attribute.name.compare(recordDescriptor[i].name) == 0){
+	                    	memcpy (key, data_start, REAL_SIZE);          	
+                       }
 	                    data_offset += REAL_SIZE;
 	                break;
 	                case TypeVarChar:
 	                    uint32_t varcharSize;
 	                    // We have to get the size of the VarChar field by reading the integer that precedes the string value itself
 	                    memcpy(&varcharSize, data_start, VARCHAR_LENGTH_SIZE);
-	                    memcpy (key, data_start + VARCHAR_LENGTH_SIZE, varcharSize);
+	                    char varChar[varcharSize + 1];
+	                    cout << "varcharSize: " << varcharSize << endl;
+                        if (attribute.name.compare(recordDescriptor[i].name) == 0){
+	                    	        	
+	                    	memcpy (key, data_start, VARCHAR_LENGTH_SIZE);
+	                    	memcpy (key, data_start + VARCHAR_LENGTH_SIZE, varcharSize);
+	                    	memcpy (varChar, data_start + VARCHAR_LENGTH_SIZE, varcharSize);
+	                        varChar[varcharSize + 1] = '\0';
+	                        cout << varChar << endl;
+	                    	
+
+                        }
 	                    // We also have to account for the overhead given by that integer.
 	                    data_offset += VARCHAR_LENGTH_SIZE + varcharSize;
 	                break;
@@ -1315,12 +1567,14 @@ RC RelationManager::indexScan(const string &tableName,
   }
 
 
+
   bool RelationManager::containsAttribute(const string& attributeName, const vector<Attribute> &attrs, unsigned &retVecIndex){
 	auto it = std::find_if(attrs.begin(), attrs.end(), [&attributeName] (const Attribute& a) { return (attributeName.compare(a.name) == 0); });
 
 	if (it != attrs.end())
 	{
 		retVecIndex = distance(attrs.begin(), it);
+		cout << "containsAttribute: retVecIndex " << retVecIndex << endl;
 		return true;
 
 	}
