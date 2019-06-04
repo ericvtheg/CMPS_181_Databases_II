@@ -202,6 +202,9 @@ class Filter : public Iterator {
         vector <Attribute> attrs;
 
         RC getNextTuple(void *data);
+        bool compOpCases(int ogComp, int toComp, CompOp op);
+        bool compOpCases(float ogComp, float toComp, CompOp op);
+        bool compValue(void * buffer, Value rhsValue, CompOp op);
         // For attribute in vector<Attribute>, name it as rel.attr
         void getAttributes(vector<Attribute> &attrs) const;
 };
