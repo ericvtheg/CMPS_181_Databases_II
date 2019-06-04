@@ -1227,14 +1227,23 @@ RC RelationManager::indexScan(const string &tableName,
 	  RM_IndexScanIterator &rm_IndexScanIterator)
   {
 
-  	RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
+  	//RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
   	IndexManager *ix = IndexManager::instance();
 
-  	// Open the file for the given tableName
-  	RC rc = rbfm->openFile(getIndexFileName(tableName, attributeName), rm_IndexScanIterator.ixfileHandle->fh);
-  	if (rc)
-  	    return rc;
+    cout << "Before open!" << endl;
+    // Open the file for the given tableName
 
+    //SOMETHING DEFINITELY WRONG WITH ixfh??
+    IXFileHandle ixfh;
+    rm_IndexScanIterator.ixfileHandle = &ixfh;
+    cout << getIndexFileName(tableName, attributeName) << endl;
+    RC rc = ix->openFile(getIndexFileName(tableName, attributeName), *(rm_IndexScanIterator.ixfileHandle));
+    if (rc){
+        cout << rc << endl;
+        return rc;
+    }
+
+    cout << "After open!" << endl;
   	// grab the record descriptor for the given tableName
   	vector<Attribute> recordDescriptor;
   	rc = getAttributes(tableName, recordDescriptor);
@@ -1352,6 +1361,7 @@ RC RelationManager::indexScan(const string &tableName,
       	  return rc;
 
       	rbfm->closeFile(fh);
+        ix->closeFile(ixfh);
       	rbfm_si.close();
 
       	//cout << "Create Index successful "<< endl;
