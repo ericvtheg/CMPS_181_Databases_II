@@ -1244,6 +1244,7 @@ RC RelationManager::indexScan(const string &tableName,
   	unsigned retVecIndex = 0;
 
   	if(containsAttribute(attributeName, recordDescriptor, retVecIndex)){
+        cout << "It contains the attribute!" << endl;
 	  	// Use the underlying ix_scaniterator to do all the work
 	  	rc = ix->scan(*(rm_IndexScanIterator.ixfileHandle),
 	                recordDescriptor[retVecIndex],

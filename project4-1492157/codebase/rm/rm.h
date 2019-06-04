@@ -157,6 +157,10 @@ public:
 	  bool highKeyInclusive,
 	  RM_IndexScanIterator &rm_IndexScanIterator);
 
+  static string getIndexFileName(const char *tableName, const string &attrName);
+  static string getIndexFileName(const char *tableName, const char* attrName);
+  static string getIndexFileName(const string &tableName, const string &attrName);
+
 friend class RM_IndexScanIterator;
 friend class RecordBasedFileManager;
 
@@ -174,9 +178,7 @@ private:
   static string getFileName(const char *tableName);
   static string getFileName(const string &tableName);
  
-  static string getIndexFileName(const char *tableName, const string &attrName);
-  static string getIndexFileName(const char *tableName, const char* attrName);
-  static string getIndexFileName(const string &tableName, const string &attrName);
+
 
   // Create recordDescriptor for Table/Column tables
   static vector<Attribute> createTableDescriptor();

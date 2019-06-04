@@ -80,91 +80,108 @@ Filter::Filter(Iterator* input, const Condition &condition)
     this->condition = condition;
 
     attrs.clear();
-    input->getAttributes(attrs);
+    iter->getAttributes(attrs);
 
-    void *data = malloc(PAGE_SIZE);
+    this->setIterator(condition);
+
+    cout << "Finished initialization" << endl;
+
+    //void *data = malloc(PAGE_SIZE);
 
     // do we call get next Tuple from here
 }
 
 RC Filter::getNextTuple(void *data) 
-{
-    bool nullBit = false;
-    bool satisfied = false;
-    RC rc;
-    int offset;
-    void * buffer = malloc(PAGE_SIZE);
-    int compInt = 0;
-    float compFloat = 0;
-    char* compChar = "";
+{	// If NE_OP
+	RC rc = iter->getNextTuple(data);
+	if (rc == QE_EOF && condition.op == NE_OP && NE_OPFirstRun != true){
+		rc = iter->setNE_OP(condition);
+		NE_OPFirstRun = true;
+		return rc;
+
+	}
+	return rc;
+//     bool nullBit = false;
+//     bool satisfied = false;
+//     RC rc;
+//     int offset;
+//     void * buffer = malloc(PAGE_SIZE);
+//     int compInt = 0;
+//     float compFloat = 0;
+//     char* compChar = "";
 
 
-   //load in value into void pointer
-//    getCompValue(buffer, condition.rhsValue);
+//    //load in value into void pointer
+// //    getCompValue(buffer, condition.rhsValue);
 
-    // recur through the tuples
-    while ((rc = getNextTuple(data)) == 1 )
-    {
-    //   our code
-      offset = 1;
-      satisfied = false;
+//     // recur through the tuples
+//     while ((rc = getNextTuple(data)) == 1 )
+//     {
+//     //   our code
+//       offset = 1;
+//       satisfied = false;
       
 
 
-    // for all attributes in tuple
-      for(int i =0; attrs.size(); i++){
-        nullBit = *(unsigned char *)((char *)data) & (1 << (7-i));
-        // what to do for nullbit case
+//     // for all attributes in tuple
+//       for(int i =0; attrs.size(); i++){
+//         nullBit = *(unsigned char *)((char *)data) & (1 << (7-i));
+//         // what to do for nullbit case
 
         
-        if(condition.bRhsIsAttr){
-        //   if (switchCases(condition.op, condition.rhsValue, attrs.)){  //(attrs[i].name == condition.rhsAttr){ 
-        //       satisfied = true;
-        //     // attribute that we care about and want to print  
-        //   }
-        }
-        else //bRhsISAttr is False
-          if(attrs[i].name == condition.lhsAttr){
-            if(attrs[i].type == TypeVarChar){
-              // need to load in 4 byte variable first
-            }else if(attrs[i].type == TypeReal){
-              //buffer now holds value for corresponding attr
-              memcpy(buffer, (char*)data+offset, attrs[i].length);
-            }else{
-              int compInt;
-              memcpy(buffer, (char*)data+offset, attrs[i].length);
-            }
+//         if(condition.bRhsIsAttr){
+//         //   if (switchCases(condition.op, condition.rhsValue, attrs.)){  //(attrs[i].name == condition.rhsAttr){ 
+//         //       satisfied = true;
+//         //     // attribute that we care about and want to print  
+//         //   }
+//         }
+//         else //bRhsISAttr is False
+//           if(attrs[i].name == condition.lhsAttr){
+//             if(attrs[i].type == TypeVarChar){
+//               // need to load in 4 byte variable first
+//             }else if(attrs[i].type == TypeReal){
+//               //buffer now holds value for corresponding attr
+//               memcpy(buffer, (char*)data+offset, attrs[i].length);
+//             }else{
+//               int compInt;
+//               memcpy(buffer, (char*)data+offset, attrs[i].length);
+//             }
 
-            // check to see if rhsValue.data matches comparison condition and value
-            satisfied = compValue(buffer, condition.rhsValue, condition.op);
-        }
-        if(attrs[i].type == TypeVarChar){
-          offset += 4;
-        //   offset += sizeofVarChar
-        }else{
-          offset += attrs[i].length;
-        }
+//             // check to see if rhsValue.data matches comparison condition and value
+//             satisfied = compValue(buffer, condition.rhsValue, condition.op);
+//         }
+//         if(attrs[i].type == TypeVarChar){
+//           offset += 4;
+//         //   offset += sizeofVarChar
+//         }else{
+//           offset += attrs[i].length;
+//         }
         
                 
-        // even if isn't attribute we want to comp still memcpy into buffer so we can "keep original tuple schema"
+//         // even if isn't attribute we want to comp still memcpy into buffer so we can "keep original tuple schema"
 
 
    
-    }
-      if(satisfied){ // if tuple satisfied criteria return it
-        // how do we return a bunch of tuples?
-        // should we just be printing each one individually?
-      }
-    }
+//     }
+//       if(satisfied){ // if tuple satisfied criteria return it
+//         // how do we return a bunch of tuples?
+//         // should we just be printing each one individually?
+//       }
+//     }
 
-    free(buffer);
-    return QE_EOF;
+//     free(buffer);
+//     return QE_EOF;
 }
 
 void Filter::getAttributes(vector<Attribute> &attrs) const 
 {
 	attrs.clear();
     attrs = this->attrs;
+}
+
+void Filter::setIterator(Condition condition)  
+{
+	iter->setIterator(condition);
 }
 
 

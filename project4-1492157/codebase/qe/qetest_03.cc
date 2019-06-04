@@ -42,6 +42,8 @@ RC testCase_3() {
 	
 	int valueA = 0;
 	float valueC = 0.0;
+
+	cout << "Test 3 : Before For Loop" << endl;
 	
 	while (filter->getNextTuple(data) != QE_EOF) {
 		int offset = 0;
