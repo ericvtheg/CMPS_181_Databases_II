@@ -17,7 +17,6 @@ RC testCase_5() {
 
 	RC rc = success;
 	IndexScan *is = new IndexScan(*rm, "right", "C");
-
 	float compVal = 110.0;
 	float valueC = 0;
 
@@ -35,11 +34,9 @@ RC testCase_5() {
 	int expectedResultCnt = 15; // 110.00 ~ 124.00;
 	int actualResultCnt = 0;
 
-	cout << "Before Filter" << endl;
 	// Create Filter
 	Filter *filter = new Filter(is, cond);
 
-	cout << "After Filter" << endl;
 	// Go over the data through iterator
 	void *data = malloc(bufSize);
 
@@ -50,8 +47,6 @@ RC testCase_5() {
 
 	while (filter->getNextTuple(data) != QE_EOF) {
 		int offset = 0;
-
-		cout << "In the while loop" << endl;
 		
 		// is an attribute B NULL?
 		nullBit = *(unsigned char *)((char *)data) & (1 << 7);
