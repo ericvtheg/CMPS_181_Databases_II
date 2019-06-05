@@ -223,6 +223,108 @@ RC Iterator::prepTupleWAttrVec(vector<Attribute> attrVec, vector<string> desired
 }
 
 
+
+unsigned Iterator::getTupleSize(const vector<Attribute> &recordDescriptor, const void *data) 
+{
+    // Read in the null indicator
+    int nullIndicatorSize = int(ceil((double) recordDescriptor.size() / CHAR_BIT));
+    char nullIndicator[nullIndicatorSize];
+    memset(nullIndicator, 0, nullIndicatorSize);
+    memcpy(nullIndicator, (char*) data, nullIndicatorSize);
+
+    // Offset into *data. Start just after null indicator
+    unsigned offset = nullIndicatorSize;
+    // Running count of size. Initialize to size of header
+    unsigned size = 0;
+
+
+    int indicatorIndex;
+    int indicatorMask;
+    bool fieldIsNull;
+
+    for (unsigned i = 0; i < (unsigned) recordDescriptor.size(); i++)
+    {
+
+    	indicatorIndex = i / CHAR_BIT;
+    	indicatorMask  = 1 << (CHAR_BIT - 1 - (i % CHAR_BIT));
+    	fieldIsNull = (nullIndicator[indicatorIndex] & indicatorMask) != 0;
+    	if (fieldIsNull == true)
+            continue;
+        switch (recordDescriptor[i].type)
+        {
+            case TypeInt:
+                size += INT_SIZE;
+                offset += INT_SIZE;
+            break;
+            case TypeReal:
+                size += REAL_SIZE;
+                offset += REAL_SIZE;
+            break;
+            case TypeVarChar:
+                uint32_t varcharSize;
+                // We have to get the size of the VarChar field by reading the integer that precedes the string value itself
+                memcpy(&varcharSize, (char*) data + offset, VARCHAR_LENGTH_SIZE);
+                size += varcharSize;
+                offset += varcharSize + VARCHAR_LENGTH_SIZE;
+            break;
+        }
+    }
+
+    return size;
+}
+
+
+void Iterator::combineTuples(vector<Attribute> leftAttrs, vector<Attribute> rightAttrs, void * leftTuple, void * rightTuple, void * combinedTuple){
+	void * retValue = malloc(PAGE_SIZE);
+
+    // Get null indicator
+    int leftNullIndicatorSize = int(ceil((double) leftAttrs.size() / CHAR_BIT));
+    int rightNullIndicatorSize = int(ceil((double) rightAttrs.size() / CHAR_BIT));
+    int combinedNullIndicatorSize = int(ceil((double)(leftAttrs.size() + rightAttrs.size()) / CHAR_BIT));
+    
+    char leftNullIndicator[leftNullIndicatorSize];
+    char rightNullIndicator[rightNullIndicatorSize];
+    char combinedNullIndicator[combinedNullIndicatorSize];
+   
+    memset(leftNullIndicator, 0, leftNullIndicatorSize);
+    memset(rightNullIndicator, 0, rightNullIndicatorSize);
+    memset(combinedNullIndicator, 0, combinedNullIndicatorSize);
+  
+    memcpy (leftNullIndicator, leftTuple, leftNullIndicatorSize);
+    memcpy (rightNullIndicator, rightTuple, rightNullIndicatorSize);
+
+    unsigned combinedTupleOffset = combinedNullIndicatorSize;
+    unsigned leftTupleSize = getTupleSize(leftAttrs, leftTuple);
+    unsigned rightTupleSize = getTupleSize(rightAttrs, rightTuple);
+
+    memcpy((char *)combinedTuple + combinedTupleOffset, (char *)leftTuple + leftNullIndicatorSize, leftTupleSize);
+    combinedTupleOffset += leftTupleSize;
+    memcpy((char *)combinedTuple + combinedNullIndicatorSize , (char *)rightTuple + rightNullIndicatorSize, rightTupleSize);
+
+    
+    for (unsigned i = 0; i < rightAttrs.size() + leftAttrs.size(); i++)
+    {
+        // Determine if null
+        bool notNull;
+        memset(retValue, 0 , PAGE_SIZE);
+        if(i >= rightAttrs.size()){
+        	notNull = prepAttributeValue(rightAttrs[i - rightAttrs.size()].name, rightAttrs, rightTuple, retValue );
+        }else{
+        	notNull = prepAttributeValue(leftAttrs[i].name, leftAttrs, leftTuple, retValue );
+        }
+        if (!notNull)
+        {
+            int indicatorIndex = i / CHAR_BIT;
+            char indicatorMask  = 1 << (CHAR_BIT - 1 - (i % CHAR_BIT));
+            combinedNullIndicator[indicatorIndex] |= indicatorMask;
+        }
+    }
+
+    memcpy(combinedTuple, combinedNullIndicator, combinedNullIndicatorSize);
+
+}
+
+
 // bool Filter::compValue(void * buffer, Value rhsValue, CompOp op){
 //     int ogCompInt = 0;
 //     int toCompInt = 0;
@@ -279,7 +381,7 @@ RC Filter::getNextTuple(void *data)
 	    	free(retValue);
 	        return QE_EOF;
         } 
-        else if(prepAttributeValue(condition.lhsAttr, attrs, data, retValue ) == false){
+        else if(prepAttributeValue(condition.lhsAttr, attrs, data, retValue ) == false && condition.op != NO_OP){
             cout << "Value was null" << endl;
             continue;
         }
@@ -428,24 +530,187 @@ INLJoin::INLJoin(
         IndexScan *rightIn,          // IndexScan Iterator of input S
         const Condition &condition   // Join condition
         )
-    {
+{
         // The INLJoin iterator takes two iterators as input. The leftIn iterator
         // works as the outer relation, and the rightIn iterator is the inner relation.
         // The rightIn is an object of IndexScan Iterator. Again, we have already implemented 
         //the IndexScan class for you, which is a wrapper on RM_IndexScanIterator. The 
         // returned schema should be the attributes of tuples from leftIn concatenated with the
         // attributes of tuples from rightIn. You don't need to remove any duplicate attributes.
+    	this->leftIter = leftIn; 
+    	this->rightIter = rightIn; 
 
+    	this->leftAttrs.clear();
+    	leftIter->getAttributes(this->leftAttrs);
 
+    	this->rightAttrs.clear();
+    	rightIter->getAttributes(this->rightAttrs);
+
+    	this->condition = condition;
+    	this->hitInLeft = false;
+    	this->hitInRight = false;
+    	this->firstNE_OPRunDone = false;
+  
+    
+
+}
+
+void INLJoin::updateIndexScanIter(Condition condition, void * lhsValue)
+{
+ 
+//          string delimiter = ".";
+	// string parsedAttributeName = condition.lhsAttr.substr(condition.lhsAttr.find(delimiter) + 1, condition.lhsAttr.length());
+
+    switch(condition.op){
+        case EQ_OP:
+         cout << "In eq op" << endl;
+         rightIter->setIterator(lhsValue, lhsValue, true, true);
+        break; 
+        case LT_OP: 
+        // Give me all the values of the index where 'S' > 'R'
+        rightIter->setIterator(lhsValue, NULL, false, true);
+	    // rm.indexScan(tableName, attrName, NULL, condition.rhsValue.data, true,
+	    //                false, *iter);
+        break;
+        case GT_OP:
+        //Give me all the values where 'S' < 'R'
+        rightIter->setIterator(NULL, lhsValue, true, false);
+        // rm.indexScan(tableName, attrName, condition.rhsValue.data, NULL, false,
+        //            true, *iter);
+        break; 
+        case LE_OP:
+        // Give me all the values of the index where 'S' >= 'R'
+        rightIter->setIterator(lhsValue, NULL, true, true);
+        // rm.indexScan(tableName, attrName, NULL, condition.rhsValue.data, true,
+        //            true, *iter);
+
+        break; 
+        case GE_OP:
+
+        // Give me all the values of the index where 'S' <= 'R'
+        rightIter->setIterator(NULL, lhsValue, true, true);
+        // rm.indexScan(tableName, attrName, condition.rhsValue.data, NULL, true,
+        //           true, *iter);
+
+        break; 
+        case NE_OP:
+        // Can run two index scans where 'R' < 'S' and 'R'> 'S'
+        // Taking care of the first case!
+        rightIter->setIterator(NULL, lhsValue, true, false);
+        //rm.indexScan(tableName, attrName, NULL, condition.rhsValue.data, true,
+        //           false, *iter); 
+
+        break; 
+        case NO_OP:
+        rightIter->setIterator(NULL, NULL, true, true);
+        // rm.indexScan(tableName, attrName, NULL, NULL, true,
+        //             true, *iter); 
+
+        break; 
     }
 
+
+   // rm.indexScan(tableName, parsedAttributeName, lowKey, highKey, lowKeyInclusive,
+   //                highKeyInclusive, *iter);
+};
+
+
+//For each tuple r in R:
+//	For each tuple s in S:
+//     if r and s satisfy the join condition
+//			output the tuple <r,s>
 RC INLJoin::getNextTuple(void *data)
 {
-    return QE_EOF;
+	void * leftTuple = malloc(PAGE_SIZE);
+	void * rightTuple = malloc(PAGE_SIZE);
+	void * leftConditionValue = malloc(PAGE_SIZE);
+	void * rightConditionValue = malloc(PAGE_SIZE);
+
+	RC rc;
+
+	cout << "Beginning of getNextTuple! " << endl;
+
+
+	while(true){
+
+		memset(leftConditionValue, 0 , PAGE_SIZE);
+		memset(leftTuple, 0, PAGE_SIZE);
+		//For each r in R as long as not null? Bc no 
+		// NUll no-op case??
+		while(!hitInLeft){
+			cout << "No left tuple found yet!" << endl;
+		    rc = leftIter->getNextTuple(leftTuple);
+		    if(rc == QE_EOF){
+		    	cout << "Left tuple EOF" << endl;
+		    	free(leftTuple);
+		    	free(rightTuple);
+		    	free(leftConditionValue);
+		    	free(rightConditionValue);
+		    	return QE_EOF;
+		    }
+		    // If the rc is not QE_EOF then check if either the condition operator is NO_OP OR if there is an actual value we can compare against
+			if(prepAttributeValue(condition.lhsAttr, leftAttrs, leftTuple, leftConditionValue ) == true || condition.op == NO_OP){
+				cout << "Left tuple value found or NO_OP condition" <<  endl;
+		    	hitInLeft = true;		
+			}
+		}
+		//Set Up qualifying S
+		if(!hitInRight){
+			if(firstNE_OPRunDone == false){
+				cout << "No right tuple found yet! First NE_OP run!" <<endl;
+				updateIndexScanIter(condition,  leftConditionValue);	
+				if(condition.op == NE_OP){
+					cout << "First NE_OP Run" << endl;
+					firstNE_OPRunDone = true;
+				}
+			}else{
+				
+				cout << "Second NE_OP Run" << endl;
+				rightIter->setIterator(leftConditionValue, NULL, false, true);
+				firstNE_OPRunDone = false;
+			}
+		}
+		while(true){
+			memset(rightTuple, 0, PAGE_SIZE);
+			rc = rightIter->getNextTuple(rightTuple);
+			if(rc == QE_EOF){
+				//If here we have exhausted S for current r
+				// and break the loop to update r all over again
+				cout << "Right Tuple EOF" << endl;
+				hitInRight = false;
+				hitInLeft = false;
+				break;
+			}
+			memset(rightConditionValue, 0, PAGE_SIZE);
+			// If value returned good or NO_OP!
+			if((prepAttributeValue(rightIter->attrName, rightAttrs, rightTuple, rightConditionValue ) == true) || (condition.op == NO_OP)) {
+		    	cout << "Right Tuple found!" << endl;
+		    	hitInRight = true;	
+		    	//Combine the two tuples and return as data
+		    	combineTuples(leftAttrs, rightAttrs, leftTuple, rightTuple, data);
+
+		    	free(leftTuple);
+		    	free(rightTuple);
+		    	free(leftConditionValue);
+		    	free(rightConditionValue);
+
+		    	return SUCCESS;	
+			}
+
+		}
+	}
 }
 
 void INLJoin::getAttributes(vector<Attribute> &attrs) const
 {
+    attrs.clear();
+    for(unsigned i = 0; leftAttrs.size(); i++){
+    	attrs.push_back(leftAttrs[i]);
+    }
+    for(unsigned j = 0; rightAttrs.size(); j++){
+    	attrs.push_back(rightAttrs[j]);
+    }
+
 
 }
 

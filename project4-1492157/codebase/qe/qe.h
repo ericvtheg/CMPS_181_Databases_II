@@ -48,6 +48,9 @@ class Iterator {
         bool compValue(void * ogCompPointer, void * toCompPointer, Condition condition);
         bool prepAttributeValue(string desiredAttr, vector<Attribute> attrVec, void * data, void * retValue);
         RC prepTupleWAttrVec(vector<Attribute> attrVec, vector<string> desiredAttrs, void * data, void * retTuple);
+        void combineTuples(vector<Attribute> leftAttrs, vector<Attribute> rightAttrs, void * leftTuple, void * rightTuple, void * combinedTuple);
+        unsigned getTupleSize(const vector<Attribute> &recordDescriptor, const void *data);
+
 
         virtual RC getNextTuple(void *data) = 0;
         virtual void getAttributes(vector<Attribute> &attrs) const = 0;
@@ -248,10 +251,16 @@ class INLJoin : public Iterator {
         ~INLJoin(){};
 
         Condition condition;
-        Iterator* iter;
-        vector <Attribute> attrs;
+        Iterator* leftIter;
+        IndexScan* rightIter;
+        vector <Attribute> leftAttrs;
+        vector <Attribute> rightAttrs;
+        bool hitInLeft;
+        bool hitInRight;
+        bool firstNE_OPRunDone;
 
         RC getNextTuple(void *data);
+        void updateIndexScanIter(Condition condition, void * lhsValue);
         // For attribute in vector<Attribute>, name it as rel.attr
         void getAttributes(vector<Attribute> &attrs) const;
 };
