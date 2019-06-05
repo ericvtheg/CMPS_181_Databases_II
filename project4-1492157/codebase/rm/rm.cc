@@ -368,38 +368,38 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
        rbfm->readAttribute(fileHandle, indexDescriptor, retRid, INDEX_COL_ATTR_NAME , nameBuffer);
        //Returns back the null indicator, so ignore
        memcpy(&varcharSize, (char *)nameBuffer + 1, VARCHAR_LENGTH_SIZE);
-       cout << "VarCharSize: " << varcharSize << endl;
+       //cout << "VarCharSize: " << varcharSize << endl;
        memcpy(attributeName, (char *)nameBuffer + 1 + VARCHAR_LENGTH_SIZE, varcharSize);
-       cout << "attributeName: " << string(attributeName) << endl;
+       //cout << "attributeName: " << string(attributeName) << endl;
 
        // Extract the index File name
        memset(nameBuffer, 0, PAGE_SIZE);
        rbfm->readAttribute(fileHandle, indexDescriptor, retRid, INDEX_COL_INDEX_NAME , nameBuffer);
        memcpy(&varcharSize, (char *)nameBuffer + 1, VARCHAR_LENGTH_SIZE);
-       cout << "VarCharSize: " << varcharSize << endl;
+       //cout << "VarCharSize: " << varcharSize << endl;
        memcpy(indexFileName, (char *)nameBuffer + 1 + VARCHAR_LENGTH_SIZE, varcharSize);
-       cout << "indexFileName: " << string(indexFileName) << endl;
+       //cout << "indexFileName: " << string(indexFileName) << endl;
 
 
        //Open the IX file
        rc = ix->openFile(string(indexFileName), ixfh);
        if (rc){
-       	   cout << "Couldn't open the file " << endl;
+       	   //cout << "Couldn't open the file " << endl;
            return rc;
        }
 
        // Prepare the Key for the entry for the given data record
        prepareKey(recordDescriptor, attributeName, data, key);
-       int wow; 
-       memcpy(&wow, key, INT_SIZE);
-       cout << "Wow: " << wow << endl; 
+       // int wow; 
+       // memcpy(&wow, key, INT_SIZE);
+       // cout << "Wow: " << wow << endl; 
       
        unsigned retVecIndex = 0;
 
   	   if(containsAttribute(string(attributeName), recordDescriptor, retVecIndex)){
 		    rc = ix->insertEntry(ixfh, recordDescriptor[retVecIndex], key, rid);
 		    if (rc){
-		    	cout << "InsertEntry Failed!?!?!" << endl;
+		    	//cout << "InsertEntry Failed!?!?!" << endl;
 		    	free(nameBuffer);
 		    	free(attributeName);
 		    	free(indexFileName);
@@ -407,7 +407,7 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
 		    }
   	   	
   	   }else{
-  	   		cout << "Not Contain attribute?!?!" << endl;
+  	   		//cout << "Not Contain attribute?!?!" << endl;
 	    	free(nameBuffer);
 	    	free(attributeName);
 	    	free(indexFileName);
@@ -528,7 +528,7 @@ RC RelationManager::deleteTuple(const string &tableName, const RID &rid)
             }
         
        }else{
-       		cout << "No attribute?!?!" << endl;
+       		//cout << "No attribute?!?!" << endl;
             free(nameBuffer);
             free(attributeName);
             free(indexFileName);
@@ -1230,7 +1230,7 @@ RC RelationManager::indexScan(const string &tableName,
   	//RecordBasedFileManager *rbfm = RecordBasedFileManager::instance();
   	IndexManager *ix = IndexManager::instance();
 
-    cout << "Before open!" << endl;
+   // cout << "Before open!" << endl;
     // Open the file for the given tableName
 
     //SOMETHING DEFINITELY WRONG WITH ixfh??
@@ -1243,7 +1243,7 @@ RC RelationManager::indexScan(const string &tableName,
         return rc;
     }
 
-    cout << "After open!" << endl;
+    //cout << "After open!" << endl;
   	// grab the record descriptor for the given tableName
   	vector<Attribute> recordDescriptor;
   	rc = getAttributes(tableName, recordDescriptor);
@@ -1253,7 +1253,7 @@ RC RelationManager::indexScan(const string &tableName,
   	unsigned retVecIndex = 0;
 
   	if(containsAttribute(attributeName, recordDescriptor, retVecIndex)){
-        cout << "It contains the attribute!" << endl;
+        //cout << "It contains the attribute!" << endl;
 	  	// Use the underlying ix_scaniterator to do all the work
 	  	rc = ix->scan(*(rm_IndexScanIterator.ixfileHandle),
 	                recordDescriptor[retVecIndex],
@@ -1478,16 +1478,16 @@ RC RelationManager::indexScan(const string &tableName,
     offset += INT_SIZE;
 
     // Insert the indexFileName
-    cout << "prepareIndexRecordData: indexName " << indexName << endl;
-    cout << "prepareIndexRecordData: indexNameLength " << index_name_len << endl;
+    //cout << "prepareIndexRecordData: indexName " << indexName << endl;
+    //cout << "prepareIndexRecordData: indexNameLength " << index_name_len << endl;
     memcpy((char*) data + offset, &index_name_len, VARCHAR_LENGTH_SIZE);
     offset += VARCHAR_LENGTH_SIZE;
     memcpy((char*) data + offset, indexName.c_str(), index_name_len);
     offset += index_name_len;
 
     //Insert the Attribute Name
-    cout << "prepareIndexRecordData: attrName " << attr.name << endl;
-    cout << "prepareIndexRecordData: indexNameLength " << name_len << endl;
+    //cout << "prepareIndexRecordData: attrName " << attr.name << endl;
+    //cout << "prepareIndexRecordData: indexNameLength " << name_len << endl;
     memcpy((char*) data + offset, &name_len, VARCHAR_LENGTH_SIZE);
     offset += VARCHAR_LENGTH_SIZE;
     memcpy((char*) data + offset, attr.name.c_str(), name_len);
@@ -1556,7 +1556,7 @@ RC RelationManager::indexScan(const string &tableName,
 	                    // We have to get the size of the VarChar field by reading the integer that precedes the string value itself
 	                    memcpy(&varcharSize, data_start, VARCHAR_LENGTH_SIZE);
 	                    char varChar[varcharSize + 1];
-	                    cout << "varcharSize: " << varcharSize << endl;
+	                    //cout << "varcharSize: " << varcharSize << endl;
                         if (attribute.name.compare(recordDescriptor[i].name) == 0){
 	                    	        	
 	                    	memcpy (key, data_start, VARCHAR_LENGTH_SIZE);
@@ -1585,7 +1585,7 @@ RC RelationManager::indexScan(const string &tableName,
 	if (it != attrs.end())
 	{
 		retVecIndex = distance(attrs.begin(), it);
-		cout << "containsAttribute: retVecIndex " << retVecIndex << endl;
+		//cout << "containsAttribute: retVecIndex " << retVecIndex << endl;
 		return true;
 
 	}
