@@ -11,6 +11,7 @@
 
 #define QE_EOF (-1)  // end of the index scan
 #define QE_NULL 1
+#define QE_ 2 
 
 using namespace std;
 
@@ -45,7 +46,9 @@ class Iterator {
         bool compOpCases(char * ogComp, char * toComp, CompOp op);
         //bool compValue(void * buffer, Value rhsValue, CompOp op);
         bool compValue(void * ogCompPointer, void * toCompPointer, Condition condition);
-        bool prepAttributeValue(Condition condition, vector<Attribute> attrVec, void * data, void * retValue);
+        bool prepAttributeValue(string desiredAttr, vector<Attribute> attrVec, void * data, void * retValue);
+        RC prepTupleWAttrVec(vector<Attribute> attrVec, vector<string> desiredAttrs, void * data, void * retTuple);
+
         virtual RC getNextTuple(void *data) = 0;
         virtual void getAttributes(vector<Attribute> &attrs) const = 0;
         virtual ~Iterator() {};

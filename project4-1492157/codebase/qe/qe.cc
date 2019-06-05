@@ -94,7 +94,7 @@ bool Iterator::compValue(void * ogCompPointer, void * toCompPointer, Condition c
 
 }
 
-bool Iterator::prepAttributeValue(Condition condition, vector<Attribute> attrVec, void * data, void * retValue){
+bool Iterator::prepAttributeValue(string desiredAttr, vector<Attribute> attrVec, void * data, void * retValue){
     int nullIndicatorSize =  int(ceil((double) attrVec.size() / CHAR_BIT));
     char nullIndicator[nullIndicatorSize];
     memset(nullIndicator, 0, nullIndicatorSize);
@@ -120,7 +120,7 @@ bool Iterator::prepAttributeValue(Condition condition, vector<Attribute> attrVec
         fieldIsNull = (nullIndicator[indicatorIndex] & indicatorMask) != 0;
         if (fieldIsNull == true){
             cout << "Field Is Null" << endl;
-            if(attrVec[i].name.compare(condition.lhsAttr) == 0){
+            if(attrVec[i].name.compare(desiredAttr) == 0){
                 cout << "Desired Field is Null" << endl;
                 return false;
             }
@@ -129,14 +129,14 @@ bool Iterator::prepAttributeValue(Condition condition, vector<Attribute> attrVec
         switch (attrVec[i].type)
         {
             case TypeInt:
-                if(attrVec[i].name.compare(condition.lhsAttr) == 0){
+                if(attrVec[i].name.compare(desiredAttr) == 0){
                     memcpy(retValue,(char *)data + data_offset, INT_SIZE);
                     return true;
                 }
                 data_offset += INT_SIZE;
             break;
             case TypeReal:
-                if(attrVec[i].name.compare(condition.lhsAttr) == 0){
+                if(attrVec[i].name.compare(desiredAttr) == 0){
                     memcpy(retValue,(char *)data + data_offset, REAL_SIZE);
                     return true;
                 }
@@ -144,7 +144,7 @@ bool Iterator::prepAttributeValue(Condition condition, vector<Attribute> attrVec
             break;
             case TypeVarChar:
                 uint32_t varcharSize;
-                if(attrVec[i].name.compare(condition.lhsAttr) == 0){
+                if(attrVec[i].name.compare(desiredAttr) == 0){
                     memcpy(&varcharSize, (char*) data + data_offset, VARCHAR_LENGTH_SIZE);
                     memcpy(retValue,(char *)data + data_offset, VARCHAR_LENGTH_SIZE);
                     memcpy((char *)retValue + VARCHAR_LENGTH_SIZE,(char *)data + data_offset + VARCHAR_LENGTH_SIZE, varcharSize);
@@ -159,6 +159,66 @@ bool Iterator::prepAttributeValue(Condition condition, vector<Attribute> attrVec
 
     cout << "how did you make it our here?" << endl;
     return false;
+
+}
+
+RC Iterator::prepTupleWAttrVec(vector<Attribute> attrVec, vector<string> desiredAttrs, void * data, void * retTuple){
+	void * retValue = malloc(PAGE_SIZE);
+
+    // Get null indicator
+    int nullIndicatorSize = int(ceil((double) attrVec.size() / CHAR_BIT));
+    char nullIndicator[nullIndicatorSize];
+    memset(nullIndicator, 0, nullIndicatorSize);
+    memcpy (nullIndicator, data, nullIndicatorSize);
+
+    unsigned dataOffset = nullIndicatorSize;
+	for (unsigned i = 0; i < desiredAttrs.size(); i++)
+	{
+	    // Get index and type of attribute in record
+	    auto pred = [&](Attribute a) {return a.name == desiredAttrs[i];};
+	    auto iterPos = find_if(attrVec.begin(), attrVec.end(), pred);
+	    unsigned index = distance(attrVec.begin(), iterPos);
+	    if (index == attrVec.size()){
+	    	cout << "No such attribute" << endl;
+	        return RBFM_NO_SUCH_ATTR;
+	    }
+
+	    AttrType type = attrVec[index].type;
+
+	    // Read attribute into buffer
+	    memset(retValue, 0 ,PAGE_SIZE);
+
+	    // Determine if null
+	    if (prepAttributeValue(desiredAttrs[i], attrVec, data, retValue) == false)
+	    {
+	        int indicatorIndex = i / CHAR_BIT;
+	        char indicatorMask  = 1 << (CHAR_BIT - 1 - (i % CHAR_BIT));
+	        nullIndicator[indicatorIndex] |= indicatorMask;
+	    }
+	    // Read from buffer into data
+	    else if (type == TypeInt)
+	    {
+	        memcpy ((char*)retTuple + dataOffset, retValue, INT_SIZE);
+	        dataOffset += INT_SIZE;
+	    }
+	    else if (type == TypeReal)
+	    {
+	        memcpy ((char*)retTuple + dataOffset, retValue, REAL_SIZE);
+	        dataOffset += REAL_SIZE;
+	    }
+	    else if (type == TypeVarChar)
+	    {
+	        uint32_t varcharSize;
+	        memcpy(&varcharSize, retValue, VARCHAR_LENGTH_SIZE);
+	        memcpy((char*)retTuple + dataOffset, &varcharSize, VARCHAR_LENGTH_SIZE);
+	        dataOffset += VARCHAR_LENGTH_SIZE;
+	        memcpy((char*)retTuple + dataOffset, (char *)retValue + VARCHAR_LENGTH_SIZE, varcharSize);
+	        dataOffset += varcharSize;
+	    }
+
+	}
+	memcpy(retTuple, nullIndicator, nullIndicatorSize);
+	return SUCCESS;
 
 }
 
@@ -215,16 +275,20 @@ RC Filter::getNextTuple(void *data)
     while(true){
         rc = iter->getNextTuple(data);
 
-        if(rc == QE_EOF) return QE_EOF;
-        else if(prepAttributeValue(condition, attrs, data, retValue ) == false){
+        if(rc == QE_EOF){
+	    	free(retValue);
+	        return QE_EOF;
+        } 
+        else if(prepAttributeValue(condition.lhsAttr, attrs, data, retValue ) == false){
             cout << "Value was null" << endl;
             continue;
         }
-        else if (compValue(retValue, condition.rhsValue.data , condition))
-        return SUCCESS;
+        else if (compValue(retValue, condition.rhsValue.data , condition)){
+	    	free(retValue);
+        	return SUCCESS;
+        }
 
     }
-
 
     free(retValue);
     // bool nullBit = false;
@@ -314,18 +378,45 @@ Project::Project(Iterator *input, const vector<string> &attrNames)
     // It projects out the values of the attributes in the attrNames. The schema of
     // the returned tuples should be the attributes in attrNames, in the order of attributes in the vector.
 
-    iter = input; 
+    this->iter = input; 
     this->attrNames = attrNames;
+    this->attrs.clear();
+    input->getAttributes(this->attrs);
 
 }
 
 RC Project::getNextTuple(void *data)
 {
-    return QE_EOF;
+	RC rc;
+	void * originalTuple = malloc(PAGE_SIZE);
+
+	//Grab the full tuple
+    rc = iter->getNextTuple(originalTuple);
+
+    //If end of file return
+    if(rc == QE_EOF){
+    	free(originalTuple);
+        return QE_EOF;
+    } 
+    else{
+    	//Else parse through the original tuple
+    	prepTupleWAttrVec(attrs, attrNames, originalTuple, data);
+    	free(originalTuple);
+    	return SUCCESS;
+    }
 }
 
 void Project::getAttributes(vector<Attribute> &attrs) const
 {
+	attrs.clear();
+	for(unsigned i = 0; this->attrs.size(); i++){
+		for(unsigned j = 0; this->attrNames.size(); j++){
+			if(attrs[i].name.compare(attrNames[j]) == 0){
+				attrs.push_back(attrs[i]);
+			}
+		}
+
+	}
     
 }
 
