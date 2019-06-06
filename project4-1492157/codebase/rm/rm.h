@@ -98,9 +98,10 @@ public:
   friend class RelationManager;
   friend class IndexManager;
   friend class IXFileHandle;
+  friend class IX_ScanIterator;
 private:
   IX_ScanIterator ix_iter;
-  IXFileHandle *ixfileHandle;
+  //IXFileHandle *ixfileHandle;
 };
 
 
@@ -163,6 +164,7 @@ public:
 
 friend class RM_IndexScanIterator;
 friend class RecordBasedFileManager;
+friend class IX_ScanIterator;
 
 protected:
   RelationManager();
@@ -205,7 +207,7 @@ private:
 
   void prepareIndexRecordData(int32_t id,string indexName, Attribute attr, void *data);
 
-  void prepareKey(const vector<Attribute> &recordDescriptor, const string &attributeName, const void * data, void * key);
+  bool prepareKey(const vector<Attribute> &recordDescriptor, const string &attributeName, const void * data, void * key);
  
   void extractKeyFromRecord(const vector<Attribute> &recordDescriptor, const string &attributeName, const void * data, void * key);
 

@@ -75,7 +75,7 @@ RC RecordBasedFileManager::insertRecord(FileHandle &fileHandle, const vector<Att
     // Gets the size of the record.
     unsigned recordSize = getRecordSize(recordDescriptor, data);
 
-    cout << recordSize <<endl;
+    //cout << recordSize <<endl;
 
     // Cycles through pages looking for enough free space for the new entry.
     void *pageData = malloc(PAGE_SIZE);

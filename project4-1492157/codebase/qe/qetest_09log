@@ -1,1004 +1,1204 @@
-rightC.i
+containsAttribute
 Beginning of getNextTuple! 
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 50
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 51
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 52
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 53
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 54
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 55
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 56
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 57
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 58
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 59
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 60
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 61
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 62
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 63
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 64
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 65
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 66
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 67
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 68
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 69
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 70
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 71
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 72
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 73
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 74
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 75
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 76
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 77
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 78
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 79
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 80
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 81
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 82
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 83
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 84
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 85
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 86
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 87
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 88
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 89
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 90
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 91
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 92
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 93
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 94
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 95
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 96
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 97
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 98
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 99
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 100
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 101
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 102
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 103
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 104
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 105
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 106
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 107
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 108
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 109
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 110
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 111
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 112
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 113
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 114
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 115
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 116
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 117
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 118
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 119
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 120
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 121
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 122
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 123
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 124
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 125
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 126
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 127
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 128
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 129
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 130
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 131
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 132
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 133
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 134
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 135
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 136
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 137
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 138
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 139
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 140
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 141
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 142
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 143
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 144
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 145
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 146
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 147
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 148
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 vectorSize: 3
+desiredAttr: left.C
 attName: left.A
 attName: left.B
 attName: left.C
+temp2: 149
 Left tuple value found or NO_OP condition
 No right tuple found yet! First NE_OP run!
 In eq op
-rightC.i
+containsAttribute
 Right Tuple EOF
 No left tuple found yet!
 Left tuple EOF
