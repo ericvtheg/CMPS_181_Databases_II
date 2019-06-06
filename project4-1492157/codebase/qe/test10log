@@ -1,0 +1,9 @@
+containsAttribute
+init < 
+containsAttribute
+init < 
+QE getAttributes: left.A
+QE getAttributes: left.B
+QE getAttributes: left.C
+containsAttribute
+init < 
