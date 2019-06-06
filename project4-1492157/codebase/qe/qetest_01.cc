@@ -22,7 +22,7 @@ int testCase_1() {
 		cerr << "***** createIndexforLeftB() failed.  *****" << endl;
 		return rc;
 	}
-	//cout << "After createIndexforLeftB " << endl;
+	cout << "After createIndexforLeftB " << endl;
 
 	// Insert tuples.
 	rc = populateLeftTable();

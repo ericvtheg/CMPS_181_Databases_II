@@ -132,7 +132,7 @@ bool Iterator::prepAttributeValue(string desiredAttr, vector<Attribute> attrVec,
                 if(attrVec[i].name.compare(desiredAttr) == 0){
                 	int temp;
                 	memcpy(&temp, (char *)data + data_offset, INT_SIZE );
-                	cout << "temp: " << temp << endl;
+                	cout << "QEtemp: " << temp << endl;
                     memcpy(retValue,(char *)data + data_offset, INT_SIZE);
                     return true;
                 }
@@ -142,7 +142,7 @@ bool Iterator::prepAttributeValue(string desiredAttr, vector<Attribute> attrVec,
                 if(attrVec[i].name.compare(desiredAttr) == 0){
                 	float temp2;
                 	memcpy(&temp2, (char *)data + data_offset, REAL_SIZE );
-                	cout << "temp2: " << temp2 << endl;
+                    cout << "QEtemp2: " << temp2 << endl;
                     memcpy(retValue,(char *)data + data_offset, REAL_SIZE);
                     return true;
                 }
@@ -152,8 +152,12 @@ bool Iterator::prepAttributeValue(string desiredAttr, vector<Attribute> attrVec,
                 uint32_t varcharSize;
                 if(attrVec[i].name.compare(desiredAttr) == 0){
                     memcpy(&varcharSize, (char*) data + data_offset, VARCHAR_LENGTH_SIZE);
+                    char temp3[varcharSize + 1];
                     memcpy(retValue,(char *)data + data_offset, VARCHAR_LENGTH_SIZE);
                     memcpy((char *)retValue + VARCHAR_LENGTH_SIZE,(char *)data + data_offset + VARCHAR_LENGTH_SIZE, varcharSize);
+                    memcpy(temp3,(char *)data + data_offset +VARCHAR_LENGTH_SIZE, VARCHAR_LENGTH_SIZE);
+                    temp3[varcharSize] = '\0';
+                	cout << "QEtemp3: " << temp3 << endl;
                     return true;
                 }
                 // We have to get the size of the VarChar field by reading the integer that precedes the string value itself
@@ -273,16 +277,19 @@ unsigned Iterator::getTupleSize(const vector<Attribute> &recordDescriptor, const
                 // We have to get the size of the VarChar field by reading the integer that precedes the string value itself
                 memcpy(&varcharSize, (char*) data + offset, VARCHAR_LENGTH_SIZE);
                 size += varcharSize;
-                offset += varcharSize + VARCHAR_LENGTH_SIZE;
+                size += VARCHAR_LENGTH_SIZE;
+                offset += varcharSize;
+                offset += VARCHAR_LENGTH_SIZE;
             break;
         }
     }
-
+    cout << "Get next tuple size: " << size << endl;
     return size;
 }
 
 
 void Iterator::combineTuples(vector<Attribute> leftAttrs, vector<Attribute> rightAttrs, void * leftTuple, void * rightTuple, void * combinedTuple){
+    cout << "In Combine Tuples: " << endl;
 	void * retValue = malloc(PAGE_SIZE);
 
     // Get null indicator
@@ -305,9 +312,6 @@ void Iterator::combineTuples(vector<Attribute> leftAttrs, vector<Attribute> righ
     unsigned leftTupleSize = getTupleSize(leftAttrs, leftTuple);
     unsigned rightTupleSize = getTupleSize(rightAttrs, rightTuple);
 
-    memcpy((char *)combinedTuple + combinedTupleOffset, (char *)leftTuple + leftNullIndicatorSize, leftTupleSize);
-    combinedTupleOffset += leftTupleSize;
-    memcpy((char *)combinedTuple + combinedNullIndicatorSize , (char *)rightTuple + rightNullIndicatorSize, rightTupleSize);
 
     
     for (unsigned i = 0; i < rightAttrs.size() + leftAttrs.size(); i++)
@@ -316,9 +320,9 @@ void Iterator::combineTuples(vector<Attribute> leftAttrs, vector<Attribute> righ
         bool notNull;
         memset(retValue, 0 , PAGE_SIZE);
         if(i >= rightAttrs.size()){
-        	notNull = prepAttributeValue(rightAttrs[i - rightAttrs.size()].name, rightAttrs, rightTuple, retValue );
+            notNull = prepAttributeValue(rightAttrs[i - rightAttrs.size()].name, rightAttrs, rightTuple, retValue );
         }else{
-        	notNull = prepAttributeValue(leftAttrs[i].name, leftAttrs, leftTuple, retValue );
+            notNull = prepAttributeValue(leftAttrs[i].name, leftAttrs, leftTuple, retValue );
         }
         if (!notNull)
         {
@@ -328,6 +332,10 @@ void Iterator::combineTuples(vector<Attribute> leftAttrs, vector<Attribute> righ
         }
     }
 
+    memcpy((char *)combinedTuple + combinedNullIndicatorSize, (char *)leftTuple + leftNullIndicatorSize, leftTupleSize);
+    //combinedTupleOffset += leftTupleSize;
+    memcpy((char *)combinedTuple + combinedNullIndicatorSize + leftTupleSize , (char *)rightTuple + rightNullIndicatorSize, rightTupleSize);
+    //combinedTupleOffset += rightTupleSize;
     memcpy(combinedTuple, combinedNullIndicator, combinedNullIndicatorSize);
     free(retValue);
 }
@@ -555,6 +563,9 @@ INLJoin::INLJoin(
     	this->rightAttrs.clear();
     	this->rightIter->getAttributes(this->rightAttrs);
 
+        this ->leftConditionValue = malloc(PAGE_SIZE);
+        this->rightConditionValue = malloc(PAGE_SIZE);
+
     	this->condition = condition;
     	this->hitInLeft = false;
     	this->hitInRight = false;
@@ -645,12 +656,12 @@ RC INLJoin::getNextTuple(void *data)
 
 	while(true){
 
+        memset(leftTuple, 0, PAGE_SIZE);
+        //For each r in R as long as not null? Bc no 
+        // NUll no-op case??
+        while(!hitInLeft){
 		memset(leftConditionValue, 0 , PAGE_SIZE);
-		memset(leftTuple, 0, PAGE_SIZE);
-		//For each r in R as long as not null? Bc no 
-		// NUll no-op case??
-		while(!hitInLeft){
-			cout << "No left tuple found yet!" << endl;
+            cout << "No left tuple found yet!" << endl;
 		    rc = leftIter->getNextTuple(leftTuple);
 		    if(rc == QE_EOF){
 		    	cout << "Left tuple EOF" << endl;
@@ -668,6 +679,7 @@ RC INLJoin::getNextTuple(void *data)
 			else if((leftValueNotNull = prepAttributeValue(condition.lhsAttr, leftAttrs, leftTuple, leftConditionValue )) == true ){
 				cout << "Left tuple value found" <<  endl;
                 //That means value is not null
+                hitInRight = false;
 		    	hitInLeft = true;		
 			}
 		}
@@ -714,8 +726,6 @@ RC INLJoin::getNextTuple(void *data)
                 
                 free(leftTuple);
                 free(rightTuple);
-                free(leftConditionValue);
-                free(rightConditionValue);
 
                 return SUCCESS;
 

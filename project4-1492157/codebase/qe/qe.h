@@ -196,6 +196,8 @@ class IndexScan : public Iterator
                 tmp += ".";
                 tmp += attrs.at(i).name;
                 attrs.at(i).name = tmp;
+
+                cout << "QE getAttributes: " << tmp << endl;
             }
         };
 
@@ -248,13 +250,19 @@ class INLJoin : public Iterator {
                IndexScan *rightIn,          // IndexScan Iterator of input S
                const Condition &condition   // Join condition
         );
-        ~INLJoin(){};
+        ~INLJoin(){
+            free(this ->leftConditionValue);
+            free(this->rightConditionValue);
+
+        };
 
         Condition condition;
         Iterator* leftIter;
         IndexScan* rightIter;
         vector <Attribute> leftAttrs;
         vector <Attribute> rightAttrs;
+        void * leftConditionValue;
+        void * rightConditionValue;
         bool hitInLeft;
         bool hitInRight;
         bool firstNE_OPRunDone;
