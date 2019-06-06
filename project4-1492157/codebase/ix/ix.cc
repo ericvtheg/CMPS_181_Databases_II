@@ -811,6 +811,7 @@ RC IX_ScanIterator::initialize(IXFileHandle &fh, Attribute attribute, const void
     RC rc = im->find(*fileHandle, attr, lowKey, startPageNum);
     if (rc)
     {
+        cout << "initialize" << endl;
         free(page);
         return rc;
     }
@@ -827,12 +828,18 @@ RC IX_ScanIterator::initialize(IXFileHandle &fh, Attribute attribute, const void
     for (i = 0; i < header.entriesNumber; i++)
     {
         int cmp = (low == NULL ? -1 : im->compareLeafSlot(attr, lowKey, page, i));
-        if (cmp < 0)
+        if (cmp < 0){
+            cout << "init < " <<  endl; 
             break;
-        if (cmp == 0 && lowKeyInclusive)
+        }
+        if (cmp == 0 && lowKeyInclusive){
+            cout << "init = " <<  endl; 
             break;
-        if (cmp > 0)
+        }
+        if (cmp > 0){
+            cout << "init > " <<  endl; 
             continue;
+        }
     }
     slotNum = i;
     return SUCCESS;
@@ -855,10 +862,14 @@ RC IX_ScanIterator::getNextEntry(RID &rid, void *key)
     // If highkey is null, always carry on
     // Otherwise, carry on only if highkey is greater than the current key
     int cmp = highKey == NULL ? 1 : im->compareLeafSlot(attr, highKey, page, slotNum);
-    if (cmp == 0 && !highKeyInclusive)
+    if (cmp == 0 && !highKeyInclusive){
+        cout << "Not high inclusive" << endl;
         return IX_EOF;
-    if (cmp < 0)
+    }
+    if (cmp < 0){
+        cout << "cmp < 0" << endl;
         return IX_EOF;
+    }
 
     // Grab the data entry, grab its rid
     DataEntry entry = im->getDataEntry(slotNum, page);
@@ -1167,7 +1178,8 @@ int IndexManager::compareLeafSlot(const Attribute attr, const void *key, const v
 }
 
 int IndexManager::compare(const int key, const int value) const
-{
+{  cout << "keyInt: " << key << endl;
+  cout << "valueInt: " << value << endl;
     if (key == value)
         return 0;
     if (key > value)
@@ -1178,7 +1190,8 @@ int IndexManager::compare(const int key, const int value) const
 }
 
 int IndexManager::compare(const float key, const float value) const
-{
+{   cout << "keyFloat: " << key << endl;
+  cout << "valueFloat: " << value << endl;
     if (key == value)
         return 0;
     if (key > value)
@@ -1189,7 +1202,8 @@ int IndexManager::compare(const float key, const float value) const
 }
 
 int IndexManager::compare(const char *key, const char *value) const
-{
+{cout << "keyString: " << key << endl;
+  cout << "valueString: " << value << endl;
     return strcmp(key, value);
 }
 

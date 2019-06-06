@@ -157,7 +157,7 @@ RC RelationManager::deleteTable(const string &tableName)
     // Delete indexFile matching with name
     projection.push_back(INDEX_COL_INDEX_NAME);
     rc = rbfm->scan(fileHandle, indexDescriptor, INDEX_COL_TABLE_ID, EQ_OP, value, projection, rbfm_si);
-    while(rc = rbfm_si.getNextRecord(rid, indexNameP) == SUCCESS){
+    while((rc = rbfm_si.getNextRecord(rid, indexNameP)) == SUCCESS){
         unsigned offset = 1;
         int32_t varcharSize;
         memcpy(&varcharSize, (char*) indexNameP + offset, VARCHAR_LENGTH_SIZE);
@@ -1492,7 +1492,7 @@ RC RelationManager::indexScan(const string &tableName,
       	while((rc = rbfm_si.getNextRecord(rid, data)) == SUCCESS){
 
       	//	cout << "In loop " << endl;
-      		if(prepareKey(recordDescriptor, attributeName, data, key) == true){
+      		if(prepareKey(recordDescriptorSingle, attributeName, data, key) == true){
       		    rc = ix->insertEntry(ixfh, recordDescriptor[retVecIndex], key, rid);
                 if (rc)
                     return -1;
@@ -1691,18 +1691,24 @@ RC RelationManager::indexScan(const string &tableName,
 	            char *data_start = (char*) data + data_offset;
 
 	            // Read in the data for the next column, point rec_offset to end of newly inserted data
-	            switch (attribute.type)
+	            switch (recordDescriptor[i].type)
 	            {
 	                case TypeInt:
 	                   if (attribute.name.compare(recordDescriptor[i].name) == 0){
 		                    memcpy (key, data_start, INT_SIZE); 
+                            int temp;          
+                            memcpy (&temp, data_start, REAL_SIZE);        
+                            cout << "prepare temp: " << temp << endl;
                             return true;                
                        }
                         data_offset += INT_SIZE;
                     break;
                     case TypeReal:
                        if (attribute.name.compare(recordDescriptor[i].name) == 0){
-                            memcpy (key, data_start, REAL_SIZE);            
+                            memcpy (key, data_start, REAL_SIZE);  
+                            float temp2;          
+                            memcpy (&temp2, data_start, REAL_SIZE);        
+                            cout << "prepare temp2: " << temp2 << endl;    
                             return true;                
                        }
                         data_offset += REAL_SIZE;
@@ -1725,7 +1731,8 @@ RC RelationManager::indexScan(const string &tableName,
 
                         }
 	                    // We also have to account for the overhead given by that integer.
-	                    data_offset += VARCHAR_LENGTH_SIZE + varcharSize;
+	                    data_offset += VARCHAR_LENGTH_SIZE; 
+                        data_offset += varcharSize;
 	                break;
 	            }
 	        }else{
