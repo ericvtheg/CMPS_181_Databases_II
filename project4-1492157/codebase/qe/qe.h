@@ -252,7 +252,7 @@ class INLJoin : public Iterator {
         );
         ~INLJoin(){
             free(this ->leftConditionValue);
-            free(this->rightConditionValue);
+            free(this ->rightConditionValue);
 
         };
 

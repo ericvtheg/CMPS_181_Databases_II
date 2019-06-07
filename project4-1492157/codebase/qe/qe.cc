@@ -313,16 +313,19 @@ void Iterator::combineTuples(vector<Attribute> leftAttrs, vector<Attribute> righ
     unsigned rightTupleSize = getTupleSize(rightAttrs, rightTuple);
 
 
-    
-    for (unsigned i = 0; i < rightAttrs.size() + leftAttrs.size(); i++)
+    cout << "rightAttrs.size()" << rightAttrs.size() <<  endl;
+    cout << "leftAttrs.size()" << leftAttrs.size() <<  endl;
+    for (size_t i = 0; i < rightAttrs.size() + leftAttrs.size(); i++)
     {
         // Determine if null
         bool notNull;
         memset(retValue, 0 , PAGE_SIZE);
-        if(i >= rightAttrs.size()){
-            notNull = prepAttributeValue(rightAttrs[i - rightAttrs.size()].name, rightAttrs, rightTuple, retValue );
-        }else{
+        if(i < leftAttrs.size()){
             notNull = prepAttributeValue(leftAttrs[i].name, leftAttrs, leftTuple, retValue );
+        }else{
+            unsigned 
+            notNull = prepAttributeValue(rightAttrs[i - leftAttrs.size()].name, rightAttrs, rightTuple, retValue );
+
         }
         if (!notNull)
         {
@@ -528,8 +531,8 @@ RC Project::getNextTuple(void *data)
 void Project::getAttributes(vector<Attribute> &attrs) const
 {
 	attrs.clear();
-	for(unsigned i = 0; this->attrs.size(); i++){
-		for(unsigned j = 0; this->attrNames.size(); j++){
+	for(unsigned i = 0; i < this->attrs.size(); i++){
+		for(unsigned j = 0; j< this->attrNames.size(); j++){
 			if(this->attrs[i].name.compare(this->attrNames[j]) == 0){
 				attrs.push_back(this->attrs[i]);
 			}
@@ -645,8 +648,8 @@ RC INLJoin::getNextTuple(void *data)
 {
 	void * leftTuple = malloc(PAGE_SIZE);
 	void * rightTuple = malloc(PAGE_SIZE);
-	void * leftConditionValue = malloc(PAGE_SIZE);
-	void * rightConditionValue = malloc(PAGE_SIZE);
+	// void * leftConditionValue = malloc(PAGE_SIZE);
+	// void * rightConditionValue = malloc(PAGE_SIZE);
     bool leftValueNotNull;
 
 	RC rc;
@@ -667,8 +670,8 @@ RC INLJoin::getNextTuple(void *data)
 		    	cout << "Left tuple EOF" << endl;
 		    	free(leftTuple);
 		    	free(rightTuple);
-		    	free(leftConditionValue);
-		    	free(rightConditionValue);
+		    	// free(leftConditionValue);
+		    	// free(rightConditionValue);
 		    	return QE_EOF;
 		    }
 		    // If the rc is not QE_EOF then check if either the condition operator is NO_OP OR if there is an actual value we can compare against
