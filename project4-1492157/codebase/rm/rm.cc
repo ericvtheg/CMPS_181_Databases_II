@@ -394,7 +394,7 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
     char * indexFileName = (char *)malloc(INDEX_COL_COLUMN_NAME_SIZE);
     void * key = malloc(PAGE_SIZE);
     IXFileHandle ixfh;
- 
+
     //Find all Index Files which matcht the Table ID
     while((rc = rbfm_si.getNextRecord(retRid, NULL)) == SUCCESS)
     {
@@ -432,10 +432,10 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
        memset(key, 0 ,PAGE_SIZE);
        // Prepare the Key for the entry for the given data record
        bool keyBool = prepareKey(recordDescriptor, attributeName, data, key);
-       // int wow; 
+       // int wow;
        // memcpy(&wow, key, INT_SIZE);
-       // cout << "Wow: " << wow << endl; 
-      
+       // cout << "Wow: " << wow << endl;
+
        unsigned retVecIndex = 0;
 
   	   if(containsAttribute(string(attributeName), recordDescriptor, retVecIndex)){
@@ -450,7 +450,7 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
                 free(key);
                 return rc;
             }
-        
+
        }else{
             //cout << "Not Contain attribute?!?!" << endl;
             free(key);
@@ -463,7 +463,7 @@ RC RelationManager::insertTuple(const string &tableName, const void *data, RID &
   	   ix->closeFile(ixfh);
 
     }
-    
+
 	free(nameBuffer);
 	free(attributeName);
 	free(indexFileName);
@@ -488,7 +488,7 @@ RC RelationManager::deleteTuple(const string &tableName, const RID &rid)
     void * key = malloc(PAGE_SIZE);
     void * retData = malloc(PAGE_SIZE);
     IXFileHandle ixfh;
- 
+
 
     // If this is a system table, we cannot modify it
     bool isSystem;
@@ -605,13 +605,13 @@ RC RelationManager::deleteTuple(const string &tableName, const RID &rid)
        memset(key, 0 ,PAGE_SIZE);
        // Prepare the Key for the entry for the given data record
        bool keyBool = prepareKey(recordDescriptor, attributeName, retData, key);
-      
+
        unsigned retVecIndex = 0;
 
        if(containsAttribute(string(attributeName), recordDescriptor, retVecIndex)){
             if(keyBool){
                 rc = ix->deleteEntry(ixfh, recordDescriptor[retVecIndex], key, rid);
-                
+
             }
             if (rc){
                 free(retData);
@@ -621,7 +621,7 @@ RC RelationManager::deleteTuple(const string &tableName, const RID &rid)
                 free(indexFileName);
                 return rc;
             }
-        
+
        }else{
             //cout << "No attribute?!?!" << endl;
             free(key);
@@ -635,7 +635,7 @@ RC RelationManager::deleteTuple(const string &tableName, const RID &rid)
        ix->closeFile(ixfh);
 
     }
-    
+
     free(key);
     free(nameBuffer);
     free(attributeName);
@@ -662,7 +662,7 @@ RC RelationManager::updateTuple(const string &tableName, const void *data, const
     void * oldKey = malloc(PAGE_SIZE);
     void * retData = malloc(PAGE_SIZE);
     IXFileHandle ixfh;
- 
+
 
     // If this is a system table, we cannot modify it
     bool isSystem;
@@ -737,18 +737,18 @@ RC RelationManager::updateTuple(const string &tableName, const void *data, const
 
        // Prepare the Key for the entry for the given data record
        bool oldKeyBool = prepareKey(recordDescriptor, string(attributeName), retData, oldKey);
-      
+
        bool newKeyBool = prepareKey(recordDescriptor, string(attributeName), data, newKey);
        unsigned retVecIndex = 0;
 
        if(containsAttribute(string(attributeName), recordDescriptor, retVecIndex)){
             rc = SUCCESS;
             if(oldKeyBool){
-                rc = ix->deleteEntry(ixfh, recordDescriptor[retVecIndex], oldKey, rid); 
+                rc = ix->deleteEntry(ixfh, recordDescriptor[retVecIndex], oldKey, rid);
             }
             if(newKeyBool){
                 rc = ix->insertEntry(ixfh, recordDescriptor[retVecIndex], newKey, rid);
-                
+
             }
             if (rc){
                 free(nameBuffer);
@@ -759,7 +759,7 @@ RC RelationManager::updateTuple(const string &tableName, const void *data, const
                 free(retData);
                 return rc;
             }
-        
+
        }else{
             free(nameBuffer);
             free(attributeName);
@@ -1362,7 +1362,7 @@ RC RelationManager::indexScan(const string &tableName,
             cout << "Could not open file" << endl;
             return rc;
         }
-        cout << "containsAttribute" << endl;
+        // cout << "containsAttribute" << endl;
         //cout << "It contains the attribute!" << endl;
 	  	// Use the underlying ix_scaniterator to do all the work
 	  	rc = ix->scan(*(rm_IndexScanIterator.ix_iter.fileHandle),
@@ -1429,7 +1429,7 @@ RC RelationManager::indexScan(const string &tableName,
       RBFM_ScanIterator rbfm_si;
       IXFileHandle ixfh;
       FileHandle fh;
-     
+
       bool isSystem;
       rc = isSystemTable(isSystem, tableName);
       if (rc)
@@ -1455,7 +1455,7 @@ RC RelationManager::indexScan(const string &tableName,
       if(containsAttribute(attributeName, recordDescriptor, retVecIndex)){
 
         //cout << "Create Index: found attribute" << endl;
-    
+
         rc = insertIndex(id, getIndexFileName(tableName, attributeName), recordDescriptor[retVecIndex]);
         if (rc)
               return rc;
@@ -1625,7 +1625,7 @@ RC RelationManager::indexScan(const string &tableName,
   	// Copy in null indicator
   	memcpy((char*) data + offset, &null, 1);
   	offset += 1;
- 
+
     //Insert the table ID
     memcpy((char*) data + offset, &id, INT_SIZE);
     offset += INT_SIZE;
@@ -1695,21 +1695,21 @@ RC RelationManager::indexScan(const string &tableName,
 	            {
 	                case TypeInt:
 	                   if (attribute.name.compare(recordDescriptor[i].name) == 0){
-		                    memcpy (key, data_start, INT_SIZE); 
-                            int temp;          
-                            memcpy (&temp, data_start, REAL_SIZE);        
-                            cout << "prepare temp: " << temp << endl;
-                            return true;                
+		                    memcpy (key, data_start, INT_SIZE);
+                            int temp;
+                            memcpy (&temp, data_start, REAL_SIZE);
+                            // cout << "prepare temp: " << temp << endl;
+                            return true;
                        }
                         data_offset += INT_SIZE;
                     break;
                     case TypeReal:
                        if (attribute.name.compare(recordDescriptor[i].name) == 0){
-                            memcpy (key, data_start, REAL_SIZE);  
-                            float temp2;          
-                            memcpy (&temp2, data_start, REAL_SIZE);        
-                            cout << "prepare temp2: " << temp2 << endl;    
-                            return true;                
+                            memcpy (key, data_start, REAL_SIZE);
+                            float temp2;
+                            memcpy (&temp2, data_start, REAL_SIZE);
+                            // cout << "prepare temp2: " << temp2 << endl;
+                            return true;
                        }
                         data_offset += REAL_SIZE;
                     break;
@@ -1720,18 +1720,18 @@ RC RelationManager::indexScan(const string &tableName,
                         char varChar[varcharSize + 1];
                         //cout << "varcharSize: " << varcharSize << endl;
                         if (attribute.name.compare(recordDescriptor[i].name) == 0){
-                                        
+
                             memcpy (key, data_start, VARCHAR_LENGTH_SIZE);
                             memcpy (key, data_start + VARCHAR_LENGTH_SIZE, varcharSize);
                             memcpy (varChar, data_start + VARCHAR_LENGTH_SIZE, varcharSize);
                             varChar[varcharSize + 1] = '\0';
                             //cout << varChar << endl;
-                            return true;               	
-                            
+                            return true;
+
 
                         }
 	                    // We also have to account for the overhead given by that integer.
-	                    data_offset += VARCHAR_LENGTH_SIZE; 
+	                    data_offset += VARCHAR_LENGTH_SIZE;
                         data_offset += varcharSize;
 	                break;
 	            }

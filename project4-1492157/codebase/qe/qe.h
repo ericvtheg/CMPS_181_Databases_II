@@ -11,7 +11,7 @@
 
 #define QE_EOF (-1)  // end of the index scan
 #define QE_NULL 1
-#define QE_ 2 
+#define QE_ 2
 
 using namespace std;
 
@@ -197,7 +197,7 @@ class IndexScan : public Iterator
                 tmp += attrs.at(i).name;
                 attrs.at(i).name = tmp;
 
-                cout << "QE getAttributes: " << tmp << endl;
+                // cout << "QE getAttributes: " << tmp << endl;
             }
         };
 

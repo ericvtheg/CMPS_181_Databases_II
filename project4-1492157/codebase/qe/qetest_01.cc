@@ -22,7 +22,7 @@ int testCase_1() {
 		cerr << "***** createIndexforLeftB() failed.  *****" << endl;
 		return rc;
 	}
-	cout << "After createIndexforLeftB " << endl;
+	// cout << "After createIndexforLeftB " << endl;
 
 	// Insert tuples.
 	rc = populateLeftTable();
@@ -53,7 +53,7 @@ int main() {
 		cerr << "***** [FAIL] QE Test Case 1 failed. *****" << endl;
 		return fail;
 	}
-	
+
 	// Create the left table
 	if (createLeftTable() != success) {
 		cerr << "***** createLeftTable() failed." << endl;

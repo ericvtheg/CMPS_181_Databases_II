@@ -117,8 +117,8 @@ RC IndexManager::closeFile(IXFileHandle &ixfileHandle)
 }
 
 RC IndexManager::insertEntry(IXFileHandle &ixfileHandle, const Attribute &attribute, const void *key, const RID &rid)
-{       
-    
+{
+
     ChildEntry childEntry = {.key = NULL, .childPage = 0};
     int32_t rootPage;
     RC rc = getRootPageNum(ixfileHandle, rootPage);
@@ -260,7 +260,7 @@ RC IndexManager::splitLeaf(IXFileHandle &fileHandle, const Attribute &attribute,
             key = &(entry.real);
         else
             key = (char*)originalLeaf + entry.varcharOffset;
-        
+
         lastSize = getKeyLengthLeaf(attribute, key);
         size += lastSize;
         if (size >= PAGE_SIZE / 2)
@@ -450,7 +450,7 @@ RC IndexManager::splitInternal(IXFileHandle &fileHandle, const Attribute &attrib
             key = &(entry.real);
         else
             key = (char*)original + entry.varcharOffset;
-        
+
         lastSize = getKeyLengthInternal(attribute, key);
         size += lastSize;
         if (size >= PAGE_SIZE / 2)
@@ -743,7 +743,7 @@ void IndexManager::printLeafNode(void *pageData, const Attribute &attr) const
                 memcpy((char*)key + VARCHAR_LENGTH_SIZE, (char*)pageData + entry.varcharOffset + VARCHAR_LENGTH_SIZE, len);
                 memset((char*)key + VARCHAR_LENGTH_SIZE + len, 0, 1);
             }
-            
+
             cout << ":[";
             for (unsigned j = 0; j < key_rids.size(); j++)
             {
@@ -811,7 +811,7 @@ RC IX_ScanIterator::initialize(IXFileHandle &fh, Attribute attribute, const void
     RC rc = im->find(*fileHandle, attr, lowKey, startPageNum);
     if (rc)
     {
-        cout << "initialize" << endl;
+        // cout << "initialize" << endl;
         free(page);
         return rc;
     }
@@ -829,15 +829,15 @@ RC IX_ScanIterator::initialize(IXFileHandle &fh, Attribute attribute, const void
     {
         int cmp = (low == NULL ? -1 : im->compareLeafSlot(attr, lowKey, page, i));
         if (cmp < 0){
-            cout << "init < " <<  endl; 
+            // cout << "init < " <<  endl;
             break;
         }
         if (cmp == 0 && lowKeyInclusive){
-            cout << "init = " <<  endl; 
+            // cout << "init = " <<  endl;
             break;
         }
         if (cmp > 0){
-            cout << "init > " <<  endl; 
+            // cout << "init > " <<  endl;
             continue;
         }
     }
@@ -863,11 +863,11 @@ RC IX_ScanIterator::getNextEntry(RID &rid, void *key)
     // Otherwise, carry on only if highkey is greater than the current key
     int cmp = highKey == NULL ? 1 : im->compareLeafSlot(attr, highKey, page, slotNum);
     if (cmp == 0 && !highKeyInclusive){
-        cout << "Not high inclusive" << endl;
+        // cout << "Not high inclusive" << endl;
         return IX_EOF;
     }
     if (cmp < 0){
-        cout << "cmp < 0" << endl;
+        // cout << "cmp < 0" << endl;
         return IX_EOF;
     }
 
@@ -1178,8 +1178,9 @@ int IndexManager::compareLeafSlot(const Attribute attr, const void *key, const v
 }
 
 int IndexManager::compare(const int key, const int value) const
-{  cout << "keyInt: " << key << endl;
-  cout << "valueInt: " << value << endl;
+{
+  // cout << "keyInt: " << key << endl;
+  // cout << "valueInt: " << value << endl;
     if (key == value)
         return 0;
     if (key > value)
@@ -1190,8 +1191,9 @@ int IndexManager::compare(const int key, const int value) const
 }
 
 int IndexManager::compare(const float key, const float value) const
-{   cout << "keyFloat: " << key << endl;
-  cout << "valueFloat: " << value << endl;
+{
+  // cout << "keyFloat: " << key << endl;
+  // cout << "valueFloat: " << value << endl;
     if (key == value)
         return 0;
     if (key > value)
@@ -1202,8 +1204,9 @@ int IndexManager::compare(const float key, const float value) const
 }
 
 int IndexManager::compare(const char *key, const char *value) const
-{cout << "keyString: " << key << endl;
-  cout << "valueString: " << value << endl;
+{
+  // cout << "keyString: " << key << endl;
+  // cout << "valueString: " << value << endl;
     return strcmp(key, value);
 }
 
@@ -1246,7 +1249,7 @@ int IndexManager::getFreeSpaceLeaf(void *pageData) const
     return header.freeSpaceOffset - (sizeof(NodeType) + sizeof(LeafHeader) + header.entriesNumber * sizeof(DataEntry));
 }
 
-RC IndexManager::deleteEntryFromLeaf(const Attribute attr, const void *key, const RID &rid, void *pageData) 
+RC IndexManager::deleteEntryFromLeaf(const Attribute attr, const void *key, const RID &rid, void *pageData)
 {
     LeafHeader header = getLeafHeader(pageData);
 
@@ -1302,7 +1305,7 @@ RC IndexManager::deleteEntryFromLeaf(const Attribute attr, const void *key, cons
     return SUCCESS;
 }
 
-RC IndexManager::deleteEntryFromInternal(const Attribute attr, const void *key, void *pageData) 
+RC IndexManager::deleteEntryFromInternal(const Attribute attr, const void *key, void *pageData)
 {
     InternalHeader header = getInternalHeader(pageData);
 
